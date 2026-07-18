@@ -47,12 +47,30 @@ export default function StudentsTab({
     setShowAddLog(false);
   };
 
+  if (myStudents.length === 0) {
+    return (
+      <div className="bg-white border border-gray-100 rounded-3xl p-12 shadow-sm flex flex-col items-center justify-center text-center">
+        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 mb-4">
+          <BookOpen className="w-8 h-8" />
+        </div>
+        <h2 className="font-display text-xl font-bold text-gray-900 mb-2">Belum Ada Mahasiswa Bimbingan</h2>
+        <p className="text-gray-500 text-sm max-w-sm">
+          Saat ini Anda belum ditugaskan sebagai dosen pembimbing untuk mahasiswa manapun.
+        </p>
+      </div>
+    );
+  }
+
   if (!selectedThesisId) {
     return (
-      <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-        {/* Render List Card Mahasiswa dari kodingan asli kamu */}
-        <h2 className="font-display text-xl font-bold text-gray-900">Mahasiswa Bimbingan Anda</h2>
-        {/* ... mapping myStudents ... */}
+      <div className="bg-white border border-gray-100 rounded-3xl p-12 shadow-sm flex flex-col items-center justify-center text-center">
+        <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-4">
+          <BookOpen className="w-8 h-8" />
+        </div>
+        <h2 className="font-display text-xl font-bold text-gray-900 mb-2">Pilih Mahasiswa Bimbingan</h2>
+        <p className="text-gray-500 text-sm max-w-sm">
+          Silakan pilih mahasiswa bimbingan dari menu di sebelah kiri untuk melihat detail log bimbingan.
+        </p>
       </div>
     );
   }

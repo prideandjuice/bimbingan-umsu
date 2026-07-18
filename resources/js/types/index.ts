@@ -2,6 +2,7 @@ import { LucideIcon } from 'lucide-react';
 
 export interface Auth {
     user: User;
+    sidebar?: any[];
 }
 
 export interface BreadcrumbItem {
@@ -36,6 +37,8 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    permissions?: string[];
+    roles?: string[];
     [key: string]: unknown;
 }
 
