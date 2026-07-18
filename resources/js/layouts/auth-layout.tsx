@@ -1,6 +1,4 @@
-import { Link } from '@inertiajs/react';
-import { GraduationCap, CheckCircle2, ArrowLeft, BookOpen, Award, Sparkles } from 'lucide-react';
-import React from 'react';
+import AuthLayoutTemplate from '@/layouts/auth/auth-split-layout';
 
 export default function AuthLayout({ children, title, description }: { children: React.ReactNode; title: string; description: string }) {
     return (
@@ -12,7 +10,7 @@ export default function AuthLayout({ children, title, description }: { children:
                 <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
                 <div className="absolute top-1/2 -right-40 w-96 h-96 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
                 <div className="absolute -bottom-40 left-1/3 w-96 h-96 rounded-full bg-emerald-600/15 blur-3xl pointer-events-none" />
-                
+
                 {/* Logo and Header */}
                 <div className="relative z-10 flex items-center gap-3">
                     <Link href="/" className="flex items-center gap-3 group transition-transform duration-300 hover:scale-105">
@@ -89,8 +87,8 @@ export default function AuthLayout({ children, title, description }: { children:
             {/* Right Pane (Form Container) */}
             <div className="flex items-center justify-center p-6 md:p-12 lg:p-16 relative">
                 {/* Back to welcome link */}
-                <Link 
-                    href="/" 
+                <Link
+                    href="/"
                     className="absolute top-8 left-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
