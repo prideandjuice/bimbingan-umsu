@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Mail, Lock } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
@@ -37,75 +37,108 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     };
 
     return (
-        <AuthLayout title="Log in to your account" description="Enter your email and password below to log in">
-            <Head title="Log in" />
+        <AuthLayout 
+            title="Masuk ke Sistem" 
+            description="Silakan masukkan email dan kata sandi Anda untuk mengakses dashboard bimbingan tesis."
+        >
+            <Head title="Masuk ke Sistem" />
 
-            <form className="flex flex-col gap-6" onSubmit={submit}>
-                <div className="grid gap-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="email">Email address</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            required
-                            autoFocus
-                            tabIndex={1}
-                            autoComplete="email"
-                            value={data.email}
-                            onChange={(e) => setData('email', e.target.value)}
-                            placeholder="email@example.com"
-                        />
+            <form className="flex flex-col gap-5" onSubmit={submit}>
+                <div className="grid gap-5">
+                    {/* Email Input */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="email" className="text-gray-700 dark:text-gray-300 font-medium text-xs">
+                            Alamat Email
+                        </Label>
+                        <div className="relative">
+                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                id="email"
+                                type="email"
+                                required
+                                autoFocus
+                                tabIndex={1}
+                                autoComplete="email"
+                                value={data.email}
+                                onChange={(e) => setData('email', e.target.value)}
+                                placeholder="nama@umsu.ac.id atau email Anda"
+                                className="pl-10 border-gray-200 dark:border-zinc-800 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 rounded-xl"
+                            />
+                        </div>
                         <InputError message={errors.email} />
                     </div>
 
-                    <div className="grid gap-2">
-                        <div className="flex items-center">
-                            <Label htmlFor="password">Password</Label>
+                    {/* Password Input */}
+                    <div className="grid gap-1.5">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="password" className="text-gray-700 dark:text-gray-300 font-medium text-xs">
+                                Kata Sandi
+                            </Label>
                             {canResetPassword && (
-                                <TextLink href={route('password.request')} className="ml-auto text-sm" tabIndex={5}>
-                                    Forgot password?
+                                <TextLink href={route('password.request')} className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300" tabIndex={5}>
+                                    Lupa kata sandi?
                                 </TextLink>
                             )}
                         </div>
-                        <Input
-                            id="password"
-                            type="password"
-                            required
-                            tabIndex={2}
-                            autoComplete="current-password"
-                            value={data.password}
-                            onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Password"
-                        />
+                        <div className="relative">
+                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                id="password"
+                                type="password"
+                                required
+                                tabIndex={2}
+                                autoComplete="current-password"
+                                value={data.password}
+                                onChange={(e) => setData('password', e.target.value)}
+                                placeholder="Masukkan kata sandi"
+                                className="pl-10 border-gray-200 dark:border-zinc-800 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 rounded-xl"
+                            />
+                        </div>
                         <InputError message={errors.password} />
                     </div>
 
-                    <div className="flex items-center space-x-3">
+                    {/* Remember Me */}
+                    <div className="flex items-center space-x-2">
                         <Checkbox
                             id="remember"
                             name="remember"
                             tabIndex={3}
                             checked={data.remember}
                             onCheckedChange={(checked) => setData('remember', !!checked)}
+                            className="rounded border-gray-300 dark:border-zinc-700 text-emerald-600 focus:ring-emerald-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                         />
-                        <Label htmlFor="remember">Remember me</Label>
+                        <Label htmlFor="remember" className="text-xs font-normal text-muted-foreground select-none cursor-pointer">
+                            Ingat saya di perangkat ini
+                        </Label>
                     </div>
 
-                    <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
-                        {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Log in
+                    {/* Submit Button */}
+                    <Button 
+                        type="submit" 
+                        className="mt-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-6 rounded-xl transition-all shadow-md shadow-emerald-700/10 active:scale-[0.98] cursor-pointer" 
+                        tabIndex={4} 
+                        disabled={processing}
+                    >
+                        {processing ? (
+                            <LoaderCircle className="h-5 w-5 animate-spin mr-2" />
+                        ) : null}
+                        Masuk Sekarang
                     </Button>
                 </div>
 
-                <div className="text-muted-foreground text-center text-sm">
-                    Don't have an account?{' '}
-                    <TextLink href={route('register')} tabIndex={5}>
-                        Sign up
+                <div className="text-center text-xs text-muted-foreground">
+                    Belum memiliki akun?{' '}
+                    <TextLink href={route('register')} className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold" tabIndex={6}>
+                        Daftar Akun Baru
                     </TextLink>
                 </div>
             </form>
 
-            {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>}
+            {status && (
+                <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-center text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                    {status}
+                </div>
+            )}
         </AuthLayout>
     );
 }
