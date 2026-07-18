@@ -9,10 +9,11 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.5",
+        "php": "^8.4",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
+        "spatie/laravel-permission": "^8.3",
         "tightenco/ziggy": "^2.4"
     },
     "require-dev": {

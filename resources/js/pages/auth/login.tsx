@@ -37,34 +37,27 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     };
 
     return (
-        <AuthLayout 
-            title="Masuk ke Sistem" 
+        <AuthLayout
+            title="Masuk ke Sistem"
             description="Silakan masukkan email dan kata sandi Anda untuk mengakses dashboard bimbingan tesis."
         >
             <Head title="Masuk ke Sistem" />
 
-            <form className="flex flex-col gap-5" onSubmit={submit}>
-                <div className="grid gap-5">
-                    {/* Email Input */}
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="email" className="text-gray-700 dark:text-gray-300 font-medium text-xs">
-                            Alamat Email
-                        </Label>
-                        <div className="relative">
-                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                id="email"
-                                type="email"
-                                required
-                                autoFocus
-                                tabIndex={1}
-                                autoComplete="email"
-                                value={data.email}
-                                onChange={(e) => setData('email', e.target.value)}
-                                placeholder="nama@umsu.ac.id atau email Anda"
-                                className="pl-10 border-gray-200 dark:border-zinc-800 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 rounded-xl"
-                            />
-                        </div>
+            <form className="flex flex-col gap-6" onSubmit={submit}>
+                <div className="grid gap-6">
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">Email or Username</Label>
+                        <Input
+                            id="email"
+                            type="text"
+                            required
+                            autoFocus
+                            tabIndex={1}
+                            autoComplete="username"
+                            value={data.email}
+                            onChange={(e) => setData('email', e.target.value)}
+                            placeholder="email@example.com or username"
+                        />
                         <InputError message={errors.email} />
                     </div>
 
@@ -113,10 +106,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     </div>
 
                     {/* Submit Button */}
-                    <Button 
-                        type="submit" 
-                        className="mt-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-6 rounded-xl transition-all shadow-md shadow-emerald-700/10 active:scale-[0.98] cursor-pointer" 
-                        tabIndex={4} 
+                    <Button
+                        type="submit"
+                        className="mt-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-6 rounded-xl transition-all shadow-md shadow-emerald-700/10 active:scale-[0.98] cursor-pointer"
+                        tabIndex={4}
                         disabled={processing}
                     >
                         {processing ? (

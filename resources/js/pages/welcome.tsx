@@ -77,7 +77,7 @@ export default function Welcome() {
                                 ) : (
                                     <>
                                         <Link
-                                            href={route('demo')}
+                                            href={route('login')}
                                             className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-sm px-6 py-3 rounded-xl transition-colors"
                                         >
                                             Masuk ke Sistem

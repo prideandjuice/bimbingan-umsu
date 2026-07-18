@@ -79,7 +79,7 @@ export default function Dashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard — Sistem Bimbingan Tesis UMSU" />
 
-            <div className="py-6">
+            <div className="max-w-7xl mx-auto px-4 py-8 w-full">
                 {appUser.role === 'admin' && (
                     <AdminDashboard currentUser={appUser} onRefresh={refresh} />
                 )}
