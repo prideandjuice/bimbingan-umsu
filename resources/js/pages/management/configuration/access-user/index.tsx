@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import AppLayout from '@/layouts/app-layout';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -80,7 +81,8 @@ export default function AccessUserIndex({
         <>
             <Head title={t('Access User')} />
 
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+                <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col gap-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-2xl font-bold tracking-tight">{t('Access User')}</h2>
@@ -204,6 +206,7 @@ export default function AccessUserIndex({
                         </PaginationContent>
                     </Pagination>
                 </div>
+                </div>
             </div>
 
             <AccessUserFormModal allMenus={allMenus} allUsers={allUsers} />
@@ -211,15 +214,19 @@ export default function AccessUserIndex({
     );
 }
 
-AccessUserIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Configuration',
-            href: '#',
-        },
-        {
-            title: 'Access User',
-            href: '/access-user',
-        }
-    ],
-};
+AccessUserIndex.layout = (page: React.ReactNode) => (
+    <AppLayout
+        breadcrumbs={[
+            {
+                title: 'Configuration',
+                href: '#',
+            },
+            {
+                title: 'Access User',
+                href: '/access-user',
+            }
+        ]}
+    >
+        {page}
+    </AppLayout>
+);

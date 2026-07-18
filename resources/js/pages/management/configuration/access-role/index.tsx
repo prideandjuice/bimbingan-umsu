@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import AppLayout from '@/layouts/app-layout';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,7 +80,8 @@ export default function AccessRoleIndex({
         <>
             <Head title={t('Access Role')} />
 
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+                <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col gap-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-2xl font-bold tracking-tight">{t('Access Role')}</h2>
@@ -188,21 +190,26 @@ export default function AccessRoleIndex({
                         </PaginationContent>
                     </Pagination>
                 </div>
+                </div>
             </div>
 
             <AccessRoleFormModal allMenus={allMenus} allRoles={allRoles} />
         </>
     );
 }
-AccessRoleIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Configuration',
-            href: '#',
-        },
-        {
-            title: 'Access Roles',
-            href: '/access-role',
-        }
-    ],
-};
+AccessRoleIndex.layout = (page: React.ReactNode) => (
+    <AppLayout
+        breadcrumbs={[
+            {
+                title: 'Configuration',
+                href: '#',
+            },
+            {
+                title: 'Access Roles',
+                href: '/access-role',
+            }
+        ]}
+    >
+        {page}
+    </AppLayout>
+);

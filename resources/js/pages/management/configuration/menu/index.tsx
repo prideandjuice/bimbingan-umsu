@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { HelpCircle, Plus, Search } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import AppLayout from '@/layouts/app-layout';
 
 import { Button } from '@/components/ui/button';
 import ConfirmModal from '@/components/ui/confirm-modal';
@@ -98,7 +99,8 @@ export default function MenuIndex({
     return (
         <>
             <Head title={t('Menu Management')} />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+                <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col gap-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-2xl font-bold tracking-tight">{t('Menu Management')}</h2>
@@ -246,6 +248,7 @@ export default function MenuIndex({
                         </PaginationContent>
                     </Pagination>
                 </div>
+                </div>
             </div>
 
             {/* Modal sekarang hanya butuh parentMenus, sisanya ambil dari Store */}
@@ -269,18 +272,22 @@ export default function MenuIndex({
     );
 }
 
-MenuIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Configuration',
-            href: '#',
-        },
-        {
-            title: 'Menu',
-            href: '/menu',
-        }
-    ],
-};
+MenuIndex.layout = (page: React.ReactNode) => (
+    <AppLayout
+        breadcrumbs={[
+            {
+                title: 'Configuration',
+                href: '#',
+            },
+            {
+                title: 'Menu',
+                href: '/menu',
+            }
+        ]}
+    >
+        {page}
+    </AppLayout>
+);
 
 
 function IconRenderer({ iconName }: { iconName: string }) {

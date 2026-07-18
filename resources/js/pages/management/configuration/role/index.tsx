@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import AppLayout from '@/layouts/app-layout';
 
 import { Button } from '@/components/ui/button';
 import ConfirmModal from '@/components/ui/confirm-modal';
@@ -89,7 +90,8 @@ export default function RoleIndex({
         <>
             <Head title={t('Role Management')} />
 
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+                <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col gap-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-2xl font-bold tracking-tight">{t('Role Management')}</h2>
@@ -202,7 +204,8 @@ export default function RoleIndex({
                             ))}
                         </PaginationContent>
                     </Pagination>
-                </div>
+                    </div>
+            </div>
             </div>
 
             <RoleFormModal />
@@ -218,15 +221,19 @@ export default function RoleIndex({
     );
 }
 
-RoleIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Configuration',
-            href: '#',
-        },
-        {
-            title: 'Roles',
-            href: '/roles',
-        }
-    ],
-};
+RoleIndex.layout = (page: React.ReactNode) => (
+    <AppLayout
+        breadcrumbs={[
+            {
+                title: 'Configuration',
+                href: '#',
+            },
+            {
+                title: 'Roles',
+                href: '/roles',
+            }
+        ]}
+    >
+        {page}
+    </AppLayout>
+);
