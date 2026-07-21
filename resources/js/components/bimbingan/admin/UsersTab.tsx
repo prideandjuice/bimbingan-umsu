@@ -95,16 +95,19 @@ export default function UsersTab({ users, handleUpdateUserRole }: UsersTabProps)
                         <option value="guest">Guest (Tamu)</option>
                         <option value="student">Student (Mahasiswa)</option>
                         <option value="lecturer">Lecturer (Dosen)</option>
+                        <option value="prodi">Prodi (Program Studi)</option>
                         <option value="admin">Super Admin</option>
                       </select>
                     ) : (
                       <span className={`inline-block text-3xs font-bold px-2 py-0.5 rounded-full uppercase ${
                         user.role === 'admin' ? 'bg-red-50 text-red-700 border border-red-100' :
+                        user.role === 'prodi' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
                         user.role === 'lecturer' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                         user.role === 'student' ? 'bg-violet-50 text-violet-700 border border-violet-100' :
                         'bg-gray-100 text-gray-500'
                       }`}>
-                        {user.role === 'admin' ? 'Kaprodi/Admin' :
+                        {user.role === 'admin' ? 'Super Admin' :
+                         user.role === 'prodi' ? 'Program Studi' :
                          user.role === 'lecturer' ? 'Dosen' :
                          user.role === 'student' ? 'Mahasiswa' : 'Guest'}
                       </span>

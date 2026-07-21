@@ -1,5 +1,6 @@
-import AuthLayoutTemplate from '@/layouts/auth/auth-split-layout';
-
+import { Link } from '@inertiajs/react';
+import { GraduationCap, CheckCircle2, ArrowLeft, BookOpen, Award, Sparkles } from 'lucide-react';
+import React from 'react';
 export default function AuthLayout({ children, title, description }: { children: React.ReactNode; title: string; description: string }) {
     return (
         <div className="relative min-h-screen grid lg:grid-cols-2 overflow-hidden bg-gradient-to-tr from-slate-50 to-emerald-50/20 dark:from-zinc-950 dark:to-zinc-900">

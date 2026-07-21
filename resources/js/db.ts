@@ -4,9 +4,10 @@
  */
 
 import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, EventType, AvailabilityRule, Booking } from '@/types';
+import axios from 'axios';
 
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
-const DB_VERSION = '2';
+const DB_VERSION = '3';
 const VERSION_KEY = 'db_version';
 
 const KEYS = {
@@ -39,9 +40,17 @@ function set<T>(key: string, value: T): void {
 const SEED_USERS: AppUser[] = [
     {
         id: 'user-admin-1',
-        name: 'Dr. Admin Kaprodi',
+        name: 'Super Admin',
         email: 'admin@umsu.ac.id',
         role: 'admin',
+        isVerified: true,
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
+    },
+    {
+        id: 'user-prodi-1',
+        name: 'Dr. Prodi Kaprodi',
+        email: 'prodi@umsu.ac.id',
+        role: 'prodi',
         department: 'Magister Ilmu Komunikasi',
         isVerified: true,
         avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
@@ -107,7 +116,10 @@ localStorage.setItem(VERSION_KEY, DB_VERSION);
 export const DB = {
     // Users
     getUsers: (): AppUser[] => get<AppUser[]>(KEYS.users, SEED_USERS),
-    saveUsers: (users: AppUser[]): void => set(KEYS.users, users),
+    saveUsers: (users: AppUser[]): void => {
+        set(KEYS.users, users);
+        axios.post('/bimbingan/sync/users', { users }).catch(err => console.error(err));
+    },
 
     // Current User
     getCurrentUser: (): AppUser => get<AppUser>(KEYS.currentUser, SEED_USERS[0]),
@@ -115,31 +127,52 @@ export const DB = {
 
     // Proposals
     getProposals: (): Proposal[] => get<Proposal[]>(KEYS.proposals, []),
-    saveProposals: (proposals: Proposal[]): void => set(KEYS.proposals, proposals),
+    saveProposals: (proposals: Proposal[]): void => {
+        set(KEYS.proposals, proposals);
+        axios.post('/bimbingan/sync/proposals', { proposals }).catch(err => console.error(err));
+    },
 
     // Proposal Titles
     getProposalTitles: (): ProposalTitle[] => get<ProposalTitle[]>(KEYS.proposalTitles, []),
-    saveProposalTitles: (titles: ProposalTitle[]): void => set(KEYS.proposalTitles, titles),
+    saveProposalTitles: (titles: ProposalTitle[]): void => {
+        set(KEYS.proposalTitles, titles);
+        axios.post('/bimbingan/sync/proposal-titles', { proposalTitles: titles }).catch(err => console.error(err));
+    },
 
     // Theses
     getTheses: (): Thesis[] => get<Thesis[]>(KEYS.theses, []),
-    saveTheses: (theses: Thesis[]): void => set(KEYS.theses, theses),
+    saveTheses: (theses: Thesis[]): void => {
+        set(KEYS.theses, theses);
+        axios.post('/bimbingan/sync/theses', { theses }).catch(err => console.error(err));
+    },
 
     // Guidances
     getGuidances: (): Guidance[] => get<Guidance[]>(KEYS.guidances, []),
-    saveGuidances: (guidances: Guidance[]): void => set(KEYS.guidances, guidances),
+    saveGuidances: (guidances: Guidance[]): void => {
+        set(KEYS.guidances, guidances);
+        axios.post('/bimbingan/sync/guidances', { guidances }).catch(err => console.error(err));
+    },
 
     // Event Types
     getEventTypes: (): EventType[] => get<EventType[]>(KEYS.eventTypes, []),
-    saveEventTypes: (types: EventType[]): void => set(KEYS.eventTypes, types),
+    saveEventTypes: (types: EventType[]): void => {
+        set(KEYS.eventTypes, types);
+        axios.post('/bimbingan/sync/event-types', { eventTypes: types }).catch(err => console.error(err));
+    },
 
     // Availability Rules
     getAvailabilityRules: (): AvailabilityRule[] => get<AvailabilityRule[]>(KEYS.availabilityRules, []),
-    saveAvailabilityRules: (rules: AvailabilityRule[]): void => set(KEYS.availabilityRules, rules),
+    saveAvailabilityRules: (rules: AvailabilityRule[]): void => {
+        set(KEYS.availabilityRules, rules);
+        axios.post('/bimbingan/sync/availability-rules', { availabilityRules: rules }).catch(err => console.error(err));
+    },
 
     // Bookings
     getBookings: (): Booking[] => get<Booking[]>(KEYS.bookings, []),
-    saveBookings: (bookings: Booking[]): void => set(KEYS.bookings, bookings),
+    saveBookings: (bookings: Booking[]): void => {
+        set(KEYS.bookings, bookings);
+        axios.post('/bimbingan/sync/bookings', { bookings }).catch(err => console.error(err));
+    },
 
     // Reset all data
     reset: (): void => {

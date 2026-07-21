@@ -20,12 +20,18 @@ export default function AdminSidebar({
   return (
     <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm h-fit">
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+          currentUser.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+        }`}>
           <GraduationCap className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="font-display font-bold text-gray-900 text-sm">Kaprodi Portal</h3>
-          <p className="text-xs text-gray-500">{currentUser.department || 'Administrator'}</p>
+          <h3 className="font-display font-bold text-gray-900 text-sm">
+            {currentUser.role === 'admin' ? 'Admin Portal' : 'Kaprodi Portal'}
+          </h3>
+          <p className="text-xs text-gray-500">
+            {currentUser.role === 'admin' ? 'Administrator' : (currentUser.department || 'Program Studi')}
+          </p>
         </div>
       </div>
 
@@ -41,52 +47,58 @@ export default function AdminSidebar({
           Ringkasan Sistem
         </button>
 
-        <button
-          onClick={() => setActiveTab('proposals')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-            activeTab === 'proposals' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-55/60'
-          }`}
-          id="nav-proposals"
-        >
-          <FileText className="w-4 h-4" />
-          Seleksi Judul
-          {pendingProposals > 0 && (
-            <span className="ml-auto bg-amber-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
-              {pendingProposals}
-            </span>
-          )}
-        </button>
+        {currentUser.role === 'prodi' && (
+          <>
+            <button
+              onClick={() => setActiveTab('proposals')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                activeTab === 'proposals' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-55/60'
+              }`}
+              id="nav-proposals"
+            >
+              <FileText className="w-4 h-4" />
+              Seleksi Judul
+              {pendingProposals > 0 && (
+                <span className="ml-auto bg-amber-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
+                  {pendingProposals}
+                </span>
+              )}
+            </button>
 
-        <button
-          onClick={() => setActiveTab('theses')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-            activeTab === 'theses'
-              ? 'bg-emerald-50 text-emerald-700'
-              : 'text-gray-600 hover:bg-gray-55/60'
-          }`}
-          id="nav-theses"
-        >
-          <BookOpen className="w-4 h-4" />
-          Tesis & Pembimbing
-          {pendingSupervisors > 0 && (
-            <span className="ml-auto bg-red-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
-              {pendingSupervisors}
-            </span>
-          )}
-        </button>
+            <button
+              onClick={() => setActiveTab('theses')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                activeTab === 'theses'
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'text-gray-600 hover:bg-gray-55/60'
+              }`}
+              id="nav-theses"
+            >
+              <BookOpen className="w-4 h-4" />
+              Tesis & Pembimbing
+              {pendingSupervisors > 0 && (
+                <span className="ml-auto bg-red-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
+                  {pendingSupervisors}
+                </span>
+              )}
+            </button>
+          </>
+        )}
 
-        <button
-          onClick={() => setActiveTab('users')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-            activeTab === 'users'
-              ? 'bg-emerald-50 text-emerald-700'
-              : 'text-gray-600 hover:bg-gray-55/60'
-          }`}
-          id="nav-users"
-        >
-          <Users className="w-4 h-4" />
-          Akun & Verifikasi
-        </button>
+        {currentUser.role === 'admin' && (
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+              activeTab === 'users'
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'text-gray-600 hover:bg-gray-55/60'
+            }`}
+            id="nav-users"
+          >
+            <Users className="w-4 h-4" />
+            Akun & Verifikasi
+          </button>
+        )}
       </nav>
     </div>
   );
