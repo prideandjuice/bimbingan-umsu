@@ -8,6 +8,10 @@ import ProposalPending from './student/ProposalPending';
 import ThesisActiveLayout from './student/ThesisActiveLayout';
 import StudentSidebarinfo from './student/StudentSidebar';
 
+import StudentWelcomeHeader from './student/StudentWelcomeHeader';
+import ThesisJourneyTimeline from './student/ThesisJourneyTimeline';
+import AcademicGuidelineCard from './student/AcademicGuidelineCard';
+
 interface StudentDashboardProps {
   currentUser: AppUser;
   onRefresh: () => void;
@@ -95,7 +99,18 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
 
       {/* SCENARIO A: Belum ada proposal */}
       {!myProposal && !myThesis && (
-        <ProposalForm currentUser={currentUser} onSubmitProposal={onSubmitProposal} />
+        <div className="space-y-6">
+          <StudentWelcomeHeader currentUser={currentUser} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-8">
+              <ProposalForm currentUser={currentUser} onSubmitProposal={onSubmitProposal} />
+            </div>
+            <div className="lg:col-span-4 space-y-6">
+              <ThesisJourneyTimeline />
+              <AcademicGuidelineCard />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* SCENARIO B: Pengajuan menunggu review */}

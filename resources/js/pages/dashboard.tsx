@@ -16,12 +16,44 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard() {
+interface DashboardProps {
+    dbUsers?: AppUser[];
+    dbProposals?: Proposal[];
+    dbProposalTitles?: ProposalTitle[];
+    dbTheses?: Thesis[];
+    dbGuidances?: Guidance[];
+    dbEventTypes?: EventType[];
+    dbAvailabilityRules?: AvailabilityRule[];
+    dbBookings?: Booking[];
+}
+
+export default function Dashboard({
+    dbUsers = [],
+    dbProposals = [],
+    dbProposalTitles = [],
+    dbTheses = [],
+    dbGuidances = [],
+    dbEventTypes = [],
+    dbAvailabilityRules = [],
+    dbBookings = []
+}: DashboardProps) {
     const { auth } = usePage<SharedData>().props;
     const [appUser, setAppUser] = useState<AppUser | null>(null);
     const [tick, setTick] = useState(0);
 
     const refresh = () => setTick((t) => t + 1);
+
+    // Sync database data into mock DB on load or change
+    useEffect(() => {
+        DB.saveUsers(dbUsers);
+        DB.saveProposals(dbProposals);
+        DB.saveProposalTitles(dbProposalTitles);
+        DB.saveTheses(dbTheses);
+        DB.saveGuidances(dbGuidances);
+        DB.saveEventTypes(dbEventTypes);
+        DB.saveAvailabilityRules(dbAvailabilityRules);
+        DB.saveBookings(dbBookings);
+    }, [dbUsers, dbProposals, dbProposalTitles, dbTheses, dbGuidances, dbEventTypes, dbAvailabilityRules, dbBookings]);
 
     useEffect(() => {
         if (!auth.user) return;
@@ -32,12 +64,14 @@ export default function Dashboard() {
 
         if (!foundUser) {
             // Tentukan default role berdasarkan email domain
-            let role: 'admin' | 'lecturer' | 'student' | 'guest' = 'guest';
+            let role: 'admin' | 'prodi' | 'lecturer' | 'student' | 'guest' = 'guest';
             
             const email = auth.user.email.toLowerCase();
             if (email.endsWith('@umsu.ac.id')) {
                 if (email.includes('admin')) {
                     role = 'admin';
+                } else if (email.includes('prodi') || email.includes('kaprodi')) {
+                    role = 'prodi';
                 } else if (email.includes('lecturer') || email.includes('dosen') || email.includes('irwan')) {
                     role = 'lecturer';
                 } else {
@@ -52,7 +86,7 @@ export default function Dashboard() {
                 role: role,
                 isVerified: role !== 'guest',
                 avatar: auth.user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
-                department: role !== 'guest' ? 'Magister Ilmu Komunikasi' : undefined,
+                department: (role !== 'guest' && role !== 'admin') ? 'Magister Ilmu Komunikasi' : undefined,
             };
 
             // Simpan ke list users di LocalStorage
@@ -62,7 +96,7 @@ export default function Dashboard() {
         // Sinkronisasi status active user di local storage mock database
         DB.setCurrentUser(foundUser);
         setAppUser(foundUser);
-    }, [auth.user, tick]);
+    }, [auth.user, tick, dbUsers]);
 
     if (!appUser) {
         return (
@@ -80,7 +114,7 @@ export default function Dashboard() {
             <Head title="Dashboard — Sistem Bimbingan Tesis UMSU" />
 
             <div className="max-w-7xl mx-auto px-4 py-8 w-full">
-                {appUser.role === 'admin' && (
+                {(appUser.role === 'admin' || appUser.role === 'prodi') && (
                     <AdminDashboard currentUser={appUser} onRefresh={refresh} />
                 )}
                 {appUser.role === 'lecturer' && (

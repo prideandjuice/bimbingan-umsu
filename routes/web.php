@@ -12,9 +12,18 @@ Route::get('/demo', function () {
 })->name('demo');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [\App\Http\Controllers\Bimbingan\DashboardController::class, 'index'])->name('dashboard');
+
+    Route::prefix('bimbingan/sync')->name('bimbingan.sync.')->group(function () {
+        Route::post('proposals', [\App\Http\Controllers\Bimbingan\BimbinganSyncController::class, 'syncProposals'])->name('proposals');
+        Route::post('proposal-titles', [\App\Http\Controllers\Bimbingan\BimbinganSyncController::class, 'syncProposalTitles'])->name('proposal-titles');
+        Route::post('theses', [\App\Http\Controllers\Bimbingan\BimbinganSyncController::class, 'syncTheses'])->name('theses');
+        Route::post('guidances', [\App\Http\Controllers\Bimbingan\BimbinganSyncController::class, 'syncGuidances'])->name('guidances');
+        Route::post('event-types', [\App\Http\Controllers\Bimbingan\BimbinganSyncController::class, 'syncEventTypes'])->name('event-types');
+        Route::post('availability-rules', [\App\Http\Controllers\Bimbingan\BimbinganSyncController::class, 'syncAvailabilityRules'])->name('availability-rules');
+        Route::post('bookings', [\App\Http\Controllers\Bimbingan\BimbinganSyncController::class, 'syncBookings'])->name('bookings');
+        Route::post('users', [\App\Http\Controllers\Bimbingan\BimbinganSyncController::class, 'syncUsers'])->name('users');
+    });
 
     Route::prefix('configuration')->name('configuration.')->group(function () {
         Route::resource('menu', \App\Http\Controllers\Management\Configuration\MenuController::class);

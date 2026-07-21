@@ -10,14 +10,17 @@ import LecturerDashboard from '@/components/bimbingan/lecturedashboard';
 import StudentDashboard from '@/components/bimbingan/studentdashboard';
 
 const DEMO_USERS: { label: string; userId: string; role: string; color: string }[] = [
-    { label: 'Kaprodi (Admin)',      userId: 'user-admin-1',    role: 'admin',    color: 'bg-emerald-700' },
+    { label: 'Super Admin',          userId: 'user-admin-1',    role: 'admin',    color: 'bg-red-700'     },
+    { label: 'Program Studi (Prodi)',userId: 'user-prodi-1',    role: 'prodi',    color: 'bg-emerald-700' },
     { label: 'Prof. Irwan (Dosen)',  userId: 'user-lecturer-1', role: 'lecturer', color: 'bg-blue-700'    },
     { label: 'Rizky (Mahasiswa)',    userId: 'user-student-1',  role: 'student',  color: 'bg-violet-700'  },
     { label: 'Budi (Tamu)',          userId: 'user-guest-1',    role: 'guest',    color: 'bg-amber-600'   },
 ];
 
 function DashboardView({ user, onRefresh }: { user: AppUser; onRefresh: () => void }) {
-    if (user.role === 'admin')    return <AdminDashboard    currentUser={user} onRefresh={onRefresh} />;
+    if (user.role === 'admin' || user.role === 'prodi') {
+        return <AdminDashboard currentUser={user} onRefresh={onRefresh} />;
+    }
     if (user.role === 'lecturer') return <LecturerDashboard currentUser={user} onRefresh={onRefresh} />;
     if (user.role === 'student')  return <StudentDashboard  currentUser={user} onRefresh={onRefresh} />;
     return <GuestDashboard currentUser={user} onRefresh={onRefresh} />;
@@ -91,7 +94,8 @@ export default function Demo() {
                             <span className="text-emerald-400 text-xs">Aktif:</span>
                             <span className="text-white text-xs font-bold">{activeUser.name}</span>
                             <span className={`text-xs font-bold text-white px-2 py-0.5 rounded-full uppercase
-                                ${activeUser.role === 'admin'    ? 'bg-emerald-600' :
+                                ${activeUser.role === 'admin'    ? 'bg-red-600'     :
+                                  activeUser.role === 'prodi'    ? 'bg-emerald-600' :
                                   activeUser.role === 'lecturer' ? 'bg-blue-600'    :
                                   activeUser.role === 'student'  ? 'bg-violet-600'  :
                                                                    'bg-amber-500'   }`}>

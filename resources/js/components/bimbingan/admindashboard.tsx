@@ -1,5 +1,5 @@
 // bimbingan/AdminDashboard.tsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DB } from '@/db';
 import type { AppUser, Proposal, ProposalTitle, Thesis, UserRole } from '@/types';
 
@@ -20,6 +20,15 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
   const [proposalTitles, setProposalTitles] = useState<ProposalTitle[]>(DB.getProposalTitles());
   const [theses, setTheses] = useState<Thesis[]>(DB.getTheses());
   const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'theses' | 'users'>('overview');
+
+  useEffect(() => {
+    if (activeTab === 'users' && currentUser.role !== 'admin') {
+      setActiveTab('overview');
+    }
+    if ((activeTab === 'proposals' || activeTab === 'theses') && currentUser.role !== 'prodi') {
+      setActiveTab('overview');
+    }
+  }, [currentUser.role, activeTab]);
 
   const handleApproveTitle = (proposalId: string, approvedTitleId: string) => {
     const proposal = proposals.find(p => p.id === proposalId);
@@ -141,7 +150,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'proposals' && (
+        {activeTab === 'proposals' && currentUser.role === 'prodi' && (
           <ProposalsTab
             proposals={proposals}
             proposalTitles={proposalTitles}
@@ -149,7 +158,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'theses' && (
+        {activeTab === 'theses' && currentUser.role === 'prodi' && (
           <ThesesTab
             theses={theses}
             lecturers={users.filter(u => u.role === 'lecturer' && u.isVerified)}
@@ -157,7 +166,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'users' && (
+        {activeTab === 'users' && currentUser.role === 'admin' && (
           <UsersTab
             users={users}
             handleUpdateUserRole={handleUpdateUserRole}
