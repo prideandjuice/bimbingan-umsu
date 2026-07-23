@@ -223,7 +223,7 @@ class MenuSeeder extends Seeder
         $this->attachMenuPermission($sm, ['read', 'verify'], ['admin']);
 
         $sm = $mmAdmin->subMenus()->updateOrCreate(['url' => $mmAdmin->url . '/tesis-aktif'], [
-            'name' => 'Tesis Aktif',
+            'name' => 'Skripsi Aktif',
             'category' => $mmAdmin->category,
             'icon' => 'Library',
             'active' => 1,

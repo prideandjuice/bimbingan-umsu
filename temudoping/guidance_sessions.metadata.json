@@ -1,0 +1,23 @@
+{
+  "attachments": [
+    {
+      "version": 1,
+      "file": "bab3_v1.pdf"
+    },
+    {
+      "version": 2,
+      "file": "bab3_v2.pdf"
+    }
+  ],
+  "comments": [
+    {
+      "sender": 15,
+      "message": "Perbaiki metodologi."
+    },
+    {
+      "sender": 100,
+      "message": "Sudah direvisi."
+    }
+  ],
+  "next_meeting": "2026-08-20 09:00"
+}

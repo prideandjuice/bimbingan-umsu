@@ -1,0 +1,11 @@
+{
+  "selected_supervisor": 21,
+  "agenda": "Pembahasan Bab 3",
+  "reschedule_history": [
+    {
+      "old_date": "2026-08-10 09:00",
+      "new_date": "2026-08-11 13:00",
+      "reason": "Dosen menghadiri rapat"
+    }
+  ]
+}

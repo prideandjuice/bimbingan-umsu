@@ -48,57 +48,58 @@ export default function AdminSidebar({
         </button>
 
         {currentUser.role === 'prodi' && (
-          <>
-            <button
-              onClick={() => setActiveTab('proposals')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === 'proposals' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-55/60'
-              }`}
-              id="nav-proposals"
-            >
-              <FileText className="w-4 h-4" />
-              Seleksi Judul
-              {pendingProposals > 0 && (
-                <span className="ml-auto bg-amber-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
-                  {pendingProposals}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('theses')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === 'theses'
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-55/60'
-              }`}
-              id="nav-theses"
-            >
-              <BookOpen className="w-4 h-4" />
-              Tesis & Pembimbing
-              {pendingSupervisors > 0 && (
-                <span className="ml-auto bg-red-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
-                  {pendingSupervisors}
-                </span>
-              )}
-            </button>
-          </>
-        )}
-
-        {currentUser.role === 'admin' && (
           <button
-            onClick={() => setActiveTab('users')}
+            onClick={() => setActiveTab('proposals')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === 'users'
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'text-gray-600 hover:bg-gray-55/60'
+              activeTab === 'proposals' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50/60'
             }`}
-            id="nav-users"
+            id="nav-proposals"
           >
-            <Users className="w-4 h-4" />
-            Akun & Verifikasi
+            <FileText className="w-4 h-4" />
+            Seleksi Judul
+            {pendingProposals > 0 && (
+              <span className="ml-auto bg-amber-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
+                {pendingProposals}
+              </span>
+            )}
           </button>
         )}
+
+        <button
+          onClick={() => setActiveTab('theses')}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+            activeTab === 'theses'
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'text-gray-600 hover:bg-gray-50/60'
+          }`}
+          id="nav-theses"
+        >
+          <BookOpen className="w-4 h-4" />
+          Skripsi & Pembimbing
+          {pendingSupervisors > 0 && (
+            <span className="ml-auto bg-red-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
+              {pendingSupervisors}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+            activeTab === 'users'
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'text-gray-600 hover:bg-gray-50/60'
+          }`}
+          id="nav-users"
+        >
+          <Users className="w-4 h-4" />
+          Akun & Verifikasi
+          {currentUser.role === 'prodi' && (
+            <span className="ml-auto bg-gray-100 text-gray-500 font-semibold text-[10px] px-1.5 py-0.5 rounded-md">
+              View Only
+            </span>
+          )}
+        </button>
       </nav>
     </div>
   );

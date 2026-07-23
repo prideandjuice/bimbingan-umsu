@@ -75,7 +75,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                     <div className="w-8 h-8 bg-emerald-700 rounded-lg flex items-center justify-center">
                                         <GraduationCap className="w-5 h-5 text-white" />
                                     </div>
-                                    <span className="font-bold text-lg text-emerald-900 dark:text-emerald-400">Sistem Tesis</span>
+                                    <span className="font-bold text-lg text-emerald-900 dark:text-emerald-400">Sistem Skripsi</span>
                                 </SheetHeader>
                                 <div className="mt-6 flex h-full flex-1 flex-col space-y-4 overflow-y-auto">
                                     <div className="flex flex-col space-y-2 text-sm">
@@ -114,7 +114,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                         <div className="w-8 h-8 bg-emerald-700 rounded-lg flex items-center justify-center">
                             <GraduationCap className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-bold text-lg text-white hidden sm:inline tracking-tight">Sistem Tesis</span>
+                        <span className="font-bold text-lg text-white hidden sm:inline tracking-tight">Sistem Skripsi</span>
                     </Link>
 
                     {/* Desktop Navigation */}

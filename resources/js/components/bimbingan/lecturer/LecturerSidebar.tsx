@@ -1,4 +1,3 @@
-// components/bimbingan/lecturer/LecturerSidebar.tsx
 import { UserCheck, Users, Calendar, Clock } from 'lucide-react';
 import type { AppUser, Booking, Thesis } from '@/types';
 
@@ -22,31 +21,35 @@ export default function LecturerSidebar({
   const pendingBookingsCount = myBookings.filter((b) => b.status === 'pending').length;
 
   return (
-    <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm h-fit">
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
-          <UserCheck className="w-5 h-5" />
+    <div className="lg:col-span-3 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-sm h-fit space-y-6 text-left">
+      <div className="flex items-center gap-3 pb-5 border-b border-gray-100 dark:border-zinc-800">
+        <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <UserCheck className="w-6 h-6" />
         </div>
         <div>
-          <h3 className="font-display font-bold text-gray-900 text-sm">Dosen Portal</h3>
-          <p className="text-xs text-gray-500">NIDN: {currentUser.nidn || 'N/A'}</p>
+          <h3 className="font-bold text-sm text-gray-900 dark:text-white">Dosen Portal</h3>
+          <p className="text-xs text-muted-foreground font-light">NIDN: {currentUser.nidn || 'N/A'}</p>
         </div>
       </div>
 
-      <nav className="space-y-1">
+      <nav className="space-y-2">
         <button
           onClick={() => {
             setActiveTab('students');
             setSelectedThesisId(null);
           }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-            activeTab === 'students' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50'
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'students'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
           }`}
         >
-          <Users className="w-4 h-4" />
-          Mahasiswa Bimbingan
+          <Users className="w-4.5 h-4.5" />
+          <span>Mahasiswa Bimbingan</span>
           {myStudents.length > 0 && (
-            <span className="ml-auto bg-emerald-600 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
+            <span className={`ml-auto font-bold text-[10px] px-2 py-0.5 rounded-full ${
+              activeTab === 'students' ? 'bg-white/20 text-white' : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+            }`}>
               {myStudents.length}
             </span>
           )}
@@ -54,14 +57,16 @@ export default function LecturerSidebar({
 
         <button
           onClick={() => setActiveTab('bookings')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-            activeTab === 'bookings' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50'
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'bookings'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
           }`}
         >
-          <Calendar className="w-4 h-4" />
-          Persetujuan Jadwal
+          <Calendar className="w-4.5 h-4.5" />
+          <span>Persetujuan Jadwal</span>
           {pendingBookingsCount > 0 && (
-            <span className="ml-auto bg-amber-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
+            <span className="ml-auto bg-amber-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full">
               {pendingBookingsCount}
             </span>
           )}
@@ -69,12 +74,14 @@ export default function LecturerSidebar({
 
         <button
           onClick={() => setActiveTab('scheduling')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-            activeTab === 'scheduling' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50'
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'scheduling'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
           }`}
         >
-          <Clock className="w-4 h-4" />
-          Ketersediaan Waktu
+          <Clock className="w-4.5 h-4.5" />
+          <span>Ketersediaan Waktu</span>
         </button>
       </nav>
     </div>

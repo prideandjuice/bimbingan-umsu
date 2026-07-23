@@ -74,8 +74,10 @@ export interface ProposalTitle {
     id: string;
     proposalId: string;
     title: string;
+    abstract?: string;
     status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
     notes?: string;
+    skFile?: string;
 }
 
 export interface Thesis {
@@ -88,8 +90,9 @@ export interface Thesis {
     department: string;
     supervisorId: string | null;
     supervisorName: string | null;
-    status: 'pending_supervisor' | 'in_progress' | 'completed';
+    status: 'pending_supervisor' | 'pending_sk' | 'in_progress' | 'completed';
     createdAt: string;
+    skFile?: string;
 }
 
 export interface Guidance {

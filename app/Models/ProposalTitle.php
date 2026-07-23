@@ -16,8 +16,10 @@ class ProposalTitle extends Model
         'id',
         'proposal_id',
         'title',
+        'abstract',
         'status',
         'notes',
+        'sk_file',
     ];
 
     public function proposal()

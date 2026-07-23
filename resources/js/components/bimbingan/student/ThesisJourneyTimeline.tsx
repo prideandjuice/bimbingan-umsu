@@ -4,13 +4,13 @@ export default function ThesisJourneyTimeline() {
   const steps = [
     {
       title: '1. Pengajuan & Seleksi Judul',
-      desc: 'Mengajukan draf proposal tesis beserta minimal 2 alternatif judul untuk diseleksi oleh Kaprodi.',
+      desc: 'Mengajukan draf proposal skripsi beserta minimal 3 alternatif judul untuk diseleksi oleh Kaprodi.',
       status: 'active',
       icon: ClipboardList,
     },
     {
       title: '2. Penunjukan Pembimbing',
-      desc: 'Kaprodi menyetujui satu judul utama dan menetapkan Dosen Pembimbing Tesis.',
+      desc: 'Kaprodi menyetujui satu judul utama dan menetapkan Dosen Pembimbing Skripsi.',
       status: 'pending',
       icon: UserCheck,
     },
@@ -21,8 +21,8 @@ export default function ThesisJourneyTimeline() {
       icon: BookOpen,
     },
     {
-      title: '4. Sidang Akhir Tesis',
-      desc: 'Mendaftarkan kelayakan ujian tesis setelah seluruh bimbingan diverifikasi oleh dosen pembimbing.',
+      title: '4. Sidang Akhir Skripsi',
+      desc: 'Mendaftarkan kelayakan ujian skripsi setelah seluruh bimbingan diverifikasi oleh dosen pembimbing.',
       status: 'pending',
       icon: GraduationCap,
     },
@@ -32,10 +32,10 @@ export default function ThesisJourneyTimeline() {
     <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
       <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
-        Alur Perjalanan Tesis Anda
+        Alur Perjalanan Skripsi Anda
       </h3>
       <p className="text-xs text-muted-foreground font-light leading-relaxed">
-        Ikuti tahapan penyusunan tesis Anda secara tertib. Status aktif ditandai dengan lingkaran berwarna hijau.
+        Ikuti tahapan penyusunan skripsi Anda secara tertib. Status aktif ditandai dengan lingkaran berwarna hijau.
       </p>
 
       <div className="relative border-l border-gray-100 dark:border-zinc-800 ml-3 pl-6 space-y-6 pt-2">

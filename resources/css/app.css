@@ -160,3 +160,55 @@
         color: #1c1c1a;
     }
 }
+
+/* Quill Editor Styling */
+.ql-toolbar.ql-snow {
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+  border-color: #e5e7eb !important;
+  background-color: #f9fafb;
+}
+
+.dark .ql-toolbar.ql-snow {
+  border-color: #27272a !important;
+  background-color: #18181b;
+}
+
+.dark .ql-snippet, .dark .ql-stroke {
+  stroke: #a1a1aa !important;
+}
+
+.dark .ql-fill {
+  fill: #a1a1aa !important;
+}
+
+.dark .ql-picker {
+  color: #a1a1aa !important;
+}
+
+.ql-container.ql-snow {
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+  border-color: #e5e7eb !important;
+  background-color: #ffffff;
+  min-height: 160px;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.dark .ql-container.ql-snow {
+  border-color: #27272a !important;
+  background-color: #09090b;
+  color: #f4f4f5;
+}
+
+.ql-editor {
+  min-height: 150px;
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+}
+
+.ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: normal;
+}

@@ -35,7 +35,7 @@ export default function Register() {
     return (
         <AuthLayout 
             title="Daftar Akun Baru" 
-            description="Silakan lengkapi formulir di bawah ini untuk membuat akun bimbingan tesis Anda."
+            description="Silakan lengkapi formulir di bawah ini untuk membuat akun bimbingan skripsi Anda."
         >
             <Head title="Daftar Akun Baru" />
             <form className="flex flex-col gap-5" onSubmit={submit}>
