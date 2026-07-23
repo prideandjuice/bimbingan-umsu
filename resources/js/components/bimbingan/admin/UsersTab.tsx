@@ -5,6 +5,7 @@ import type { AppUser, UserRole } from '@/types';
 
 interface UsersTabProps {
   users: AppUser[];
+  currentUser?: AppUser;
   handleUpdateUserRole: (
     userId: string,
     role: UserRole,
@@ -14,7 +15,8 @@ interface UsersTabProps {
   ) => void;
 }
 
-export default function UsersTab({ users, handleUpdateUserRole }: UsersTabProps) {
+export default function UsersTab({ users, currentUser, handleUpdateUserRole }: UsersTabProps) {
+  const canEdit = currentUser?.role === 'admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<UserRole>('guest');
@@ -170,37 +172,41 @@ export default function UsersTab({ users, handleUpdateUserRole }: UsersTabProps)
                     </span>
                   </td>
                   <td className="py-4 px-4 text-right">
-                    {isEditing ? (
-                      <div className="flex justify-end gap-1.5">
+                    {canEdit ? (
+                      isEditing ? (
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            onClick={() => {
+                              handleUpdateUserRole(user.id, editRole, editNpm, editNidn, editDepartment);
+                              setEditingUserId(null);
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-3xs px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                          >
+                            Simpan
+                          </button>
+                          <button
+                            onClick={() => setEditingUserId(null)}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-3xs px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                          >
+                            Batal
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           onClick={() => {
-                            handleUpdateUserRole(user.id, editRole, editNpm, editNidn, editDepartment);
-                            setEditingUserId(null);
+                            setEditingUserId(user.id);
+                            setEditRole(user.role);
+                            setEditNpm(user.npm || '');
+                            setEditNidn(user.nidn || '');
+                            setEditDepartment(user.department || '');
                           }}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-3xs px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                          className="text-emerald-700 hover:text-emerald-800 font-bold text-xs bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                         >
-                          Simpan
+                          Edit Hak Akses
                         </button>
-                        <button
-                          onClick={() => setEditingUserId(null)}
-                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-3xs px-2.5 py-1 rounded-md transition-colors cursor-pointer"
-                        >
-                          Batal
-                        </button>
-                      </div>
+                      )
                     ) : (
-                      <button
-                        onClick={() => {
-                          setEditingUserId(user.id);
-                          setEditRole(user.role);
-                          setEditNpm(user.npm || '');
-                          setEditNidn(user.nidn || '');
-                          setEditDepartment(user.department || '');
-                        }}
-                        className="text-emerald-700 hover:text-emerald-800 font-bold text-xs bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                      >
-                        Edit Hak Akses
-                      </button>
+                      <span className="text-3xs text-gray-400 font-medium">Read-Only</span>
                     )}
                   </td>
                 </tr>

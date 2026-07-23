@@ -36,11 +36,23 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        $emailPrefix = explode('@', $request->email)[0];
+        $username = $request->username ?? (\Illuminate\Support\Str::slug($emailPrefix) . '_' . \Illuminate\Support\Str::random(4));
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'username' => $username,
             'password' => Hash::make($request->password),
+            'is_verified' => true,
+            'department' => 'Magister Ilmu Komunikasi',
         ]);
+
+        try {
+            $user->assignRole('student');
+        } catch (\Throwable $e) {
+            // Fallback if role missing
+        }
 
         event(new Registered($user));
 

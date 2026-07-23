@@ -45,22 +45,24 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
   };
 
   // Callback Mutations (Tetap di induk utama karena memodifikasi DB lokal)
-  const onSubmitProposal = (abstractText: string, titlesArray: string[]) => {
+  const onSubmitProposal = (items: Array<{ title: string; abstract: string }>) => {
     const proposalId = `prop-${Date.now()}`;
+    const mainAbstract = items[0]?.abstract || '';
     const newProposal: Proposal = {
       id: proposalId,
       studentId: currentUser.id,
       studentName: currentUser.name,
       studentNpm: currentUser.npm || 'N/A',
       department: currentUser.department || 'Magister Ilmu Komunikasi',
-      abstract: abstractText,
+      abstract: mainAbstract,
       status: 'pending',
       createdAt: new Date().toISOString()
     };
-    const titlesToInsert: ProposalTitle[] = titlesArray.map((t, idx) => ({
+    const titlesToInsert: ProposalTitle[] = items.map((item, idx) => ({
       id: `title-${proposalId}-${idx}`,
       proposalId: proposalId,
-      title: t.trim(),
+      title: item.title.trim(),
+      abstract: item.abstract.trim(),
       status: 'PENDING'
     }));
 
@@ -115,10 +117,18 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
 
       {/* SCENARIO B: Pengajuan menunggu review */}
       {myProposal && !myThesis && (
-        <ProposalPending myProposal={myProposal} proposalTitles={proposalTitles} onRefresh={onRefresh} />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8">
+            <ProposalPending myProposal={myProposal} proposalTitles={proposalTitles} onRefresh={onRefresh} />
+          </div>
+          <div className="lg:col-span-4 space-y-6">
+            <ThesisJourneyTimeline />
+            <AcademicGuidelineCard />
+          </div>
+        </div>
       )}
 
-      {/* SCENARIO C: Tesis disetujui & Masa Bimbingan Aktif */}
+      {/* SCENARIO C: Skripsi disetujui & Masa Bimbingan Aktif */}
       {myThesis && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="active-thesis-layout">
           <ThesisActiveLayout

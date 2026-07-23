@@ -7,7 +7,7 @@ import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, EventType, Ava
 import axios from 'axios';
 
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
-const DB_VERSION = '3';
+const DB_VERSION = '7';
 const VERSION_KEY = 'db_version';
 
 const KEYS = {
@@ -85,6 +85,43 @@ const SEED_USERS: AppUser[] = [
     },
 ];
 
+const SEED_PROPOSALS: Proposal[] = [
+    {
+        id: 'prop-demo-1',
+        studentId: 'user-student-1',
+        studentName: 'Mahasiswa Demo',
+        studentNpm: '2210000001',
+        department: 'Magister Ilmu Komunikasi',
+        abstract: 'Analisis strategi komunikasi digital dalam meningkatkan brand awareness dan keterlibatan publik pada institusi akademis.',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+    },
+];
+
+const SEED_PROPOSAL_TITLES: ProposalTitle[] = [
+    {
+        id: 'title-demo-1',
+        proposalId: 'prop-demo-1',
+        title: 'Strategi Komunikasi Digital Kampus dalam Era Transformasi Teknologi Informasi',
+        abstract: 'Penelitian ini berfokus pada analisis strategi komunikasi pemasaran digital yang diterapkan oleh institusi pendidikan tinggi dalam membangun brand equity dan meningkatkan interaksi publik di media sosial.',
+        status: 'PENDING',
+    },
+    {
+        id: 'title-demo-2',
+        proposalId: 'prop-demo-1',
+        title: 'Analisis Pola Komunikasi Organisasi pada Manajemen Pelayanan Akademik Publik',
+        abstract: 'Studi ini meneliti efektivitas aliran informasi internal antara dosen, tenaga kependidikan, dan mahasiswa dalam mengoptimalkan kualitas pelayanan akademik berbasis sistem digital.',
+        status: 'PENDING',
+    },
+    {
+        id: 'title-demo-3',
+        proposalId: 'prop-demo-1',
+        title: 'Pengaruh Media Sosial Instagram terhadap Persepsi Reputasi Lembaga Akademik',
+        abstract: 'Penelitian kuantitatif yang menguji korelasi antara intensitas publikasi konten edukatif di Instagram dengan persepsi keunggulan reputasi institusi di mata mahasiswa baru.',
+        status: 'PENDING',
+    },
+];
+
 function seedIfEmpty(): void {
     if (!localStorage.getItem(KEYS.users)) {
         set(KEYS.users, SEED_USERS);
@@ -92,8 +129,8 @@ function seedIfEmpty(): void {
     if (!localStorage.getItem(KEYS.currentUser)) {
         set(KEYS.currentUser, SEED_USERS[0]);
     }
-    if (!localStorage.getItem(KEYS.proposals)) set(KEYS.proposals, []);
-    if (!localStorage.getItem(KEYS.proposalTitles)) set(KEYS.proposalTitles, []);
+    if (!localStorage.getItem(KEYS.proposals)) set(KEYS.proposals, SEED_PROPOSALS);
+    if (!localStorage.getItem(KEYS.proposalTitles)) set(KEYS.proposalTitles, SEED_PROPOSAL_TITLES);
     if (!localStorage.getItem(KEYS.theses)) set(KEYS.theses, []);
     if (!localStorage.getItem(KEYS.guidances)) set(KEYS.guidances, []);
     if (!localStorage.getItem(KEYS.eventTypes)) set(KEYS.eventTypes, []);

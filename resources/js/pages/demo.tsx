@@ -45,7 +45,7 @@ export default function Demo() {
 
     return (
         <>
-            <Head title="Demo — Sistem Bimbingan Tesis UMSU" />
+            <Head title="Demo — Sistem Bimbingan Skripsi UMSU" />
 
             <div className="min-h-screen bg-gray-50 flex flex-col">
 

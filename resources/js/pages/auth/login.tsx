@@ -39,7 +39,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     return (
         <AuthLayout
             title="Masuk ke Sistem"
-            description="Silakan masukkan email dan kata sandi Anda untuk mengakses dashboard bimbingan tesis."
+            description="Silakan masukkan email dan kata sandi Anda untuk mengakses dashboard bimbingan skripsi."
         >
             <Head title="Masuk ke Sistem" />
 

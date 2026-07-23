@@ -3,12 +3,12 @@ import { Info, HelpCircle, CheckSquare } from 'lucide-react';
 export default function AcademicGuidelineCard() {
   const guidelines = [
     {
-      title: 'Ketentuan Abstrak',
-      desc: 'Tulis ringkasan penelitian Anda dalam 100 - 250 kata yang memuat masalah, metode, dan target luaran.',
+      title: 'Ketentuan Latar Belakang Singkat',
+      desc: 'Tulis ringkasan penelitian Anda dalam ~500 kata yang memuat masalah, metode, dan target luaran.',
     },
     {
       title: 'Alternatif Judul',
-      desc: 'Wajib memberikan minimal 2 dan maksimal 4 opsi alternatif judul tesis agar memudahkan seleksi Kaprodi.',
+      desc: 'Wajib memberikan minimal 3 dan maksimal 4 opsi alternatif judul skripsi agar memudahkan seleksi Kaprodi.',
     },
     {
       title: 'Cek Plagiasi (Turnitin)',

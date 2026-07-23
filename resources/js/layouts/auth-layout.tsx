@@ -20,7 +20,7 @@ export default function AuthLayout({ children, title, description }: { children:
                         </div>
                         <div>
                             <p className="font-bold text-white text-base tracking-wide leading-none">UMSU</p>
-                            <p className="text-xs text-emerald-300 font-light mt-0.5">Sistem Bimbingan Tesis</p>
+                            <p className="text-xs text-emerald-300 font-light mt-0.5">Sistem Bimbingan Skripsi</p>
                         </div>
                     </Link>
                 </div>
@@ -30,13 +30,13 @@ export default function AuthLayout({ children, title, description }: { children:
                     <div className="space-y-4">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-emerald-200">
                             <Sparkles className="w-3.5 h-3.5 text-emerald-300 animate-pulse" />
-                            <span>Pascasarjana UMSU Digital</span>
+                            <span>UMSU Digital</span>
                         </div>
                         <h1 className="text-4xl font-extrabold leading-tight tracking-tight">
-                            Bimbingan Tesis Lebih <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-200">Terstruktur</span> &amp; <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-200">Efisien</span>.
+                            Bimbingan Skripsi Lebih <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-200">Terstruktur</span> &amp; <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-200">Efisien</span>.
                         </h1>
                         <p className="text-emerald-100/80 text-base leading-relaxed font-light">
-                            Selamat datang di portal akademik Pascasarjana Universitas Muhammadiyah Sumatera Utara. Pantau progres judul, logbook bimbingan, dan jadwal pertemuan secara real-time.
+                            Selamat datang di portal akademik Universitas Muhammadiyah Sumatera Utara. Pantau progres judul, logbook bimbingan, dan jadwal pertemuan secara real-time.
                         </p>
                     </div>
 
@@ -51,7 +51,7 @@ export default function AuthLayout({ children, title, description }: { children:
                                 <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center border border-emerald-500/30">
                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                 </div>
-                                <span className="text-emerald-100 font-medium">1. Pengajuan alternatif judul tesis online</span>
+                                <span className="text-emerald-100 font-medium">1. Pengajuan alternatif judul skripsi online</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center border border-emerald-500/30">
@@ -81,7 +81,7 @@ export default function AuthLayout({ children, title, description }: { children:
                         <Award className="w-4 h-4 text-emerald-400" />
                         Terakreditasi Unggul UMSU
                     </span>
-                    <span>© {new Date().getFullYear()} Pascasarjana UMSU</span>
+                    <span>© {new Date().getFullYear()} UMSU</span>
                 </div>
             </div>
 

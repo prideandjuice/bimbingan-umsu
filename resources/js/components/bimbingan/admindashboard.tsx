@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { DB } from '@/db';
 import type { AppUser, Proposal, ProposalTitle, Thesis, UserRole } from '@/types';
+import { toast } from 'sonner';
+import axios from 'axios';
 
 import AdminSidebar from './admin/AdminSidebar';
 import OverviewTab from './admin/OverviewTab';
@@ -22,15 +24,16 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
   const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'theses' | 'users'>('overview');
 
   useEffect(() => {
-    if (activeTab === 'users' && currentUser.role !== 'admin') {
+    const allowedRoles = ['admin', 'prodi'];
+    if (!allowedRoles.includes(currentUser.role)) {
       setActiveTab('overview');
     }
-    if ((activeTab === 'proposals' || activeTab === 'theses') && currentUser.role !== 'prodi') {
+    if (activeTab === 'proposals' && currentUser.role !== 'prodi') {
       setActiveTab('overview');
     }
   }, [currentUser.role, activeTab]);
 
-  const handleApproveTitle = (proposalId: string, approvedTitleId: string) => {
+  const handleApproveTitle = (proposalId: string, approvedTitleId: string, customNotes?: string) => {
     const proposal = proposals.find(p => p.id === proposalId);
     if (!proposal) return;
 
@@ -41,10 +44,13 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
       p.id === proposalId ? { ...p, status: 'processed' as const } : p
     );
 
+    const defaultNotes = 'Judul disetujui oleh Kaprodi.';
+    const finalNotes = customNotes && customNotes.trim() ? customNotes.trim() : defaultNotes;
+
     const updatedTitles = proposalTitles.map(t => {
       if (t.proposalId === proposalId) {
         return t.id === approvedTitleId
-          ? { ...t, status: 'ACCEPTED' as const, notes: 'Judul disetujui oleh Kaprodi.' }
+          ? { ...t, status: 'ACCEPTED' as const, notes: finalNotes }
           : { ...t, status: 'REJECTED' as const, notes: 'Judul lain telah disetujui.' };
       }
       return t;
@@ -61,7 +67,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
       supervisorId: null,
       supervisorName: null,
       status: 'pending_supervisor',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     DB.saveProposals(updatedProposals);
@@ -71,6 +77,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
     setProposals(updatedProposals);
     setProposalTitles(updatedTitles);
     setTheses([...theses, newThesis]);
+    toast.success('Judul skripsi berhasil disetujui! Hubungi Admin untuk penerbitan SK.');
     onRefresh();
   };
 
@@ -84,14 +91,53 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
             ...t,
             supervisorId: lecturer.id,
             supervisorName: lecturer.name,
-            status: 'in_progress' as const
+            status: 'pending_sk' as const
           }
         : t
     );
 
     DB.saveTheses(updatedTheses);
     setTheses(updatedTheses);
+    toast.success(`Dosen pembimbing ${lecturer.name} berhasil ditunjuk. Menunggu SK dari Admin.`);
     onRefresh();
+  };
+
+  const handleUploadSKFile = async (thesisId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('thesis_id', thesisId);
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post('/bimbingan/upload-sk', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.status === 'success') {
+        const uploadedSkPath = response.data.skFile;
+
+        const updatedTheses = theses.map(t => 
+          t.id === thesisId
+            ? {
+                ...t,
+                skFile: uploadedSkPath,
+                status: 'in_progress' as const
+              }
+            : t
+        );
+
+        DB.saveTheses(updatedTheses);
+        setTheses(updatedTheses);
+        toast.success('Berkas SK Bimbingan berhasil diunggah.');
+        onRefresh();
+      } else {
+        toast.error('Gagal mengunggah berkas SK Bimbingan.');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Terjadi kesalahan saat mengunggah berkas SK.');
+    }
   };
 
   const handleUpdateUserRole = (
@@ -117,6 +163,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
 
     DB.saveUsers(updatedUsers);
     setUsers(updatedUsers);
+    toast.success('Hak akses pengguna berhasil diperbarui.');
     onRefresh();
   };
 
@@ -158,17 +205,20 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'theses' && currentUser.role === 'prodi' && (
+        {activeTab === 'theses' && (currentUser.role === 'prodi' || currentUser.role === 'admin') && (
           <ThesesTab
             theses={theses}
+            currentUser={currentUser}
             lecturers={users.filter(u => u.role === 'lecturer' && u.isVerified)}
             handleAssignSupervisor={handleAssignSupervisor}
+            handleUploadSK={handleUploadSKFile}
           />
         )}
 
-        {activeTab === 'users' && currentUser.role === 'admin' && (
+        {activeTab === 'users' && (currentUser.role === 'admin' || currentUser.role === 'prodi') && (
           <UsersTab
             users={users}
+            currentUser={currentUser}
             handleUpdateUserRole={handleUpdateUserRole}
           />
         )}

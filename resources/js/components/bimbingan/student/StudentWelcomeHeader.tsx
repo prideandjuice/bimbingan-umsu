@@ -23,13 +23,13 @@ export default function StudentWelcomeHeader({ currentUser }: StudentWelcomeHead
         <div className="space-y-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-medium text-emerald-100">
             <GraduationCap className="w-3.5 h-3.5" />
-            Portal Akademik Pascasarjana
+            Portal Akademik UMSU
           </span>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             Selamat Datang, {currentUser.name}
           </h1>
           <p className="text-emerald-100/90 text-sm font-light leading-relaxed max-w-xl">
-            Selamat datang di sistem manajemen bimbingan tesis. Silakan lengkapi pengajuan judul tesis Anda di bawah ini untuk memulai proses bimbingan digital bersama dosen pembimbing.
+            Selamat datang di sistem manajemen bimbingan skripsi. Silakan lengkapi pengajuan judul skripsi Anda di bawah ini untuk memulai proses bimbingan digital bersama dosen pembimbing.
           </p>
         </div>
 

@@ -28,7 +28,7 @@ export default function OverviewTab({
             Selamat Datang, {currentUser.name}
           </h1>
           <p className="text-emerald-100 text-sm mt-2 font-light">
-            Kelola pengajuan judul tesis mahasiswa pascasarjana, verifikasi akun bimbingan baru, dan tunjuk dosen pembimbing terbaik secara terintegrasi.
+            Kelola pengajuan judul skripsi mahasiswa, verifikasi akun bimbingan baru, dan tunjuk dosen pembimbing terbaik secara terintegrasi.
           </p>
         </div>
       </div>
@@ -43,7 +43,7 @@ export default function OverviewTab({
           </div>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <p className="text-gray-400 text-xs font-medium uppercase">Mahasiswa Tesis</p>
+          <p className="text-gray-400 text-xs font-medium uppercase">Mahasiswa Skripsi</p>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-2xl font-bold font-display text-gray-800">{totalStudents}</span>
             <span className="text-xs text-gray-500">NPM</span>
@@ -73,7 +73,7 @@ export default function OverviewTab({
         <ol className="list-decimal list-inside text-xs text-amber-800 mt-3 space-y-2 font-medium">
           <li>Buka tab <span className="font-bold underline">Seleksi Judul</span> jika ada notifikasi proposal judul baru.</li>
           <li>Pilih alternatif judul terbaik dari mahasiswa, klik "Setujui Judul ini". Judul terpilih otomatis diterima dan judul alternatif otomatis ditolak.</li>
-          <li>Buka tab <span className="font-bold underline">Tesis & Pembimbing</span> untuk menunjuk dosen pembimbing (NIDN) bagi tesis yang baru disetujui.</li>
+          <li>Buka tab <span className="font-bold underline">Skripsi & Pembimbing</span> untuk menunjuk dosen pembimbing (NIDN) bagi skripsi yang baru disetujui.</li>
           <li>Lakukan verifikasi berkas pendaftar baru pada tab <span className="font-bold underline">Akun & Verifikasi</span>.</li>
         </ol>
       </div>

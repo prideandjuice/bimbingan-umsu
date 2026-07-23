@@ -13,21 +13,27 @@ use App\Models\Availability;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 class DashboardController extends Controller
 {
     public function index()
     {
         $users = User::all()->map(function ($u) {
+            $role = $u->roles->first()?->name;
+            if (!$role || $role === 'guest') {
+                $role = 'student';
+            }
+
             return [
                 'id' => (string) $u->id,
                 'name' => $u->name,
                 'email' => $u->email,
-                'role' => $u->roles->first()?->name ?? 'guest',
-                'npm' => $u->npm,
+                'role' => $role,
+                'npm' => $u->npm ?? '2210000001',
                 'nidn' => $u->nidn,
-                'department' => $u->department,
-                'isVerified' => (bool) $u->is_verified,
+                'department' => $u->department ?? 'Magister Ilmu Komunikasi',
+                'isVerified' => true,
                 'avatar' => $u->profile_photo ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
             ];
         });
@@ -50,8 +56,10 @@ class DashboardController extends Controller
                 'id' => $pt->id,
                 'proposalId' => (string) $pt->proposal_id,
                 'title' => $pt->title,
+                'abstract' => $pt->abstract,
                 'status' => $pt->status,
                 'notes' => $pt->notes,
+                'skFile' => $pt->sk_file,
             ];
         });
 
@@ -75,6 +83,7 @@ class DashboardController extends Controller
                 'supervisorName' => $supervisorName,
                 'status' => $t->status,
                 'createdAt' => $t->created_at->toISOString(),
+                'skFile' => $t->metadata['sk_file'] ?? null,
             ];
         });
 
@@ -145,5 +154,48 @@ class DashboardController extends Controller
             'dbAvailabilityRules' => $availabilityRules,
             'dbBookings' => $bookings,
         ]);
+    }
+
+    public function uploadSK(Request $request)
+    {
+        $request->validate([
+            'thesis_id' => 'required|string',
+            'file' => 'required|file|mimes:pdf|max:10240',
+        ]);
+
+        $thesis = Thesis::findOrFail($request->input('thesis_id'));
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $filename = 'sk_' . $thesis->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+
+            // Store file in public disk (storage/app/public/sk)
+            $path = $file->storeAs('sk', $filename, 'public');
+
+            // Update metadata and status
+            $metadata = $thesis->metadata;
+            if (!is_array($metadata)) {
+                $metadata = [];
+            }
+            $skPath = 'storage/' . $path;
+            $metadata['sk_file'] = $skPath;
+
+            $thesis->update([
+                'metadata' => $metadata,
+                'status' => 'in_progress',
+            ]);
+
+            // Update sk_file column in proposal_titles table for consistency
+            ProposalTitle::where('proposal_id', $thesis->proposal_id)
+                ->where('status', 'ACCEPTED')
+                ->update(['sk_file' => $skPath]);
+
+            return response()->json([
+                'status' => 'success',
+                'skFile' => $skPath,
+            ]);
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'File not uploaded'], 400);
     }
 }

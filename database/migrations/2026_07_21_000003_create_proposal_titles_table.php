@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('id')->primary(); // matching frontend format
             $table->foreignId('proposal_id')->constrained('title_submissions')->onDelete('cascade');
             $table->text('title');
+            $table->longText('abstract')->nullable();
             $table->string('status')->default('PENDING'); // PENDING, ACCEPTED, REJECTED
             $table->text('notes')->nullable();
             $table->timestamps();

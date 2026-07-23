@@ -7,7 +7,7 @@ export default function Welcome() {
 
     return (
         <>
-            <Head title="Sistem Bimbingan Tesis UMSU" />
+            <Head title="Sistem Bimbingan Skripsi UMSU" />
 
             <div className="min-h-screen bg-gray-50">
                 {/* Navbar */}
@@ -19,7 +19,7 @@ export default function Welcome() {
                             </div>
                             <div>
                                 <p className="font-bold text-gray-900 text-sm leading-none">UMSU</p>
-                                <p className="text-xs text-gray-500 leading-none mt-0.5">Sistem Bimbingan Tesis</p>
+                                <p className="text-xs text-gray-500 leading-none mt-0.5">Sistem Bimbingan Skripsi</p>
                             </div>
                         </div>
 
@@ -56,15 +56,15 @@ export default function Welcome() {
                     <div className="max-w-6xl mx-auto px-6 py-20 lg:py-28">
                         <div className="max-w-2xl">
                             <span className="inline-block bg-emerald-800 text-emerald-300 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-6">
-                                Pascasarjana UMSU
+                                UMSU Digital
                             </span>
                             <h1 className="text-3xl lg:text-5xl font-bold leading-tight mb-5">
                                 Sistem Informasi<br />
-                                <span className="text-emerald-300">Bimbingan Tesis</span>
+                                <span className="text-emerald-300">Bimbingan Skripsi</span>
                             </h1>
                             <p className="text-emerald-100 text-base lg:text-lg font-light leading-relaxed mb-8">
                                 Platform digital terintegrasi untuk mahasiswa, dosen pembimbing, dan Kaprodi dalam
-                                mengelola seluruh proses bimbingan tesis pascasarjana UMSU.
+                                mengelola seluruh proses bimbingan skripsi UMSU.
                             </p>
                             <div className="flex flex-wrap gap-3">
                                 {auth.user ? (
@@ -99,7 +99,7 @@ export default function Welcome() {
                 <section className="max-w-6xl mx-auto px-6 py-16">
                     <div className="text-center mb-12">
                         <h2 className="text-2xl font-bold text-gray-900">Fitur Utama Sistem</h2>
-                        <p className="text-gray-500 text-sm mt-2">Dirancang untuk memperlancar alur bimbingan tesis dari awal hingga selesai</p>
+                        <p className="text-gray-500 text-sm mt-2">Dirancang untuk memperlancar alur bimbingan skripsi dari awal hingga selesai</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -109,7 +109,7 @@ export default function Welcome() {
                             </div>
                             <h3 className="font-bold text-gray-900 text-sm mb-2">Pengajuan Judul</h3>
                             <p className="text-xs text-gray-500 font-light leading-relaxed">
-                                Mahasiswa mengajukan alternatif judul tesis. Kaprodi menyeleksi dan menyetujui judul terbaik.
+                                Mahasiswa mengajukan alternatif judul skripsi. Kaprodi menyeleksi dan menyetujui judul terbaik.
                             </p>
                         </div>
 
@@ -154,7 +154,7 @@ export default function Welcome() {
                             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6">
                                 <span className="inline-block bg-emerald-700 text-white text-xs font-bold uppercase px-3 py-1 rounded-full mb-4">Mahasiswa</span>
                                 <ul className="space-y-2 text-sm text-gray-700 font-light">
-                                    <li className="flex items-start gap-2"><span className="text-emerald-600 font-bold mt-0.5">✓</span> Ajukan proposal judul tesis</li>
+                                    <li className="flex items-start gap-2"><span className="text-emerald-600 font-bold mt-0.5">✓</span> Ajukan proposal judul skripsi</li>
                                     <li className="flex items-start gap-2"><span className="text-emerald-600 font-bold mt-0.5">✓</span> Pantau status persetujuan judul</li>
                                     <li className="flex items-start gap-2"><span className="text-emerald-600 font-bold mt-0.5">✓</span> Isi log bimbingan harian</li>
                                     <li className="flex items-start gap-2"><span className="text-emerald-600 font-bold mt-0.5">✓</span> Booking jadwal dengan dosen</li>
@@ -174,10 +174,10 @@ export default function Welcome() {
                             <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-6">
                                 <span className="inline-block bg-amber-600 text-white text-xs font-bold uppercase px-3 py-1 rounded-full mb-4">Kaprodi / Admin</span>
                                 <ul className="space-y-2 text-sm text-gray-700 font-light">
-                                    <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Seleksi dan setujui judul tesis</li>
+                                    <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Seleksi dan setujui judul skripsi</li>
                                     <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Tunjuk dosen pembimbing</li>
                                     <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Verifikasi akun pendaftar baru</li>
-                                    <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Pantau semua tesis aktif</li>
+                                    <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Pantau semua skripsi aktif</li>
                                 </ul>
                             </div>
                         </div>
@@ -187,7 +187,7 @@ export default function Welcome() {
                 {/* Footer */}
                 <footer className="bg-emerald-900 text-emerald-300 text-center py-8 text-xs">
                     <p className="font-semibold text-white">Universitas Muhammadiyah Sumatera Utara</p>
-                    <p className="mt-1">Program Pascasarjana — Sistem Bimbingan Tesis © {new Date().getFullYear()}</p>
+                    <p className="mt-1">Sistem Bimbingan Skripsi UMSU © {new Date().getFullYear()}</p>
                 </footer>
             </div>
         </>

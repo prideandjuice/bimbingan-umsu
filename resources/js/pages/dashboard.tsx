@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import { DB } from '@/db';
-import type { AppUser, SharedData, BreadcrumbItem } from '@/types';
+import type { AppUser, SharedData, BreadcrumbItem, Proposal, ProposalTitle, Thesis, Guidance, EventType, AvailabilityRule, Booking } from '@/types';
 import AppLayout from '@/layouts/app-layout';
 
 import AdminDashboard from '@/components/bimbingan/admindashboard';
@@ -63,8 +63,8 @@ export default function Dashboard({
         let foundUser = users.find((u) => u.email.toLowerCase() === auth.user.email.toLowerCase());
 
         if (!foundUser) {
-            // Tentukan default role berdasarkan email domain
-            let role: 'admin' | 'prodi' | 'lecturer' | 'student' | 'guest' = 'guest';
+            // Tentukan default role berdasarkan email domain (default: student)
+            let role: 'admin' | 'prodi' | 'lecturer' | 'student' | 'guest' = 'student';
             
             const email = auth.user.email.toLowerCase();
             if (email.endsWith('@umsu.ac.id')) {
@@ -84,13 +84,22 @@ export default function Dashboard({
                 name: auth.user.name,
                 email: auth.user.email,
                 role: role,
-                isVerified: role !== 'guest',
+                isVerified: true,
                 avatar: auth.user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
-                department: (role !== 'guest' && role !== 'admin') ? 'Magister Ilmu Komunikasi' : undefined,
+                department: 'Magister Ilmu Komunikasi',
             };
 
             // Simpan ke list users di LocalStorage
             DB.saveUsers([...users, foundUser]);
+        } else if (foundUser.role === 'guest' || !foundUser.isVerified) {
+            foundUser = {
+                ...foundUser,
+                role: 'student',
+                isVerified: true,
+                department: foundUser.department || 'Magister Ilmu Komunikasi',
+            };
+            const updatedUsers = users.map((u) => (u.email.toLowerCase() === foundUser!.email.toLowerCase() ? foundUser! : u));
+            DB.saveUsers(updatedUsers);
         }
 
         // Sinkronisasi status active user di local storage mock database
@@ -111,7 +120,7 @@ export default function Dashboard({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard — Sistem Bimbingan Tesis UMSU" />
+            <Head title="Dashboard — Sistem Bimbingan Skripsi UMSU" />
 
             <div className="max-w-7xl mx-auto px-4 py-8 w-full">
                 {(appUser.role === 'admin' || appUser.role === 'prodi') && (
