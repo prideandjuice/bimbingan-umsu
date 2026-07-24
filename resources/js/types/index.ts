@@ -64,7 +64,7 @@ export interface Proposal {
     studentId: string;
     studentName: string;
     studentNpm: string;
-    department: string;
+    prodi: string;
     abstract: string;
     status: 'pending' | 'processed' | 'rejected';
     createdAt: string;
