@@ -139,7 +139,7 @@ export default function Welcome() {
                             </div>
                             <h3 className="font-bold text-gray-900 text-sm mb-2">Verifikasi Akun</h3>
                             <p className="text-xs text-gray-500 font-light leading-relaxed">
-                                Kaprodi memverifikasi akun baru dan menetapkan peran sebagai Mahasiswa (NPM) atau Dosen (NIDN).
+                                Admin / Super Admin memverifikasi akun baru dan menetapkan peran sebagai Mahasiswa (NPM) atau Dosen (NIDN).
                             </p>
                         </div>
                     </div>
@@ -176,7 +176,7 @@ export default function Welcome() {
                                 <ul className="space-y-2 text-sm text-gray-700 font-light">
                                     <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Seleksi dan setujui judul skripsi</li>
                                     <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Tunjuk dosen pembimbing</li>
-                                    <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Verifikasi akun pendaftar baru</li>
+                                    <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Verifikasi akun pendaftar baru (oleh Admin / Super Admin)</li>
                                     <li className="flex items-start gap-2"><span className="text-amber-600 font-bold mt-0.5">✓</span> Pantau semua skripsi aktif</li>
                                 </ul>
                             </div>
