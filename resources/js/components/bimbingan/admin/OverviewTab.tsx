@@ -28,7 +28,9 @@ export default function OverviewTab({
             Selamat Datang, {currentUser.name}
           </h1>
           <p className="text-emerald-100 text-sm mt-2 font-light">
-            Kelola pengajuan judul skripsi mahasiswa, verifikasi akun bimbingan baru, dan tunjuk dosen pembimbing terbaik secara terintegrasi.
+            {currentUser.role === 'admin'
+              ? 'Kelola verifikasi akun pengguna baru dan terbitkan berkas SK bimbingan mahasiswa secara terintegrasi.'
+              : 'Kelola pengajuan judul skripsi mahasiswa dan tunjuk dosen pembimbing terbaik secara terintegrasi.'}
           </p>
         </div>
       </div>
@@ -67,15 +69,29 @@ export default function OverviewTab({
 
       {/* Quick Actions / Informational Section */}
       <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-6 text-left">
-        <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
-          <Clock className="w-4 h-4" /> Alur Kerja Kaprodi (Super Admin)
-        </h4>
-        <ol className="list-decimal list-inside text-xs text-amber-800 mt-3 space-y-2 font-medium">
-          <li>Buka tab <span className="font-bold underline">Seleksi Judul</span> jika ada notifikasi proposal judul baru.</li>
-          <li>Pilih alternatif judul terbaik dari mahasiswa, klik "Setujui Judul ini". Judul terpilih otomatis diterima dan judul alternatif otomatis ditolak.</li>
-          <li>Buka tab <span className="font-bold underline">Skripsi & Pembimbing</span> untuk menunjuk dosen pembimbing (NIDN) bagi skripsi yang baru disetujui.</li>
-          <li>Lakukan verifikasi berkas pendaftar baru pada tab <span className="font-bold underline">Akun & Verifikasi</span>.</li>
-        </ol>
+        {currentUser.role === 'admin' ? (
+          <>
+            <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+              <Clock className="w-4 h-4" /> Alur Kerja Admin / Super Admin
+            </h4>
+            <ol className="list-decimal list-inside text-xs text-amber-800 mt-3 space-y-2 font-medium">
+              <li>Buka tab <span className="font-bold underline">Akun & Verifikasi</span> untuk meninjau dan memverifikasi akun pendaftar baru.</li>
+              <li>Ubah peran akun pendaftar baru menjadi <span className="font-bold">Mahasiswa</span> (serta isi NPM) atau <span className="font-bold">Dosen</span> (serta isi NIDN).</li>
+              <li>Buka tab <span className="font-bold underline">Skripsi & Pembimbing</span> untuk menerbitkan dan mengunggah berkas SK Bimbingan bagi skripsi yang dosen pembimbingnya telah ditunjuk.</li>
+            </ol>
+          </>
+        ) : (
+          <>
+            <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+              <Clock className="w-4 h-4" /> Alur Kerja Kaprodi
+            </h4>
+            <ol className="list-decimal list-inside text-xs text-amber-800 mt-3 space-y-2 font-medium">
+              <li>Buka tab <span className="font-bold underline">Seleksi Judul</span> jika ada notifikasi proposal judul baru.</li>
+              <li>Pilih alternatif judul terbaik dari mahasiswa, klik "Setujui Judul ini". Judul terpilih otomatis diterima dan judul alternatif otomatis ditolak.</li>
+              <li>Buka tab <span className="font-bold underline">Skripsi & Pembimbing</span> untuk menunjuk dosen pembimbing bagi skripsi yang baru disetujui.</li>
+            </ol>
+          </>
+        )}
       </div>
     </div>
   );

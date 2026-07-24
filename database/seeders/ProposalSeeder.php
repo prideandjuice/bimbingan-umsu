@@ -22,7 +22,6 @@ class ProposalSeeder extends Seeder
                 'title' => 'Digital Branding Usaha Mikro, Kecil, dan Menengah (UMKM) Kuliner',
                 'abstract' => '<p>Usaha Mikro, Kecil, dan Menengah (UMKM) sektor kuliner...</p>',
                 'status' => 'approved',
-                'department' => 'Magister Ilmu Komunikasi',
             ]
         );
 
