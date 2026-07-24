@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle, User, Mail, Lock } from 'lucide-react';
+import { LoaderCircle, User, Mail, Lock, IdCard } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
@@ -12,6 +12,7 @@ import AuthLayout from '@/layouts/auth-layout';
 interface RegisterForm {
     [key: string]: any;
     name: string;
+    npm: string;
     email: string;
     password: string;
     password_confirmation: string;
@@ -20,6 +21,7 @@ interface RegisterForm {
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm<RegisterForm>({
         name: '',
+        npm: '',
         email: '',
         password: '',
         password_confirmation: '',
@@ -64,6 +66,29 @@ export default function Register() {
                         <InputError message={errors.name} />
                     </div>
 
+                    {/* NPM Input */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="npm" className="text-gray-700 dark:text-gray-300 font-medium text-xs">
+                            NPM (Nomor Pokok Mahasiswa)
+                        </Label>
+                        <div className="relative">
+                            <IdCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                id="npm"
+                                type="text"
+                                required
+                                tabIndex={2}
+                                autoComplete="off"
+                                value={data.npm}
+                                onChange={(e) => setData('npm', e.target.value)}
+                                disabled={processing}
+                                placeholder="Contoh: 2210000001"
+                                className="pl-10 border-gray-200 dark:border-zinc-800 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 rounded-xl"
+                            />
+                        </div>
+                        <InputError message={errors.npm} />
+                    </div>
+
                     {/* Email Input */}
                     <div className="grid gap-1.5">
                         <Label htmlFor="email" className="text-gray-700 dark:text-gray-300 font-medium text-xs">
@@ -75,7 +100,7 @@ export default function Register() {
                                 id="email"
                                 type="email"
                                 required
-                                tabIndex={2}
+                                tabIndex={3}
                                 autoComplete="email"
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
@@ -98,7 +123,7 @@ export default function Register() {
                                 id="password"
                                 type="password"
                                 required
-                                tabIndex={3}
+                                tabIndex={4}
                                 autoComplete="new-password"
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
@@ -121,7 +146,7 @@ export default function Register() {
                                 id="password_confirmation"
                                 type="password"
                                 required
-                                tabIndex={4}
+                                tabIndex={5}
                                 autoComplete="new-password"
                                 value={data.password_confirmation}
                                 onChange={(e) => setData('password_confirmation', e.target.value)}
@@ -137,7 +162,7 @@ export default function Register() {
                     <Button 
                         type="submit" 
                         className="mt-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-6 rounded-xl transition-all shadow-md shadow-emerald-700/10 active:scale-[0.98] cursor-pointer" 
-                        tabIndex={5} 
+                        tabIndex={6} 
                         disabled={processing}
                     >
                         {processing ? (
@@ -149,7 +174,7 @@ export default function Register() {
 
                 <div className="text-center text-xs text-muted-foreground">
                     Sudah memiliki akun?{' '}
-                    <TextLink href={route('login')} className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold" tabIndex={6}>
+                    <TextLink href={route('login')} className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold" tabIndex={7}>
                         Masuk ke Sistem
                     </TextLink>
                 </div>
