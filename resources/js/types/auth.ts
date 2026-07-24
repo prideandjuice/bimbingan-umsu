@@ -30,7 +30,7 @@ export interface UserManagementData {
     password?: string;
     roles?: RoleData[];
     role_ids?: number[];
-    is_approve?: boolean;
+    is_verified?: boolean;
     created_at?: string;
     updated_at?: string;
 }

@@ -44,7 +44,7 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'username' => $username,
             'password' => Hash::make($request->password),
-            'is_verified' => true,
+            'is_verified' => false,
             'department' => 'Magister Ilmu Komunikasi',
         ]);
 

@@ -62,12 +62,15 @@ export default function Dashboard({
         const users = DB.getUsers();
         let foundUser = users.find((u) => u.email.toLowerCase() === auth.user.email.toLowerCase());
 
+        const backendIsVerified = auth.user.is_verified ?? false;
+        const backendRole = (auth.user.roles && auth.user.roles.length > 0) ? auth.user.roles[0] : 'student';
+
         if (!foundUser) {
             // Tentukan default role berdasarkan email domain (default: student)
-            let role: 'admin' | 'prodi' | 'lecturer' | 'student' | 'guest' = 'student';
+            let role: 'admin' | 'prodi' | 'lecturer' | 'student' | 'guest' = backendRole as any;
             
-            const email = auth.user.email.toLowerCase();
-            if (email.endsWith('@umsu.ac.id')) {
+            if (role === 'guest' && auth.user.email.toLowerCase().endsWith('@umsu.ac.id')) {
+                const email = auth.user.email.toLowerCase();
                 if (email.includes('admin')) {
                     role = 'admin';
                 } else if (email.includes('prodi') || email.includes('kaprodi')) {
@@ -84,22 +87,24 @@ export default function Dashboard({
                 name: auth.user.name,
                 email: auth.user.email,
                 role: role,
-                isVerified: true,
+                isVerified: backendIsVerified,
                 avatar: auth.user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
                 department: 'Magister Ilmu Komunikasi',
             };
 
             // Simpan ke list users di LocalStorage
             DB.saveUsers([...users, foundUser]);
-        } else if (foundUser.role === 'guest' || !foundUser.isVerified) {
-            foundUser = {
-                ...foundUser,
-                role: 'student',
-                isVerified: true,
-                department: foundUser.department || 'Magister Ilmu Komunikasi',
-            };
-            const updatedUsers = users.map((u) => (u.email.toLowerCase() === foundUser!.email.toLowerCase() ? foundUser! : u));
-            DB.saveUsers(updatedUsers);
+        } else {
+            // Sinkronisasi status jika berbeda dengan backend
+            if (foundUser.isVerified !== backendIsVerified || foundUser.role !== backendRole) {
+                foundUser = {
+                    ...foundUser,
+                    role: backendRole as any,
+                    isVerified: backendIsVerified,
+                };
+                const updatedUsers = users.map((u) => (u.email.toLowerCase() === foundUser!.email.toLowerCase() ? foundUser! : u));
+                DB.saveUsers(updatedUsers);
+            }
         }
 
         // Sinkronisasi status active user di local storage mock database
@@ -115,6 +120,15 @@ export default function Dashboard({
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-700"></div>
                 </div>
             </AppLayout>
+        );
+    }
+
+    if (!appUser.isVerified) {
+        return (
+            <div className="min-h-screen bg-gradient-to-tr from-slate-50 to-emerald-50/20 dark:from-zinc-950 dark:to-zinc-900 flex items-center justify-center p-4">
+                <Head title="Menunggu Verifikasi — Sistem Bimbingan Skripsi UMSU" />
+                <GuestDashboard currentUser={appUser} onRefresh={refresh} />
+            </div>
         );
     }
 
