@@ -16,7 +16,7 @@ export default function ProposalsTab({
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
 
-  const departments = Array.from(new Set(proposals.map((p) => p.department).filter(Boolean)));
+  const departments = Array.from(new Set(proposals.map((p) => p.prodi).filter(Boolean)));
 
   const pendingProposals = proposals.filter((p) => {
     if (p.status !== 'pending') return false;
@@ -29,7 +29,7 @@ export default function ProposalsTab({
         (t) => t.proposalId === p.id && t.title.toLowerCase().includes(searchTerm.toLowerCase())
       );
 
-    const matchesDept = departmentFilter === '' || p.department === departmentFilter;
+    const matchesDept = departmentFilter === '' || p.prodi === departmentFilter;
 
     return matchesSearch && matchesDept;
   });
@@ -142,7 +142,7 @@ export default function ProposalsTab({
                 <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-gray-200/60 dark:border-zinc-800">
                   <div>
                     <span className="inline-block bg-emerald-100/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold text-[11px] px-3 py-1 rounded-md uppercase tracking-wider mb-2">
-                      {proposal.department}
+                      {proposal.prodi}
                     </span>
                     <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">
                       {proposal.studentName}
@@ -172,11 +172,10 @@ export default function ProposalsTab({
                       return (
                         <div
                           key={titleItem.id}
-                          className={`bg-white dark:bg-zinc-900 border transition-all rounded-2xl overflow-hidden shadow-2xs ${
-                            isExpanded
+                          className={`bg-white dark:bg-zinc-900 border transition-all rounded-2xl overflow-hidden shadow-2xs ${isExpanded
                               ? 'border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/10'
                               : 'border-gray-200/80 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-700'
-                          }`}
+                            }`}
                         >
                           {/* Main Row / Header Baris Opsi (Clickable) */}
                           <div
@@ -303,7 +302,7 @@ export default function ProposalsTab({
                 Mahasiswa: {selectedTitleForModal.proposal.studentName} ({selectedTitleForModal.proposal.studentNpm})
               </p>
               <p className="text-muted-foreground">
-                Program Studi: {selectedTitleForModal.proposal.department}
+                Program Studi: {selectedTitleForModal.proposal.prodi}
               </p>
             </div>
 

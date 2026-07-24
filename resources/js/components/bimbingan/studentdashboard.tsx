@@ -53,7 +53,7 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
       studentId: currentUser.id,
       studentName: currentUser.name,
       studentNpm: currentUser.npm || 'N/A',
-      department: currentUser.department || 'Magister Ilmu Komunikasi',
+      prodi: currentUser.department || 'Magister Ilmu Komunikasi',
       abstract: mainAbstract,
       status: 'pending',
       createdAt: new Date().toISOString()
