@@ -23,7 +23,7 @@ class UserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $isStore = $this->routeIs('configuration.user.store');
+        $isStore = $this->routeIs('configuration.users.store');
 
         return [
             'name' => ['required', 'string', 'max:255'],

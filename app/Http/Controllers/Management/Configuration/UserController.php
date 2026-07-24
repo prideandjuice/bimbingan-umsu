@@ -95,7 +95,7 @@ class UserController extends Controller
         //     return response()->json(['errors' => "User {$user->name} has not verified their email yet."], 422);
         // }
 
-        $user->update(['is_approve' => true]);
+        $user->update(['is_verified' => true]);
 
         return back()->with('success', 'User approved successfully');
     }
