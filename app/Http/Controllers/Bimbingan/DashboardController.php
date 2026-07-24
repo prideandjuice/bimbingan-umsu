@@ -41,7 +41,7 @@ class DashboardController extends Controller
                 'npm' => $u->npm ?? '2210000001',
                 'nidn' => $u->nidn,
                 'department' => $u->department ?? 'Magister Ilmu Komunikasi',
-                'isVerified' => true,
+                'isVerified' => (bool) $u->is_verified,
                 'avatar' => $u->profile_photo ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
             ];
         });
