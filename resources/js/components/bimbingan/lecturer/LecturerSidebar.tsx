@@ -1,5 +1,5 @@
 import { UserCheck, Users, Calendar, Clock } from 'lucide-react';
-import type { AppUser, Booking, Thesis } from '@/types';
+import type { AppUser, Booking, Guidance, Thesis } from '@/types';
 
 interface LecturerSidebarProps {
   currentUser: AppUser;
@@ -8,6 +8,7 @@ interface LecturerSidebarProps {
   myStudents: Thesis[];
   myBookings: Booking[];
   setSelectedThesisId: (id: string | null) => void;
+  guidances?: Guidance[];
 }
 
 export default function LecturerSidebar({
@@ -17,8 +18,14 @@ export default function LecturerSidebar({
   myStudents,
   myBookings,
   setSelectedThesisId,
+  guidances = [],
 }: LecturerSidebarProps) {
   const pendingBookingsCount = myBookings.filter((b) => b.status === 'pending').length;
+
+  const studentThesisIds = myStudents.map((s) => s.id);
+  const pendingFeedbackCount = guidances.filter(
+    (g) => studentThesisIds.includes(g.thesisId) && g.status === 'pending_verification'
+  ).length;
 
   return (
     <div className="lg:col-span-3 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-sm h-fit space-y-6 text-left">
@@ -35,7 +42,9 @@ export default function LecturerSidebar({
       <nav className="space-y-2">
         <button
           onClick={() => {
-            setActiveTab('students');
+            if (activeTab !== 'students') {
+              setActiveTab('students');
+            }
             setSelectedThesisId(null);
           }}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -46,17 +55,21 @@ export default function LecturerSidebar({
         >
           <Users className="w-4.5 h-4.5" />
           <span>Mahasiswa Bimbingan</span>
-          {myStudents.length > 0 && (
-            <span className={`ml-auto font-bold text-[10px] px-2 py-0.5 rounded-full ${
-              activeTab === 'students' ? 'bg-white/20 text-white' : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+          {pendingFeedbackCount > 0 && (
+            <span className={`ml-auto font-bold text-[10px] px-2 py-0.5 rounded-full shadow-xs ${
+              activeTab === 'students' ? 'bg-amber-500 text-white animate-pulse' : 'bg-amber-500 text-white'
             }`}>
-              {myStudents.length}
+              {pendingFeedbackCount}
             </span>
           )}
         </button>
 
         <button
-          onClick={() => setActiveTab('bookings')}
+          onClick={() => {
+            if (activeTab !== 'bookings') {
+              setActiveTab('bookings');
+            }
+          }}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'bookings'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
@@ -73,7 +86,11 @@ export default function LecturerSidebar({
         </button>
 
         <button
-          onClick={() => setActiveTab('scheduling')}
+          onClick={() => {
+            if (activeTab !== 'scheduling') {
+              setActiveTab('scheduling');
+            }
+          }}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'scheduling'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'

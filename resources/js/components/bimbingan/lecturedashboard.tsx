@@ -1,7 +1,7 @@
 // components/bimbingan/LecturerDashboard.tsx
 import { useState } from 'react';
 import { DB } from '@/db';
-import type { AppUser, Guidance } from '@/types';
+import type { AppUser, Guidance, EventType, AvailabilityRule } from '@/types';
 
 import LecturerSidebar from './lecturer/LecturerSidebar';
 import StudentsTab from './lecturer/StudentsTab';
@@ -73,7 +73,43 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
     refreshLocalData();
   };
 
-  // Logika add/delete event types & availability disingkat dengan pola serupa...
+  const handleAddEventType = (name: string, duration: number, description: string) => {
+    const newEt: EventType = {
+      id: `et-${Date.now()}`,
+      lecturerId: currentUser.id,
+      name,
+      duration,
+      description,
+    };
+    const updated = [...eventTypes, newEt];
+    DB.saveEventTypes(updated);
+    refreshLocalData();
+  };
+
+  const handleDeleteEventType = (id: string) => {
+    const updated = eventTypes.filter((et) => et.id !== id);
+    DB.saveEventTypes(updated);
+    refreshLocalData();
+  };
+
+  const handleAddAvailability = (dayOfWeek: number, startTime: string, endTime: string) => {
+    const newAr: AvailabilityRule = {
+      id: `ar-${Date.now()}`,
+      lecturerId: currentUser.id,
+      dayOfWeek,
+      startTime,
+      endTime,
+    };
+    const updated = [...availabilityRules, newAr];
+    DB.saveAvailabilityRules(updated);
+    refreshLocalData();
+  };
+
+  const handleDeleteAvailability = (id: string) => {
+    const updated = availabilityRules.filter((ar) => ar.id !== id);
+    DB.saveAvailabilityRules(updated);
+    refreshLocalData();
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="lecturer-dashboard-container">
@@ -84,6 +120,7 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
         myStudents={myStudents}
         myBookings={myBookings}
         setSelectedThesisId={setSelectedThesisId}
+        guidances={guidances}
       />
 
       <div className="lg:col-span-9 space-y-6">
@@ -111,10 +148,10 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
           <SchedulingTab
             myEventTypes={myEventTypes}
             myAvailabilities={myAvailabilities}
-            handleAddEventType={(name, dur, desc) => { /* logic */ }}
-            handleDeleteEventType={(id) => { /* logic */ }}
-            handleAddAvailability={(day, start, end) => { /* logic */ }}
-            handleDeleteAvailability={(id) => { /* logic */ }}
+            handleAddEventType={handleAddEventType}
+            handleDeleteEventType={handleDeleteEventType}
+            handleAddAvailability={handleAddAvailability}
+            handleDeleteAvailability={handleDeleteAvailability}
           />
         )}
       </div>

@@ -122,6 +122,71 @@ const SEED_PROPOSAL_TITLES: ProposalTitle[] = [
     },
 ];
 
+const SEED_EVENT_TYPES: EventType[] = [
+    {
+        id: 'et-1',
+        lecturerId: 'user-lecturer-1',
+        name: 'Konsultasi Bimbingan Proposal',
+        duration: 30,
+        description: 'Sesi review draft proposal skripsi dan perumusan latar belakang masalah.',
+    },
+    {
+        id: 'et-2',
+        lecturerId: 'user-lecturer-1',
+        name: 'Review Bab IV & V (Hasil & Pembahasan)',
+        duration: 45,
+        description: 'Sesi evaluasi mendalam hasil analisa data dan pembahasan sebelum Ujian Skripsi.',
+    },
+    {
+        id: 'et-3',
+        lecturerId: 'user-lecturer-1',
+        name: 'Persetujuan Sidang Skripsi',
+        duration: 20,
+        description: 'Verifikasi kelengkapan berkas skripsi akhir dan tanda tangan persetujuan sidang.',
+    },
+];
+
+const SEED_AVAILABILITY_RULES: AvailabilityRule[] = [
+    { id: 'ar-1', lecturerId: 'user-lecturer-1', dayOfWeek: 1, startTime: '09:00', endTime: '12:00' },
+    { id: 'ar-2', lecturerId: 'user-lecturer-1', dayOfWeek: 3, startTime: '13:00', endTime: '16:00' },
+    { id: 'ar-3', lecturerId: 'user-lecturer-1', dayOfWeek: 5, startTime: '09:00', endTime: '11:30' },
+];
+
+const SEED_BOOKINGS: Booking[] = [
+    {
+        id: 'booking-1',
+        thesisId: 'thesis-1',
+        studentId: 'user-student-1',
+        studentName: 'Mahasiswa Demo',
+        studentNpm: '2210000001',
+        lecturerId: 'user-lecturer-1',
+        lecturerName: 'Prof. Dr. Irwan, M.Si',
+        eventTypeId: 'et-1',
+        eventTypeName: 'Konsultasi Bimbingan Proposal',
+        date: '2026-07-28',
+        timeSlot: '09:30 - 10:00',
+        status: 'pending',
+        notes: 'Mohon masukan untuk instrumen kuesioner pada Bab 3.',
+        createdAt: new Date().toISOString(),
+    },
+    {
+        id: 'booking-2',
+        thesisId: 'thesis-2',
+        studentId: 'user-student-2',
+        studentName: 'ELVIRA RAHMADEWI',
+        studentNpm: '2210000002',
+        lecturerId: 'user-lecturer-1',
+        lecturerName: 'Prof. Dr. Irwan, M.Si',
+        eventTypeId: 'et-2',
+        eventTypeName: 'Review Bab IV & V (Hasil & Pembahasan)',
+        date: '2026-07-29',
+        timeSlot: '13:00 - 13:45',
+        status: 'confirmed',
+        notes: 'Pembahasan hasil olah data SPSS & pengujian hipotesis.',
+        createdAt: new Date().toISOString(),
+    },
+];
+
 function seedIfEmpty(): void {
     if (!localStorage.getItem(KEYS.users)) {
         set(KEYS.users, SEED_USERS);
@@ -133,9 +198,9 @@ function seedIfEmpty(): void {
     if (!localStorage.getItem(KEYS.proposalTitles)) set(KEYS.proposalTitles, SEED_PROPOSAL_TITLES);
     if (!localStorage.getItem(KEYS.theses)) set(KEYS.theses, []);
     if (!localStorage.getItem(KEYS.guidances)) set(KEYS.guidances, []);
-    if (!localStorage.getItem(KEYS.eventTypes)) set(KEYS.eventTypes, []);
-    if (!localStorage.getItem(KEYS.availabilityRules)) set(KEYS.availabilityRules, []);
-    if (!localStorage.getItem(KEYS.bookings)) set(KEYS.bookings, []);
+    if (!localStorage.getItem(KEYS.eventTypes)) set(KEYS.eventTypes, SEED_EVENT_TYPES);
+    if (!localStorage.getItem(KEYS.availabilityRules)) set(KEYS.availabilityRules, SEED_AVAILABILITY_RULES);
+    if (!localStorage.getItem(KEYS.bookings)) set(KEYS.bookings, SEED_BOOKINGS);
 }
 
 // Jika versi DB berbeda → hapus semua data lama lalu seed ulang
@@ -191,21 +256,21 @@ export const DB = {
     },
 
     // Event Types
-    getEventTypes: (): EventType[] => get<EventType[]>(KEYS.eventTypes, []),
+    getEventTypes: (): EventType[] => get<EventType[]>(KEYS.eventTypes, SEED_EVENT_TYPES),
     saveEventTypes: (types: EventType[]): void => {
         set(KEYS.eventTypes, types);
         axios.post('/bimbingan/sync/event-types', { eventTypes: types }).catch(err => console.error(err));
     },
 
     // Availability Rules
-    getAvailabilityRules: (): AvailabilityRule[] => get<AvailabilityRule[]>(KEYS.availabilityRules, []),
+    getAvailabilityRules: (): AvailabilityRule[] => get<AvailabilityRule[]>(KEYS.availabilityRules, SEED_AVAILABILITY_RULES),
     saveAvailabilityRules: (rules: AvailabilityRule[]): void => {
         set(KEYS.availabilityRules, rules);
         axios.post('/bimbingan/sync/availability-rules', { availabilityRules: rules }).catch(err => console.error(err));
     },
 
     // Bookings
-    getBookings: (): Booking[] => get<Booking[]>(KEYS.bookings, []),
+    getBookings: (): Booking[] => get<Booking[]>(KEYS.bookings, SEED_BOOKINGS),
     saveBookings: (bookings: Booking[]): void => {
         set(KEYS.bookings, bookings);
         axios.post('/bimbingan/sync/bookings', { bookings }).catch(err => console.error(err));
