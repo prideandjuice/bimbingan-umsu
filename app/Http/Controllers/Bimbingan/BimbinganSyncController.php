@@ -244,19 +244,27 @@ class BimbinganSyncController extends Controller
         try {
             $lecturerId = auth()->id();
             if ($lecturerId) {
+                // Registrasi / panggil AvailabilityObserver secara eksplisit
+                Availability::observe(\App\Observers\AvailabilityObserver::class);
+
                 $incomingIds = collect($request->input('availabilityRules', []))->pluck('id')->toArray();
                 Availability::where('lecturer_id', $lecturerId)->whereNotIn('id', $incomingIds)->delete();
 
                 foreach ($request->input('availabilityRules', []) as $rule) {
-                    Availability::updateOrCreate(
-                        ['id' => $rule['id']],
-                        [
-                            'lecturer_id' => $rule['lecturerId'],
-                            'day_of_week' => $rule['dayOfWeek'],
-                            'start_time' => $rule['startTime'],
-                            'end_time' => $rule['endTime'],
-                        ]
-                    );
+                    $lecturer = User::find($rule['lecturerId'] ?? $lecturerId);
+                    $availability = Availability::find($rule['id']) ?? new Availability(['id' => $rule['id']]);
+
+                    $availability->fill([
+                        'lecturer_id' => $rule['lecturerId'],
+                        'name' => $rule['name'] ?? ($lecturer ? $lecturer->name : null),
+                        'is_default' => isset($rule['isDefault']) ? (bool)$rule['isDefault'] : false,
+                        'day_of_week' => $rule['dayOfWeek'],
+                        'start_time' => $rule['startTime'],
+                        'end_time' => $rule['endTime'],
+                    ]);
+
+                    // Memanggil save() untuk memicu event observer (saving/created/updated)
+                    $availability->save();
                 }
             }
             return response()->json(['status' => 'success']);
@@ -270,20 +278,29 @@ class BimbinganSyncController extends Controller
     {
         try {
             foreach ($request->input('bookings', []) as $booking) {
-                $thesisId = $booking['thesisId'] ?? null;
-                if ($thesisId && !Thesis::where('id', $thesisId)->exists()) {
-                    $thesisId = null;
-                }
-
                 $studentId = $booking['studentId'] ?? null;
                 if (!$studentId || !User::where('id', $studentId)->exists()) {
                     $studentId = auth()->id() ?? User::first()?->id;
                 }
                 if (!$studentId) continue;
 
+                $thesisId = $booking['thesisId'] ?? null;
+                if (!$thesisId || !Thesis::where('id', $thesisId)->exists()) {
+                    $thesisId = Thesis::where('student_id', $studentId)->first()?->id ?? Thesis::first()?->id;
+                }
+                if (!$thesisId) continue;
+
                 $lecturerId = $booking['lecturerId'] ?? null;
                 if (!$lecturerId || !User::where('id', $lecturerId)->exists()) {
-                    continue;
+                    $lecturerId = User::whereHas('roles', function ($q) {
+                        $q->where('name', 'lecturer');
+                    })->first()?->id ?? User::where('id', '!=', $studentId)->first()?->id;
+                }
+                if (!$lecturerId) continue;
+
+                $eventTypeId = $booking['eventTypeId'] ?? null;
+                if ($eventTypeId && !EventType::where('id', $eventTypeId)->exists()) {
+                    $eventTypeId = null;
                 }
 
                 Appointment::updateOrCreate(
@@ -292,7 +309,7 @@ class BimbinganSyncController extends Controller
                         'thesis_id' => $thesisId,
                         'student_id' => $studentId,
                         'lecturer_id' => $lecturerId,
-                        'event_type_id' => $booking['eventTypeId'] ?? null,
+                        'event_type_id' => $eventTypeId,
                         'date' => $booking['date'],
                         'time_slot' => $booking['timeSlot'],
                         'status' => $booking['status'],

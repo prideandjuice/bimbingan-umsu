@@ -63,7 +63,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
       studentId: proposal.studentId,
       studentName: proposal.studentName,
       studentNpm: proposal.studentNpm,
-      department: proposal.department,
+      department: proposal.prodi,
       supervisorId: null,
       supervisorName: null,
       status: 'pending_supervisor',
@@ -145,7 +145,8 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
     role: UserRole,
     npm: string,
     nidn: string,
-    department: string
+    department: string,
+    isVerified: boolean = true
   ) => {
     const updatedUsers = users.map(user => {
       if (user.id === userId) {
@@ -155,7 +156,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           npm: role === 'student' ? npm : undefined,
           nidn: role === 'lecturer' ? nidn : undefined,
           department: department || user.department,
-          isVerified: true
+          isVerified
         };
       }
       return user;
@@ -163,7 +164,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
 
     DB.saveUsers(updatedUsers);
     setUsers(updatedUsers);
-    toast.success('Hak akses pengguna berhasil diperbarui.');
+    toast.success('Data & status verifikasi pengguna berhasil diperbarui.');
     onRefresh();
   };
 

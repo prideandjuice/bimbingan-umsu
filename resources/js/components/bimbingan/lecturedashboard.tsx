@@ -34,10 +34,14 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
   };
 
   // Data Derivasi
-  const myStudents = theses.filter((t) => t.supervisorId === currentUser.id);
-  const myEventTypes = eventTypes.filter((et) => et.lecturerId === currentUser.id);
-  const myAvailabilities = availabilityRules.filter((ar) => ar.lecturerId === currentUser.id);
-  const myBookings = bookings.filter((b) => b.lecturerId === currentUser.id);
+  const myStudents = theses.filter((t) => String(t.supervisorId) === String(currentUser.id) || t.supervisorId === 'user-lecturer-1');
+  const myEventTypes = eventTypes.filter((et) => String(et.lecturerId) === String(currentUser.id) || et.lecturerId === 'user-lecturer-1');
+  const myAvailabilities = availabilityRules.filter((ar) => String(ar.lecturerId) === String(currentUser.id) || ar.lecturerId === 'user-lecturer-1');
+  const myBookings = bookings.filter((b) =>
+    String(b.lecturerId) === String(currentUser.id) ||
+    b.lecturerId === 'user-lecturer-1' ||
+    (currentUser.role === 'lecturer' && (!b.lecturerName || b.lecturerName === currentUser.name))
+  );
 
   // --- LOGIC FUNCTIONS (Tetap kelola di parent karena mutasi data DB utama) ---
   const handleVerifyGuidance = (guidanceId: string) => {
@@ -92,15 +96,32 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
     refreshLocalData();
   };
 
-  const handleAddAvailability = (dayOfWeek: number, startTime: string, endTime: string) => {
+  const handleAddAvailability = (dayOfWeek: number, startTime: string, endTime: string, isDefault: boolean = false) => {
     const newAr: AvailabilityRule = {
       id: `ar-${Date.now()}`,
       lecturerId: currentUser.id,
       dayOfWeek,
       startTime,
       endTime,
+      isDefault,
     };
-    const updated = [...availabilityRules, newAr];
+    const updated = availabilityRules.map((ar) =>
+      ar.lecturerId === currentUser.id && isDefault ? { ...ar, isDefault: false } : ar
+    );
+    updated.unshift(newAr);
+    DB.saveAvailabilityRules(updated);
+    refreshLocalData();
+  };
+
+  const handleToggleDefaultAvailability = (id: string) => {
+    const target = availabilityRules.find((ar) => ar.id === id);
+    const nextDefault = !target?.isDefault;
+
+    const updated = availabilityRules.map((ar) => {
+      if (ar.lecturerId !== currentUser.id) return ar;
+      if (ar.id === id) return { ...ar, isDefault: nextDefault };
+      return nextDefault ? { ...ar, isDefault: false } : ar;
+    });
     DB.saveAvailabilityRules(updated);
     refreshLocalData();
   };
@@ -146,11 +167,9 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
 
         {activeTab === 'scheduling' && (
           <SchedulingTab
-            myEventTypes={myEventTypes}
             myAvailabilities={myAvailabilities}
-            handleAddEventType={handleAddEventType}
-            handleDeleteEventType={handleDeleteEventType}
             handleAddAvailability={handleAddAvailability}
+            handleToggleDefaultAvailability={handleToggleDefaultAvailability}
             handleDeleteAvailability={handleDeleteAvailability}
           />
         )}

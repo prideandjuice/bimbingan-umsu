@@ -50,7 +50,7 @@ export default function UserIndex({
     const confirmDelete = useConfirm<UserManagementData>();
     const confirmApprove = useConfirm<UserManagementData>();
     const confirmClearSession = useConfirm<UserManagementData>();
-    
+
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [perPage, setPerPage] = useState(filters.per_page || '10');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -133,13 +133,13 @@ export default function UserIndex({
                 <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col gap-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h2 className="text-2xl font-bold tracking-tight">{t('User Management')}</h2>
+                            <h2 className="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-400">{t('User Management')}</h2>
                             <p className="text-sm text-muted-foreground">
                                 {t('Kelola pengguna sistem dan hak akses.')}
                             </p>
                         </div>
                         {can('create configuration/users') && (
-                            <Button onClick={openAdd}>
+                            <Button onClick={openAdd} className="bg-emerald-950 hover:bg-emerald-950 text-white font-semibold shadow-xs border-0">
                                 <Plus className="mr-2 h-4 w-4" /> {t('Add User')}
                             </Button>
                         )}

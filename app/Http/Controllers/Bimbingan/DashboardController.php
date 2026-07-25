@@ -127,6 +127,7 @@ class DashboardController extends Controller
                 'dayOfWeek' => (int)$a->day_of_week,
                 'startTime' => $a->start_time,
                 'endTime' => $a->end_time,
+                'isDefault' => (bool)$a->is_default,
             ];
         });
 

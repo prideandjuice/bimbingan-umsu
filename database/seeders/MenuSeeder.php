@@ -213,15 +213,6 @@ class MenuSeeder extends Seeder
         ]);
         $this->attachMenuPermission($sm, ['read', 'assign'], ['admin']);
 
-        $sm = $mmAdmin->subMenus()->updateOrCreate(['url' => $mmAdmin->url . '/verifikasi-akun'], [
-            'name' => 'Verifikasi Akun',
-            'category' => $mmAdmin->category,
-            'icon' => 'UserCheck',
-            'active' => 1,
-            'orders' => 3
-        ]);
-        $this->attachMenuPermission($sm, ['read', 'verify'], ['admin']);
-
         $sm = $mmAdmin->subMenus()->updateOrCreate(['url' => $mmAdmin->url . '/tesis-aktif'], [
             'name' => 'Skripsi Aktif',
             'category' => $mmAdmin->category,

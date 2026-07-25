@@ -89,12 +89,33 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
     refreshLocalData();
   };
 
-  // ... Pertahankan logic fungsi handleBookMeeting di sini ...
+  const onBookMeeting = (eventTypeId: string, date: string, slot: string, notes: string) => {
+    if (!myThesis) return;
+    const supervisorName = myThesis.supervisorName || 'Prof. Dr. Irwan, M.Si';
+    const newBooking: Booking = {
+      id: `booking-${Date.now()}`,
+      thesisId: myThesis.id,
+      studentId: currentUser.id,
+      studentName: currentUser.name,
+      studentNpm: currentUser.npm || 'N/A',
+      lecturerId: myThesis.supervisorId || 'user-lecturer-1',
+      lecturerName: supervisorName,
+      eventTypeId: eventTypeId || 'default-bimbingan',
+      eventTypeName: 'Konsultasi Bimbingan',
+      date,
+      timeSlot: slot,
+      status: 'pending',
+      notes,
+      createdAt: new Date().toISOString(),
+    };
+    DB.saveBookings([...bookings, newBooking]);
+    refreshLocalData();
+  };
 
   const verifiedGuidances = myGuidances.filter(g => g.status === 'verified');
   const currentProgress = verifiedGuidances.length > 0 ? Math.max(...verifiedGuidances.map(g => g.progress)) : 0;
   const mySupervisorEventTypes = myThesis?.supervisorId ? eventTypes.filter(et => et.lecturerId === myThesis.supervisorId) : [];
-  const mySupervisorAvailability = myThesis?.supervisorId ? availabilityRules.filter(ar => ar.lecturerId === myThesis.supervisorId) : [];
+  const mySupervisorAvailability = myThesis?.supervisorId ? availabilityRules.filter(ar => ar.lecturerId === myThesis.supervisorId) : availabilityRules;
 
   return (
     <div className="space-y-6" id="student-dashboard-container">
@@ -141,7 +162,7 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
             mySupervisorAvailability={mySupervisorAvailability}
             currentProgress={currentProgress}
             handleSubmitGuidance={onAddGuidanceLog}
-            handleBookMeeting={() => { /* logic */ }}
+            handleBookMeeting={onBookMeeting}
           />
 
           <StudentSidebarinfo

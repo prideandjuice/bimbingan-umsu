@@ -122,6 +122,7 @@ export interface AvailabilityRule {
     dayOfWeek: number;
     startTime: string;
     endTime: string;
+    isDefault?: boolean;
 }
 
 export interface Booking {

@@ -12,9 +12,16 @@ import {
   ChevronUp,
   AlertTriangle,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Star,
+  Plus,
+  Send,
+  X,
 } from 'lucide-react';
 import type { AppUser, Thesis, Guidance, Booking, EventType, AvailabilityRule, Proposal } from '@/types';
+import { toast } from 'sonner';
+
+const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
 interface ThesisActiveLayoutProps {
   currentUser: AppUser;
@@ -45,6 +52,12 @@ export default function ThesisActiveLayout({
 
   // Track mana sesi bimbingan yang di-expand detailnya (default: opsi pertama)
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(myGuidances[0]?.id || null);
+
+  // Booking Modal State
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedRule, setSelectedRule] = useState<AvailabilityRule | null>(null);
+  const [bookingDate, setBookingDate] = useState(new Date().toISOString().split('T')[0]);
+  const [bookingNotes, setBookingNotes] = useState('');
 
   const toggleGuidanceDetail = (id: string) => {
     setExpandedGuidanceId(prev => (prev === id ? null : id));
@@ -344,21 +357,198 @@ export default function ThesisActiveLayout({
       {/* TAB 3: Janji Temu Bimbingan */}
       {activeTab === 'bookings' && (
         <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm space-y-6 text-left">
-          <div className="border-b border-gray-100 dark:border-zinc-800 pb-4">
-            <h3 className="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-emerald-600" />
-              Janji Temu Konsultasi
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Jadwalkan sesi tatap muka atau konsultasi online dengan Dosen Pembimbing Anda.
-            </p>
+          <div className="border-b border-gray-100 dark:border-zinc-800 pb-4 flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-emerald-600" />
+                Janji Temu Konsultasi
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Jadwalkan sesi tatap muka atau konsultasi online dengan Dosen Pembimbing Anda (<strong>{myThesis.supervisorName || 'Prof. Dr. Irwan, M.Si'}</strong>).
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Jadwal ketersediaan bimbingan dosen pembimbing Anda (<strong>{myThesis.supervisorName || 'Prof. Dr. Irwan, M.Si'}</strong>) akan tampil di sini.
-            </p>
+          {/* Jadwal Ketersediaan Dosen */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider text-muted-foreground">
+              Jadwal Ketersediaan Dosen Pembimbing
+            </h4>
+
+            {mySupervisorAvailability.length === 0 ? (
+              <div className="bg-gray-50 dark:bg-zinc-900/50 border border-dashed border-gray-200 dark:border-zinc-800 rounded-2xl p-6 text-center text-xs text-muted-foreground">
+                Dosen pembimbing Anda belum mengatur jadwal ketersediaan jam bimbingan.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {mySupervisorAvailability.map((rule) => (
+                  <div
+                    key={rule.id}
+                    className={`bg-white dark:bg-zinc-900 border ${
+                      rule.isDefault
+                        ? 'border-emerald-200 dark:border-emerald-900/60 shadow-xs'
+                        : 'border-gray-100 dark:border-zinc-800'
+                    } rounded-2xl p-4 space-y-3 flex flex-col justify-between`}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+                          {DAY_NAMES[rule.dayOfWeek] || 'Hari'}
+                        </span>
+
+                        {rule.isDefault ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-900/50">
+                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                            Jadwal Utama Dosen
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 text-[10px] font-medium">
+                            Jadwal Cadangan
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-gray-800 dark:text-gray-200">
+                        <Clock className="w-4 h-4 text-emerald-600" />
+                        <span>{rule.startTime} - {rule.endTime} WIB</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setSelectedRule(rule);
+                        setShowBookingModal(true);
+                      }}
+                      className="w-full py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Ajukan Janji Temu</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Riwayat Janji Temu Mahasiswa */}
+          <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 space-y-3">
+            <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider text-muted-foreground">
+              Riwayat Pengajuan Janji Temu Saya ({myBookings.length})
+            </h4>
+
+            {myBookings.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Belum ada pengajuan janji temu.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {myBookings.map((b) => (
+                  <div
+                    key={b.id}
+                    className="bg-gray-50/70 dark:bg-zinc-800/30 border border-gray-100 dark:border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900 dark:text-white">{b.lecturerName}</span>
+                        <span className="font-mono text-muted-foreground">• {b.date} ({b.timeSlot})</span>
+                      </div>
+                      {b.notes && <p className="text-muted-foreground text-[11px] font-light">"{b.notes}"</p>}
+                    </div>
+
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1 rounded-full shrink-0 self-start sm:self-auto ${
+                      b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                      b.status === 'rejected' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
+                      b.status === 'completed' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                      'bg-amber-100 text-amber-800 border border-amber-200'
+                    }`}>
+                      {b.status === 'confirmed' ? '✓ Disetujui Dosen' :
+                       b.status === 'rejected' ? '✕ Ditolak Dosen' :
+                       b.status === 'completed' ? '✔️ Selesai' :
+                       '⏳ Menunggu Konfirmasi Dosen'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Modal Form Ajukan Janji Temu */}
+          {showBookingModal && selectedRule && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center">
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base text-gray-900 dark:text-white">
+                        Ajukan Janji Temu Bimbingan
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        {DAY_NAMES[selectedRule.dayOfWeek]} ({selectedRule.startTime} - {selectedRule.endTime})
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowBookingModal(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!bookingDate) return;
+                    handleBookMeeting(
+                      'default-session',
+                      bookingDate,
+                      `${selectedRule.startTime} - ${selectedRule.endTime}`,
+                      bookingNotes
+                    );
+                    setShowBookingModal(false);
+                    setBookingNotes('');
+                    toast.success('Pengajuan janji temu bimbingan berhasil dikirim ke Dosen Pembimbing!');
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                      Pilih Tanggal Pertemuan
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={bookingDate}
+                      onChange={(e) => setBookingDate(e.target.value)}
+                      className="w-full p-3 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                      Catatan / Topik Konsultasi (Opsional)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={bookingNotes}
+                      onChange={(e) => setBookingNotes(e.target.value)}
+                      placeholder="Misal: Konsultasi perbaikan Bab 2 dan instrumen kuesioner..."
+                      className="w-full p-3 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Kirim Pengajuan Janji Temu</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

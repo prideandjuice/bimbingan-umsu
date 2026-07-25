@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Observers\AvailabilityObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+#[ObservedBy([AvailabilityObserver::class])]
 class Availability extends Model
 {
     use HasFactory;
