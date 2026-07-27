@@ -46,7 +46,7 @@ export default function TableAction({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button size="sm">
+                <Button size="sm" className="bg-emerald-950 hover:bg-emerald-950 text-white font-semibold shadow-xs border-0">
                     Action <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>

@@ -32,25 +32,47 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
     const match = url.match(/^\/(cms|lecturer|mahasiswa|dosen|kaprodi|admin)/);
     const prefix = match ? match[0] : '';
 
+    const userRole = auth.user?.role || (auth.user as any)?.roles?.[0]?.name;
+    const isStudent = userRole === 'student' || auth.user?.email?.includes('student') || Boolean((auth.user as any)?.npm);
+    const isLecturer = userRole === 'lecturer' || auth.user?.email?.includes('lecturer') || Boolean((auth.user as any)?.nidn);
+    const hasSidebarNav = isStudent || isLecturer;
+
     // Parse DB menus to NavItems
-    const dynamicNavItems: NavItem[] = sidebarData.map((menu: any) => {
-        const DynamicIcon = (LucideIcons[menu.icon as keyof typeof LucideIcons] as LucideIcon) || LayoutGrid;
-        return {
-            title: t(menu.name),
-            url: menu.url === 'dashboard' ? route('dashboard') : `${prefix}/${menu.url}`,
-            icon: DynamicIcon,
-            items: menu.sub_menus && menu.sub_menus.length > 0
-                ? menu.sub_menus.map((sub: any) => ({
-                    title: t(sub.name),
-                    url: `${prefix}/${sub.url}`,
-                    icon: sub.icon ? (LucideIcons[sub.icon as keyof typeof LucideIcons] as LucideIcon) : undefined,
-                }))
-                : undefined,
-        };
-    });
+    const dynamicNavItems: NavItem[] = sidebarData
+        .filter((menu: any) => {
+            if (hasSidebarNav) {
+                // Filter out 'mahasiswa' / 'Akademik Mahasiswa' / 'dosen' / 'Portal Dosen' topbar menu for roles with sidebar nav
+                if (
+                    menu.url === 'mahasiswa' ||
+                    menu.name === 'Akademik Mahasiswa' ||
+                    menu.url === 'dosen' ||
+                    menu.name === 'Portal Dosen' ||
+                    menu.url === 'dashboard'
+                ) {
+                    return false;
+                }
+            }
+            return true;
+        })
+        .map((menu: any) => {
+            const DynamicIcon = (LucideIcons[menu.icon as keyof typeof LucideIcons] as LucideIcon) || LayoutGrid;
+            const mainUrl = menu.url === 'dashboard' ? route('dashboard') : (menu.url.startsWith('/') ? menu.url : `/${menu.url}`);
+            return {
+                title: t(menu.name),
+                url: mainUrl,
+                icon: DynamicIcon,
+                items: menu.sub_menus && menu.sub_menus.length > 0
+                    ? menu.sub_menus.map((sub: any) => ({
+                        title: t(sub.name),
+                        url: sub.url.startsWith('/') ? sub.url : `/${sub.url}`,
+                        icon: sub.icon ? (LucideIcons[sub.icon as keyof typeof LucideIcons] as LucideIcon) : undefined,
+                    }))
+                    : undefined,
+            };
+        });
 
     const allNavItems = [
-        { title: 'Dashboard', url: route('dashboard'), icon: LayoutGrid },
+        ...(!hasSidebarNav ? [{ title: 'Dashboard', url: route('dashboard'), icon: LayoutGrid }] : []),
         ...dynamicNavItems,
     ];
 

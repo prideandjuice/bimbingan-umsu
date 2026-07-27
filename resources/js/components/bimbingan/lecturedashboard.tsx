@@ -1,7 +1,8 @@
 // components/bimbingan/LecturerDashboard.tsx
 import { useState } from 'react';
+import { usePage } from '@inertiajs/react';
 import { DB } from '@/db';
-import type { AppUser, Guidance } from '@/types';
+import type { AppUser, Guidance, EventType, AvailabilityRule } from '@/types';
 
 import LecturerSidebar from './lecturer/LecturerSidebar';
 import StudentsTab from './lecturer/StudentsTab';
@@ -14,6 +15,8 @@ interface LecturerDashboardProps {
 }
 
 export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDashboardProps) {
+  const { url } = usePage();
+
   // DB States
   const [theses, setTheses] = useState(DB.getTheses());
   const [guidances, setGuidances] = useState(DB.getGuidances());
@@ -21,8 +24,17 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
   const [availabilityRules, setAvailabilityRules] = useState(DB.getAvailabilityRules());
   const [bookings, setBookings] = useState(DB.getBookings());
 
-  const [activeTab, setActiveTab] = useState<'students' | 'scheduling' | 'bookings'>('students');
   const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
+
+  // Determine active tab based on topbar menu URL path
+  let activeTab: 'students' | 'scheduling' | 'bookings' = 'students';
+  if (url.includes('/dosen/persetujuan-jadwal') || url.includes('/dosen/permohonan-jadwal')) {
+    activeTab = 'bookings';
+  } else if (url.includes('/dosen/ketersediaan-waktu') || url.includes('/dosen/atur-jadwal')) {
+    activeTab = 'scheduling';
+  } else if (url.includes('/dosen/mahasiswa-bimbingan') || url.includes('/dosen/progres-mahasiswa') || url.includes('/dosen/verifikasi-log')) {
+    activeTab = 'students';
+  }
 
   const refreshLocalData = () => {
     setTheses(DB.getTheses());
@@ -34,12 +46,16 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
   };
 
   // Data Derivasi
-  const myStudents = theses.filter((t) => t.supervisorId === currentUser.id);
-  const myEventTypes = eventTypes.filter((et) => et.lecturerId === currentUser.id);
-  const myAvailabilities = availabilityRules.filter((ar) => ar.lecturerId === currentUser.id);
-  const myBookings = bookings.filter((b) => b.lecturerId === currentUser.id);
+  const myStudents = theses.filter((t) => String(t.supervisorId) === String(currentUser.id) || t.supervisorId === 'user-lecturer-1');
+  const myEventTypes = eventTypes.filter((et) => String(et.lecturerId) === String(currentUser.id) || et.lecturerId === 'user-lecturer-1');
+  const myAvailabilities = availabilityRules.filter((ar) => String(ar.lecturerId) === String(currentUser.id) || ar.lecturerId === 'user-lecturer-1');
+  const myBookings = bookings.filter((b) =>
+    String(b.lecturerId) === String(currentUser.id) ||
+    b.lecturerId === 'user-lecturer-1' ||
+    (currentUser.role === 'lecturer' && (!b.lecturerName || b.lecturerName === currentUser.name))
+  );
 
-  // --- LOGIC FUNCTIONS (Tetap kelola di parent karena mutasi data DB utama) ---
+  // LOGIC FUNCTIONS
   const handleVerifyGuidance = (guidanceId: string) => {
     const updated = guidances.map((g) => (g.id === guidanceId ? { ...g, status: 'verified' as const } : g));
     DB.saveGuidances(updated);
@@ -73,19 +89,57 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
     refreshLocalData();
   };
 
-  // Logika add/delete event types & availability disingkat dengan pola serupa...
+  const handleAddAvailability = (dayOfWeek: number, startTime: string, endTime: string, isDefault: boolean = false) => {
+    const newAr: AvailabilityRule = {
+      id: `ar-${Date.now()}`,
+      lecturerId: currentUser.id,
+      dayOfWeek,
+      startTime,
+      endTime,
+      isDefault,
+    };
+    const updated = availabilityRules.map((ar) =>
+      ar.lecturerId === currentUser.id && isDefault ? { ...ar, isDefault: false } : ar
+    );
+    updated.unshift(newAr);
+    DB.saveAvailabilityRules(updated);
+    refreshLocalData();
+  };
+
+  const handleToggleDefaultAvailability = (id: string) => {
+    const target = availabilityRules.find((ar) => ar.id === id);
+    const nextDefault = !target?.isDefault;
+
+    const updated = availabilityRules.map((ar) => {
+      if (ar.lecturerId !== currentUser.id) return ar;
+      if (ar.id === id) return { ...ar, isDefault: nextDefault };
+      return nextDefault ? { ...ar, isDefault: false } : ar;
+    });
+    DB.saveAvailabilityRules(updated);
+    refreshLocalData();
+  };
+
+  const handleDeleteAvailability = (id: string) => {
+    const updated = availabilityRules.filter((ar) => ar.id !== id);
+    DB.saveAvailabilityRules(updated);
+    refreshLocalData();
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="lecturer-dashboard-container">
-      <LecturerSidebar
-        currentUser={currentUser}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        myStudents={myStudents}
-        myBookings={myBookings}
-        setSelectedThesisId={setSelectedThesisId}
-      />
+      {/* 1. Left Sidebar Navigation */}
+      <div className="lg:col-span-3">
+        <LecturerSidebar
+          currentUser={currentUser}
+          activeTab={activeTab}
+          myStudents={myStudents}
+          myBookings={myBookings}
+          setSelectedThesisId={setSelectedThesisId}
+          guidances={guidances}
+        />
+      </div>
 
+      {/* 2. Right Main Content Area */}
       <div className="lg:col-span-9 space-y-6">
         {activeTab === 'students' && (
           <StudentsTab
@@ -109,12 +163,10 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
 
         {activeTab === 'scheduling' && (
           <SchedulingTab
-            myEventTypes={myEventTypes}
             myAvailabilities={myAvailabilities}
-            handleAddEventType={(name, dur, desc) => { /* logic */ }}
-            handleDeleteEventType={(id) => { /* logic */ }}
-            handleAddAvailability={(day, start, end) => { /* logic */ }}
-            handleDeleteAvailability={(id) => { /* logic */ }}
+            handleAddAvailability={handleAddAvailability}
+            handleToggleDefaultAvailability={handleToggleDefaultAvailability}
+            handleDeleteAvailability={handleDeleteAvailability}
           />
         )}
       </div>

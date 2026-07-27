@@ -45,7 +45,7 @@ export interface User {
 
 // ─── Domain Types ────────────────────────────────────────────────────────────
 
-export type UserRole = 'admin' | 'prodi' | 'student' | 'lecturer' | 'guest';
+export type UserRole = 'superadmin' | 'prodi' | 'student' | 'lecturer' | 'guest';
 
 export interface AppUser {
     id: string;
@@ -122,6 +122,7 @@ export interface AvailabilityRule {
     dayOfWeek: number;
     startTime: string;
     endTime: string;
+    isDefault?: boolean;
 }
 
 export interface Booking {

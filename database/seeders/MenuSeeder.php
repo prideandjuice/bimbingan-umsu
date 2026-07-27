@@ -86,13 +86,13 @@ class MenuSeeder extends Seeder
         $this->attachMenuPermission($sm, ['read', 'create', 'update', 'delete', 'approve'], ['admin']);
 
         // =========================================================================
-        // 2. KATEGORI MAHASISWA
+        // 2. KATEGORI MAHASISWA (Pindah Navigasi ke Sidebar Page)
         // =========================================================================
         $mmMahasiswa = Menu::updateOrCreate(['url' => 'mahasiswa'], [
             'name' => 'Akademik Mahasiswa',
             'category' => 'MAHASISWA',
-            'icon' => 'UserGraduation', // Or GraduationCap
-            'active' => 1,
+            'icon' => 'UserGraduation',
+            'active' => 0,
             'orders' => 2
         ]);
         $this->attachMenuPermission($mmMahasiswa, ['read'], ['student']);
@@ -135,50 +135,41 @@ class MenuSeeder extends Seeder
 
 
         // =========================================================================
-        // 3. KATEGORI DOSEN PEMBIMBING
+        // 3. KATEGORI DOSEN PEMBIMBING (Navigasi Samping Sidebar Page)
         // =========================================================================
         $mmDosen = Menu::updateOrCreate(['url' => 'dosen'], [
             'name' => 'Portal Dosen',
             'category' => 'DOSEN',
             'icon' => 'Briefcase',
-            'active' => 1,
+            'active' => 0,
             'orders' => 3
         ]);
         $this->attachMenuPermission($mmDosen, ['read'], ['lecturer']);
 
-        $sm = $mmDosen->subMenus()->updateOrCreate(['url' => $mmDosen->url . '/progres-mahasiswa'], [
-            'name' => 'Progres Mahasiswa',
+        $sm = $mmDosen->subMenus()->updateOrCreate(['url' => $mmDosen->url . '/mahasiswa-bimbingan'], [
+            'name' => 'Mahasiswa Bimbingan',
             'category' => $mmDosen->category,
-            'icon' => 'TrendingUp',
+            'icon' => 'Users',
             'active' => 1,
             'orders' => 1
         ]);
         $this->attachMenuPermission($sm, ['read'], ['lecturer']);
 
-        $sm = $mmDosen->subMenus()->updateOrCreate(['url' => $mmDosen->url . '/verifikasi-log'], [
-            'name' => 'Verifikasi Log',
-            'category' => $mmDosen->category,
-            'icon' => 'CheckCircle',
-            'active' => 1,
-            'orders' => 2
-        ]);
-        $this->attachMenuPermission($sm, ['read', 'verify'], ['lecturer']);
-
-        $sm = $mmDosen->subMenus()->updateOrCreate(['url' => $mmDosen->url . '/atur-jadwal'], [
-            'name' => 'Atur Ketersediaan',
+        $sm = $mmDosen->subMenus()->updateOrCreate(['url' => $mmDosen->url . '/ketersediaan-waktu'], [
+            'name' => 'Ketersediaan Waktu',
             'category' => $mmDosen->category,
             'icon' => 'Clock',
             'active' => 1,
-            'orders' => 3
+            'orders' => 2
         ]);
         $this->attachMenuPermission($sm, ['read', 'create', 'update', 'delete'], ['lecturer']);
 
-        $sm = $mmDosen->subMenus()->updateOrCreate(['url' => $mmDosen->url . '/permohonan-jadwal'], [
-            'name' => 'Permohonan Jadwal',
+        $sm = $mmDosen->subMenus()->updateOrCreate(['url' => $mmDosen->url . '/persetujuan-jadwal'], [
+            'name' => 'Persetujuan Jadwal',
             'category' => $mmDosen->category,
             'icon' => 'CalendarCheck',
             'active' => 1,
-            'orders' => 4
+            'orders' => 3
         ]);
         $this->attachMenuPermission($sm, ['read', 'approve', 'reject'], ['lecturer']);
 
@@ -193,7 +184,7 @@ class MenuSeeder extends Seeder
             'active' => 1,
             'orders' => 4
         ]);
-        $this->attachMenuPermission($mmAdmin, ['read'], ['admin']);
+        $this->attachMenuPermission($mmAdmin, ['read'], ['admin', 'prodi', 'superadmin']);
 
         $sm = $mmAdmin->subMenus()->updateOrCreate(['url' => $mmAdmin->url . '/seleksi-judul'], [
             'name' => 'Seleksi Judul',
@@ -202,7 +193,7 @@ class MenuSeeder extends Seeder
             'active' => 1,
             'orders' => 1
         ]);
-        $this->attachMenuPermission($sm, ['read', 'approve', 'reject'], ['admin']);
+        $this->attachMenuPermission($sm, ['read', 'approve', 'reject'], ['admin', 'prodi', 'superadmin']);
 
         $sm = $mmAdmin->subMenus()->updateOrCreate(['url' => $mmAdmin->url . '/tunjuk-dosen'], [
             'name' => 'Penunjukan Dosen',
@@ -211,24 +202,15 @@ class MenuSeeder extends Seeder
             'active' => 1,
             'orders' => 2
         ]);
-        $this->attachMenuPermission($sm, ['read', 'assign'], ['admin']);
-
-        $sm = $mmAdmin->subMenus()->updateOrCreate(['url' => $mmAdmin->url . '/verifikasi-akun'], [
-            'name' => 'Verifikasi Akun',
-            'category' => $mmAdmin->category,
-            'icon' => 'UserCheck',
-            'active' => 1,
-            'orders' => 3
-        ]);
-        $this->attachMenuPermission($sm, ['read', 'verify'], ['admin']);
+        $this->attachMenuPermission($sm, ['read', 'assign'], ['admin', 'prodi', 'superadmin']);
 
         $sm = $mmAdmin->subMenus()->updateOrCreate(['url' => $mmAdmin->url . '/tesis-aktif'], [
             'name' => 'Skripsi Aktif',
             'category' => $mmAdmin->category,
             'icon' => 'Library',
             'active' => 1,
-            'orders' => 4
+            'orders' => 3
         ]);
-        $this->attachMenuPermission($sm, ['read'], ['admin']);
+        $this->attachMenuPermission($sm, ['read'], ['admin', 'prodi', 'superadmin']);
     }
 }

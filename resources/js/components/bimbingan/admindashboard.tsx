@@ -24,11 +24,11 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
   const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'theses' | 'users'>('overview');
 
   useEffect(() => {
-    const allowedRoles = ['admin', 'prodi'];
+    const allowedRoles = ['superadmin', 'prodi'];
     if (!allowedRoles.includes(currentUser.role)) {
       setActiveTab('overview');
     }
-    if (activeTab === 'proposals' && currentUser.role !== 'prodi') {
+    if (activeTab === 'proposals' && currentUser.role !== 'prodi' && currentUser.role !== 'superadmin') {
       setActiveTab('overview');
     }
   }, [currentUser.role, activeTab]);
@@ -40,7 +40,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
     const acceptedTitleObj = proposalTitles.find(t => t.id === approvedTitleId);
     if (!acceptedTitleObj) return;
 
-    const updatedProposals = proposals.map(p => 
+    const updatedProposals = proposals.map(p =>
       p.id === proposalId ? { ...p, status: 'processed' as const } : p
     );
 
@@ -63,7 +63,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
       studentId: proposal.studentId,
       studentName: proposal.studentName,
       studentNpm: proposal.studentNpm,
-      department: proposal.department,
+      department: proposal.prodi,
       supervisorId: null,
       supervisorName: null,
       status: 'pending_supervisor',
@@ -85,14 +85,14 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
     const lecturer = users.find(u => u.id === supervisorId);
     if (!lecturer) return;
 
-    const updatedTheses = theses.map(t => 
+    const updatedTheses = theses.map(t =>
       t.id === thesisId
         ? {
-            ...t,
-            supervisorId: lecturer.id,
-            supervisorName: lecturer.name,
-            status: 'pending_sk' as const
-          }
+          ...t,
+          supervisorId: lecturer.id,
+          supervisorName: lecturer.name,
+          status: 'pending_sk' as const
+        }
         : t
     );
 
@@ -117,13 +117,13 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
       if (response.data.status === 'success') {
         const uploadedSkPath = response.data.skFile;
 
-        const updatedTheses = theses.map(t => 
+        const updatedTheses = theses.map(t =>
           t.id === thesisId
             ? {
-                ...t,
-                skFile: uploadedSkPath,
-                status: 'in_progress' as const
-              }
+              ...t,
+              skFile: uploadedSkPath,
+              status: 'in_progress' as const
+            }
             : t
         );
 
@@ -145,7 +145,8 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
     role: UserRole,
     npm: string,
     nidn: string,
-    department: string
+    department: string,
+    isVerified: boolean = true
   ) => {
     const updatedUsers = users.map(user => {
       if (user.id === userId) {
@@ -155,7 +156,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           npm: role === 'student' ? npm : undefined,
           nidn: role === 'lecturer' ? nidn : undefined,
           department: department || user.department,
-          isVerified: true
+          isVerified
         };
       }
       return user;
@@ -163,7 +164,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
 
     DB.saveUsers(updatedUsers);
     setUsers(updatedUsers);
-    toast.success('Hak akses pengguna berhasil diperbarui.');
+    toast.success('Data & status verifikasi pengguna berhasil diperbarui.');
     onRefresh();
   };
 
@@ -197,7 +198,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'proposals' && currentUser.role === 'prodi' && (
+        {activeTab === 'proposals' && (currentUser.role === 'prodi' || currentUser.role === 'superadmin') && (
           <ProposalsTab
             proposals={proposals}
             proposalTitles={proposalTitles}
@@ -205,7 +206,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'theses' && (currentUser.role === 'prodi' || currentUser.role === 'admin') && (
+        {activeTab === 'theses' && (currentUser.role === 'prodi' || currentUser.role === 'admin' || currentUser.role === 'superadmin') && (
           <ThesesTab
             theses={theses}
             currentUser={currentUser}
@@ -215,7 +216,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'users' && (currentUser.role === 'admin' || currentUser.role === 'prodi') && (
+        {activeTab === 'users' && (currentUser.role === 'admin' || currentUser.role === 'prodi' || currentUser.role === 'superadmin') && (
           <UsersTab
             users={users}
             currentUser={currentUser}

@@ -19,10 +19,18 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $users = User::all()->map(function ($u) {
+        $users = User::with('roles')->get()->map(function ($u) {
+            //User::all(): Mengambil semua record dari tabel users di database.
+            //->map(function ($u): Memproses/mengubah setiap objek user satu per satu (dimana $u adalah satu individu user) di dalam memory sebelum dikembalikan ke variabel $users.
             $role = $u->roles->first()?->name;
+            //$u->roles: Mengakses relasi Eloquent roles milik user tersebut (biasanya menggunakan paket seperti Spatie Permission)
+            //->first(): Mengambil role pertama yang dimiliki oleh user.
             if (!$role || $role === 'guest') {
                 $role = 'student';
+                //Jika user tidak memiliki role (nilainya null atau kosong).
+                //atau jika role-nya adalah 'guest', maka akan diubah menjadi 'student'.
+                //Ini digunakan sebagai fallback untuk memastikan setiap user memiliki role yang valid untuk aplikasi.
+                //Secara implisit, ini menetapkan 'student' sebagai role default bagi pengguna baru jika tidak ada role lain yang ditugaskan. 
             }
 
             return [
@@ -119,6 +127,7 @@ class DashboardController extends Controller
                 'dayOfWeek' => (int)$a->day_of_week,
                 'startTime' => $a->start_time,
                 'endTime' => $a->end_time,
+                'isDefault' => (bool)$a->is_default,
             ];
         });
 

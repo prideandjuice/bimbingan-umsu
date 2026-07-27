@@ -7,7 +7,7 @@ import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, EventType, Ava
 import axios from 'axios';
 
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
-const DB_VERSION = '7';
+const DB_VERSION = '11';
 const VERSION_KEY = 'db_version';
 
 const KEYS = {
@@ -42,7 +42,7 @@ const SEED_USERS: AppUser[] = [
         id: 'user-admin-1',
         name: 'Super Admin',
         email: 'admin@umsu.ac.id',
-        role: 'admin',
+        role: 'superadmin',
         isVerified: true,
         avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
     },
@@ -85,42 +85,41 @@ const SEED_USERS: AppUser[] = [
     },
 ];
 
-const SEED_PROPOSALS: Proposal[] = [
+const SEED_PROPOSALS: Proposal[] = [];
+
+const SEED_PROPOSAL_TITLES: ProposalTitle[] = [];
+
+const SEED_EVENT_TYPES: EventType[] = [
     {
-        id: 'prop-demo-1',
-        studentId: 'user-student-1',
-        studentName: 'Mahasiswa Demo',
-        studentNpm: '2210000001',
-        department: 'Magister Ilmu Komunikasi',
-        abstract: 'Analisis strategi komunikasi digital dalam meningkatkan brand awareness dan keterlibatan publik pada institusi akademis.',
-        status: 'pending',
-        createdAt: new Date().toISOString(),
+        id: 'et-1',
+        lecturerId: 'user-lecturer-1',
+        name: 'Konsultasi Bimbingan Proposal',
+        duration: 30,
+        description: 'Sesi review draft proposal skripsi dan perumusan latar belakang masalah.',
+    },
+    {
+        id: 'et-2',
+        lecturerId: 'user-lecturer-1',
+        name: 'Review Bab IV & V (Hasil & Pembahasan)',
+        duration: 45,
+        description: 'Sesi evaluasi mendalam hasil analisa data dan pembahasan sebelum Ujian Skripsi.',
+    },
+    {
+        id: 'et-3',
+        lecturerId: 'user-lecturer-1',
+        name: 'Persetujuan Sidang Skripsi',
+        duration: 20,
+        description: 'Verifikasi kelengkapan berkas skripsi akhir dan tanda tangan persetujuan sidang.',
     },
 ];
 
-const SEED_PROPOSAL_TITLES: ProposalTitle[] = [
-    {
-        id: 'title-demo-1',
-        proposalId: 'prop-demo-1',
-        title: 'Strategi Komunikasi Digital Kampus dalam Era Transformasi Teknologi Informasi',
-        abstract: 'Penelitian ini berfokus pada analisis strategi komunikasi pemasaran digital yang diterapkan oleh institusi pendidikan tinggi dalam membangun brand equity dan meningkatkan interaksi publik di media sosial.',
-        status: 'PENDING',
-    },
-    {
-        id: 'title-demo-2',
-        proposalId: 'prop-demo-1',
-        title: 'Analisis Pola Komunikasi Organisasi pada Manajemen Pelayanan Akademik Publik',
-        abstract: 'Studi ini meneliti efektivitas aliran informasi internal antara dosen, tenaga kependidikan, dan mahasiswa dalam mengoptimalkan kualitas pelayanan akademik berbasis sistem digital.',
-        status: 'PENDING',
-    },
-    {
-        id: 'title-demo-3',
-        proposalId: 'prop-demo-1',
-        title: 'Pengaruh Media Sosial Instagram terhadap Persepsi Reputasi Lembaga Akademik',
-        abstract: 'Penelitian kuantitatif yang menguji korelasi antara intensitas publikasi konten edukatif di Instagram dengan persepsi keunggulan reputasi institusi di mata mahasiswa baru.',
-        status: 'PENDING',
-    },
+const SEED_AVAILABILITY_RULES: AvailabilityRule[] = [
+    { id: 'ar-1', lecturerId: 'user-lecturer-1', dayOfWeek: 1, startTime: '09:00', endTime: '12:00' },
+    { id: 'ar-2', lecturerId: 'user-lecturer-1', dayOfWeek: 3, startTime: '13:00', endTime: '16:00' },
+    { id: 'ar-3', lecturerId: 'user-lecturer-1', dayOfWeek: 5, startTime: '09:00', endTime: '11:30' },
 ];
+
+const SEED_BOOKINGS: Booking[] = [];
 
 function seedIfEmpty(): void {
     if (!localStorage.getItem(KEYS.users)) {
@@ -133,9 +132,9 @@ function seedIfEmpty(): void {
     if (!localStorage.getItem(KEYS.proposalTitles)) set(KEYS.proposalTitles, SEED_PROPOSAL_TITLES);
     if (!localStorage.getItem(KEYS.theses)) set(KEYS.theses, []);
     if (!localStorage.getItem(KEYS.guidances)) set(KEYS.guidances, []);
-    if (!localStorage.getItem(KEYS.eventTypes)) set(KEYS.eventTypes, []);
-    if (!localStorage.getItem(KEYS.availabilityRules)) set(KEYS.availabilityRules, []);
-    if (!localStorage.getItem(KEYS.bookings)) set(KEYS.bookings, []);
+    if (!localStorage.getItem(KEYS.eventTypes)) set(KEYS.eventTypes, SEED_EVENT_TYPES);
+    if (!localStorage.getItem(KEYS.availabilityRules)) set(KEYS.availabilityRules, SEED_AVAILABILITY_RULES);
+    if (!localStorage.getItem(KEYS.bookings)) set(KEYS.bookings, SEED_BOOKINGS);
 }
 
 // Jika versi DB berbeda → hapus semua data lama lalu seed ulang
@@ -191,21 +190,21 @@ export const DB = {
     },
 
     // Event Types
-    getEventTypes: (): EventType[] => get<EventType[]>(KEYS.eventTypes, []),
+    getEventTypes: (): EventType[] => get<EventType[]>(KEYS.eventTypes, SEED_EVENT_TYPES),
     saveEventTypes: (types: EventType[]): void => {
         set(KEYS.eventTypes, types);
         axios.post('/bimbingan/sync/event-types', { eventTypes: types }).catch(err => console.error(err));
     },
 
     // Availability Rules
-    getAvailabilityRules: (): AvailabilityRule[] => get<AvailabilityRule[]>(KEYS.availabilityRules, []),
+    getAvailabilityRules: (): AvailabilityRule[] => get<AvailabilityRule[]>(KEYS.availabilityRules, SEED_AVAILABILITY_RULES),
     saveAvailabilityRules: (rules: AvailabilityRule[]): void => {
         set(KEYS.availabilityRules, rules);
         axios.post('/bimbingan/sync/availability-rules', { availabilityRules: rules }).catch(err => console.error(err));
     },
 
     // Bookings
-    getBookings: (): Booking[] => get<Booking[]>(KEYS.bookings, []),
+    getBookings: (): Booking[] => get<Booking[]>(KEYS.bookings, SEED_BOOKINGS),
     saveBookings: (bookings: Booking[]): void => {
         set(KEYS.bookings, bookings);
         axios.post('/bimbingan/sync/bookings', { bookings }).catch(err => console.error(err));
