@@ -218,10 +218,10 @@ export default function ThesesTab({
                   )}
                 </div>
 
-                {/* Actions Block */}
+                  {/* Actions Block */}
                 {thesis.status === 'pending_supervisor' && (
                   <div className="w-full md:w-auto text-right">
-                    {currentUser.role === 'prodi' ? (
+                    {(currentUser.role === 'prodi' || currentUser.role === 'superadmin') ? (
                       selectedThesisId === thesis.id ? (
                         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full">
                           <div className="flex flex-col gap-2 w-full md:w-auto">
@@ -307,7 +307,7 @@ export default function ThesesTab({
 
                 {thesis.status === 'pending_sk' && (
                   <div className="w-full md:w-auto text-right">
-                    {currentUser.role === 'admin' ? (
+                    {(currentUser.role === 'admin' || currentUser.role === 'superadmin') ? (
                       uploadingSkThesisId === thesis.id ? (
                         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full">
                           <div className="flex items-center gap-2 flex-1">
