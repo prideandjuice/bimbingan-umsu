@@ -13,7 +13,8 @@ import {
   FileCheck2,
   Calendar,
   Sparkles,
-  Plus
+  Plus,
+  UserCheck,
 } from 'lucide-react';
 import type { AppUser, Guidance, Thesis } from '@/types';
 
@@ -269,14 +270,48 @@ export default function StudentsTab({
   // --- TAMPILAN UTAMA (LECTURER OVERVIEW DASHBOARD SAMA SEPERTI PROTOTYPE SCREENSHOT) ---
   return (
     <div className="space-y-6 text-left">
-      {/* 1. Header Welcome Dosen */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Selamat Datang, {currentUser.name}
-        </h1>
-        <p className="text-xs md:text-sm text-muted-foreground font-light mt-1">
-          Berikut adalah ringkasan progres bimbingan skripsi mahasiswa Anda hari ini.
-        </p>
+      {/* 1. Premium Header Welcome Banner Dosen */}
+      <div className="bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 text-white rounded-3xl p-6 md:p-8 shadow-xl shadow-emerald-900/10 relative overflow-hidden text-left">
+        {/* Background Ambient Glow Accent */}
+        <div className="absolute -right-12 -bottom-12 w-56 h-56 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-1/3 -top-10 w-36 h-36 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-inner">
+              <UserCheck className="w-7 h-7 md:w-8 md:h-8 text-emerald-200" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 bg-emerald-500/30 backdrop-blur-md border border-emerald-300/30 text-emerald-100 text-[11px] font-bold px-3 py-0.5 rounded-full">
+                  <Sparkles className="w-3 h-3 text-amber-300" />
+                  Portal Dosen Pembimbing
+                </span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
+                Selamat Datang, {currentUser.name}
+              </h1>
+              <p className="text-xs md:text-sm text-emerald-100/80 font-light">
+                Berikut adalah ringkasan progres bimbingan skripsi mahasiswa Anda hari ini.
+              </p>
+            </div>
+          </div>
+
+          {/* Highlighted NIDN Badge */}
+          <div className="flex items-center gap-3 shrink-0 self-start md:self-auto">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-sm">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/30 border border-emerald-300/30 flex items-center justify-center text-emerald-200">
+                <FileCheck2 className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-emerald-300 tracking-wider block">NIDN RESMI</span>
+                <span className="text-sm font-extrabold font-mono text-white tracking-wide">
+                  {currentUser.nidn || '0012345678'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 2. Stat Cards Grid (3 Cards) */}

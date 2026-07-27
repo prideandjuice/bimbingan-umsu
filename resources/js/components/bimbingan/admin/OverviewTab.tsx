@@ -28,7 +28,7 @@ export default function OverviewTab({
             Selamat Datang, {currentUser.name}
           </h1>
           <p className="text-emerald-100 text-sm mt-2 font-light">
-            {currentUser.role === 'admin'
+            {currentUser.role === 'superadmin'
               ? 'Kelola verifikasi akun pengguna baru dan terbitkan berkas SK bimbingan mahasiswa secara terintegrasi.'
               : 'Kelola pengajuan judul skripsi mahasiswa dan tunjuk dosen pembimbing terbaik secara terintegrasi.'}
           </p>

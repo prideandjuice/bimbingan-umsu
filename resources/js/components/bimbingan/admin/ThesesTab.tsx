@@ -81,7 +81,7 @@ export default function ThesesTab({
             Daftar seluruh judul skripsi yang telah disetujui. Tunjuk dosen pembimbing berkompeten untuk memulai masa bimbingan.
           </p>
         </div>
-        
+
         <div className="flex gap-2 flex-wrap">
           {pendingSupervisors > 0 && (
             <div className="bg-red-50 text-red-700 border border-red-100 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shrink-0">
@@ -147,254 +147,254 @@ export default function ThesesTab({
           </div>
         ) : (
           filteredTheses.map(thesis => {
-          const LecturersList = lecturers;
-          const isPendingSupervisor = thesis.status === 'pending_supervisor';
-          const studentGuidances = DB.getGuidances().filter(g => g.thesisId === thesis.id && g.status === 'verified');
-          const currentProgress = studentGuidances.length > 0 
-            ? Math.max(...studentGuidances.map(g => g.progress)) 
-            : 0;
+            const LecturersList = lecturers;
+            const isPendingSupervisor = thesis.status === 'pending_supervisor';
+            const studentGuidances = DB.getGuidances().filter(g => g.thesisId === thesis.id && g.status === 'verified');
+            const currentProgress = studentGuidances.length > 0
+              ? Math.max(...studentGuidances.map(g => g.progress))
+              : 0;
 
-          return (
-            <div key={thesis.id} className="border border-gray-100 rounded-2xl p-5 hover:border-gray-200 transition-all bg-white shadow-3xs">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex-1 text-left">
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="bg-emerald-50 text-emerald-700 font-bold text-3xs px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-                      {thesis.department}
-                    </span>
-                    {thesis.status === 'pending_supervisor' && (
-                      <span className="bg-red-50 text-red-600 border border-red-100 text-3xs px-2.5 py-0.5 rounded-md font-semibold flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Menunggu Pembimbing
+            return (
+              <div key={thesis.id} className="border border-gray-100 rounded-2xl p-5 hover:border-gray-200 transition-all bg-white shadow-3xs">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="bg-emerald-50 text-emerald-700 font-bold text-3xs px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                        {thesis.department}
                       </span>
-                    )}
-                    {thesis.status === 'pending_sk' && (
-                      <span className="bg-amber-50 text-amber-600 border border-amber-100 text-3xs px-2.5 py-0.5 rounded-md font-semibold flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Menunggu SK Admin
-                      </span>
-                    )}
-                    {thesis.status === 'in_progress' && (
-                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-3xs px-2.5 py-0.5 rounded-md font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Masa Bimbingan ({currentProgress}%)
-                      </span>
+                      {thesis.status === 'pending_supervisor' && (
+                        <span className="bg-red-50 text-red-600 border border-red-100 text-3xs px-2.5 py-0.5 rounded-md font-semibold flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Menunggu Pembimbing
+                        </span>
+                      )}
+                      {thesis.status === 'pending_sk' && (
+                        <span className="bg-amber-50 text-amber-600 border border-amber-100 text-3xs px-2.5 py-0.5 rounded-md font-semibold flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Menunggu SK Admin
+                        </span>
+                      )}
+                      {thesis.status === 'in_progress' && (
+                        <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-3xs px-2.5 py-0.5 rounded-md font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Masa Bimbingan ({currentProgress}%)
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-display font-bold text-gray-900 text-base leading-relaxed">
+                      {thesis.title}
+                    </h3>
+                    <p className="text-xs text-gray-500 font-medium mt-1">
+                      Mahasiswa: <span className="text-gray-800 font-semibold">{thesis.studentName}</span> ({thesis.studentNpm})
+                    </p>
+
+                    {/* Badge SK File */}
+                    {thesis.skFile && (
+                      <div className="mt-2.5 inline-flex items-center gap-2 text-xs font-medium text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                        <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>SK Bimbingan: <strong>{thesis.skFile.split('/').pop()}</strong></span>
+                        <a
+                          href={`/${thesis.skFile}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-emerald-700 hover:text-emerald-900 font-semibold flex items-center gap-0.5 ml-1 underline"
+                          title="Unduh SK Bimbingan"
+                        >
+                          <Download className="w-3 h-3" /> Unduh
+                        </a>
+                      </div>
                     )}
                   </div>
-                  <h3 className="font-display font-bold text-gray-900 text-base leading-relaxed">
-                    {thesis.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 font-medium mt-1">
-                    Mahasiswa: <span className="text-gray-800 font-semibold">{thesis.studentName}</span> ({thesis.studentNpm})
-                  </p>
-
-                  {/* Badge SK File */}
-                  {thesis.skFile && (
-                    <div className="mt-2.5 inline-flex items-center gap-2 text-xs font-medium text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
-                      <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>SK Bimbingan: <strong>{thesis.skFile.split('/').pop()}</strong></span>
-                      <a
-                        href={`/${thesis.skFile}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-emerald-700 hover:text-emerald-900 font-semibold flex items-center gap-0.5 ml-1 underline"
-                        title="Unduh SK Bimbingan"
-                      >
-                        <Download className="w-3 h-3" /> Unduh
-                      </a>
-                    </div>
-                  )}
                 </div>
-              </div>
 
-              {/* Supervisor Section */}
-              <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="text-left">
-                  <p className="text-3xs font-bold uppercase text-gray-400 tracking-wider">Dosen Pembimbing Utama</p>
-                  {thesis.supervisorName ? (
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      <p className="text-sm text-gray-800 font-semibold">{thesis.supervisorName}</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 font-medium italic mt-1">Belum ditunjuk.</p>
-                  )}
-                </div>
+                {/* Supervisor Section */}
+                <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="text-left">
+                    <p className="text-3xs font-bold uppercase text-gray-400 tracking-wider">Dosen Pembimbing Utama</p>
+                    {thesis.supervisorName ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <p className="text-sm text-gray-800 font-semibold">{thesis.supervisorName}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 font-medium italic mt-1">Belum ditunjuk.</p>
+                    )}
+                  </div>
 
                   {/* Actions Block */}
-                {thesis.status === 'pending_supervisor' && (
-                  <div className="w-full md:w-auto text-right">
-                    {(currentUser.role === 'prodi' || currentUser.role === 'superadmin') ? (
-                      selectedThesisId === thesis.id ? (
-                        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full">
-                          <div className="flex flex-col gap-2 w-full md:w-auto">
-                            <div className="relative">
-                              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
-                              <input
-                                type="text"
-                                placeholder="Cari nama dosen..."
-                                value={lecturerSearch}
-                                onChange={(e) => setLecturerSearch(e.target.value)}
-                                className="pl-8 pr-2 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:outline-none w-full md:w-60 text-gray-800"
-                              />
+                  {thesis.status === 'pending_supervisor' && (
+                    <div className="w-full md:w-auto text-right">
+                      {(currentUser.role === 'prodi' || currentUser.role === 'superadmin') ? (
+                        selectedThesisId === thesis.id ? (
+                          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full">
+                            <div className="flex flex-col gap-2 w-full md:w-auto">
+                              <div className="relative">
+                                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
+                                <input
+                                  type="text"
+                                  placeholder="Cari nama dosen..."
+                                  value={lecturerSearch}
+                                  onChange={(e) => setLecturerSearch(e.target.value)}
+                                  className="pl-8 pr-2 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:outline-none w-full md:w-60 text-gray-800"
+                                />
+                              </div>
+                              <select
+                                value={selectedSupervisorId}
+                                onChange={(e) => setSelectedSupervisorId(e.target.value)}
+                                className="text-xs bg-white border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none w-full md:w-60 text-gray-800"
+                              >
+                                <option value="">-- Pilih Dosen Pembimbing --</option>
+                                {LecturersList.filter(lecturer =>
+                                  lecturer.name.toLowerCase().includes(lecturerSearch.toLowerCase()) ||
+                                  (lecturer.nidn && lecturer.nidn.includes(lecturerSearch))
+                                ).map(lecturer => {
+                                  const quotaCount = getLecturerQuota(lecturer.id);
+                                  const isNearLimit = quotaCount >= 6;
+                                  const isFull = quotaCount >= 8;
+                                  let statusText = `Bimbingan: ${quotaCount}/8`;
+                                  if (isFull) statusText += ' (Penuh)';
+                                  else if (isNearLimit) statusText += ' (Hampir Penuh)';
+                                  return (
+                                    <option key={lecturer.id} value={lecturer.id} disabled={isFull}>
+                                      {lecturer.name} ({statusText})
+                                    </option>
+                                  );
+                                })}
+                              </select>
                             </div>
-                            <select
-                              value={selectedSupervisorId}
-                              onChange={(e) => setSelectedSupervisorId(e.target.value)}
-                              className="text-xs bg-white border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none w-full md:w-60 text-gray-800"
-                            >
-                              <option value="">-- Pilih Dosen Pembimbing --</option>
-                              {LecturersList.filter(lecturer => 
-                                lecturer.name.toLowerCase().includes(lecturerSearch.toLowerCase()) ||
-                                (lecturer.nidn && lecturer.nidn.includes(lecturerSearch))
-                              ).map(lecturer => {
-                                const quotaCount = getLecturerQuota(lecturer.id);
-                                const isNearLimit = quotaCount >= 6;
-                                const isFull = quotaCount >= 8;
-                                let statusText = `Bimbingan: ${quotaCount}/8`;
-                                if (isFull) statusText += ' (Penuh)';
-                                else if (isNearLimit) statusText += ' (Hampir Penuh)';
-                                return (
-                                  <option key={lecturer.id} value={lecturer.id} disabled={isFull}>
-                                    {lecturer.name} ({statusText})
-                                  </option>
-                                );
-                              })}
-                            </select>
+                            <div className="flex gap-1 shrink-0 self-end md:self-auto">
+                              <button
+                                onClick={() => {
+                                  handleAssignSupervisor(thesis.id, selectedSupervisorId);
+                                  setSelectedThesisId(null);
+                                  setSelectedSupervisorId('');
+                                  setLecturerSearch('');
+                                }}
+                                disabled={!selectedSupervisorId}
+                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                              >
+                                Simpan
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedThesisId(null);
+                                  setSelectedSupervisorId('');
+                                  setLecturerSearch('');
+                                }}
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                              >
+                                Batal
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex gap-1 shrink-0 self-end md:self-auto">
-                            <button
-                              onClick={() => {
-                                handleAssignSupervisor(thesis.id, selectedSupervisorId);
-                                setSelectedThesisId(null);
-                                setSelectedSupervisorId('');
-                                setLecturerSearch('');
-                              }}
-                              disabled={!selectedSupervisorId}
-                              className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
-                            >
-                              Simpan
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedThesisId(null);
-                                setSelectedSupervisorId('');
-                                setLecturerSearch('');
-                              }}
-                              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
-                            >
-                              Batal
-                            </button>
-                          </div>
-                        </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedThesisId(thesis.id);
+                              setSelectedSupervisorId('');
+                              setLecturerSearch('');
+                            }}
+                            className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            Tunjuk Pembimbing
+                          </button>
+                        )
                       ) : (
-                        <button
-                          onClick={() => {
-                            setSelectedThesisId(thesis.id);
-                            setSelectedSupervisorId('');
-                            setLecturerSearch('');
-                          }}
-                          className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                        >
-                          <UserPlus className="w-3.5 h-3.5" />
-                          Tunjuk Pembimbing
-                        </button>
-                      )
-                    ) : (
-                      <p className="text-xs text-gray-500 font-medium italic">
-                        Menunggu penunjukan dosen pembimbing oleh Kaprodi.
-                      </p>
-                    )}
-                  </div>
-                )}
+                        <p className="text-xs text-gray-500 font-medium italic">
+                          Menunggu penunjukan dosen pembimbing oleh Kaprodi.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
-                {thesis.status === 'pending_sk' && (
-                  <div className="w-full md:w-auto text-right">
-                    {(currentUser.role === 'admin' || currentUser.role === 'superadmin') ? (
-                      uploadingSkThesisId === thesis.id ? (
-                        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full">
-                          <div className="flex items-center gap-2 flex-1">
-                            <label className="px-3 py-1.5 bg-gray-100 hover:bg-gray-250 rounded-lg text-xs font-semibold text-gray-700 flex items-center gap-1.5 cursor-pointer shrink-0 border border-gray-205">
-                              <FileUp className="w-3.5 h-3.5 text-emerald-600" />
-                              {selectedSkFile ? 'Ganti File PDF' : 'Pilih File PDF'}
-                              <input
-                                type="file"
-                                accept=".pdf"
-                                className="hidden"
-                                onChange={(e) => {
-                                  if (e.target.files && e.target.files[0]) {
-                                    setSelectedSkFile(e.target.files[0]);
+                  {thesis.status === 'pending_sk' && (
+                    <div className="w-full md:w-auto text-right">
+                      {(currentUser.role === 'superadmin' || currentUser.role === 'admin') ? (
+                        uploadingSkThesisId === thesis.id ? (
+                          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full">
+                            <div className="flex items-center gap-2 flex-1">
+                              <label className="px-3 py-1.5 bg-gray-100 hover:bg-gray-250 rounded-lg text-xs font-semibold text-gray-700 flex items-center gap-1.5 cursor-pointer shrink-0 border border-gray-205">
+                                <FileUp className="w-3.5 h-3.5 text-emerald-600" />
+                                {selectedSkFile ? 'Ganti File PDF' : 'Pilih File PDF'}
+                                <input
+                                  type="file"
+                                  accept=".pdf"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      setSelectedSkFile(e.target.files[0]);
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {selectedSkFile && (
+                                <span className="text-xs text-gray-600 truncate max-w-[150px]" title={selectedSkFile.name}>
+                                  {selectedSkFile.name}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              <button
+                                onClick={() => {
+                                  if (selectedSkFile) {
+                                    handleUploadSK(thesis.id, selectedSkFile);
+                                    setUploadingSkThesisId(null);
+                                    setSelectedSkFile(null);
                                   }
                                 }}
-                              />
-                            </label>
-                            {selectedSkFile && (
-                              <span className="text-xs text-gray-600 truncate max-w-[150px]" title={selectedSkFile.name}>
-                                {selectedSkFile.name}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex gap-1 shrink-0">
-                            <button
-                              onClick={() => {
-                                if (selectedSkFile) {
-                                  handleUploadSK(thesis.id, selectedSkFile);
+                                disabled={!selectedSkFile}
+                                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                              >
+                                Simpan SK
+                              </button>
+                              <button
+                                onClick={() => {
                                   setUploadingSkThesisId(null);
                                   setSelectedSkFile(null);
-                                }
-                              }}
-                              disabled={!selectedSkFile}
-                              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
-                            >
-                              Simpan SK
-                            </button>
-                            <button
-                              onClick={() => {
-                                setUploadingSkThesisId(null);
-                                setSelectedSkFile(null);
-                              }}
-                              className="bg-gray-100 hover:bg-gray-205 text-gray-700 font-bold text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
-                            >
-                              Batal
-                            </button>
+                                }}
+                                className="bg-gray-100 hover:bg-gray-205 text-gray-700 font-bold text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                              >
+                                Batal
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setUploadingSkThesisId(thesis.id);
+                              setSelectedSkFile(null);
+                            }}
+                            className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <FileCheck2 className="w-3.5 h-3.5" />
+                            Unggah SK Bimbingan
+                          </button>
+                        )
                       ) : (
-                        <button
-                          onClick={() => {
-                            setUploadingSkThesisId(thesis.id);
-                            setSelectedSkFile(null);
-                          }}
-                          className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <FileCheck2 className="w-3.5 h-3.5" />
-                          Unggah SK Bimbingan
-                        </button>
-                      )
-                    ) : (
-                      <p className="text-xs text-amber-600 font-medium italic">
-                        Menunggu file SK bimbingan diterbitkan oleh Admin.
-                      </p>
-                    )}
-                  </div>
-                )}
+                        <p className="text-xs text-amber-600 font-medium italic">
+                          Menunggu file SK bimbingan diterbitkan oleh Admin.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
-                {thesis.status === 'in_progress' && (
-                  /* Progress bar if supervisor is assigned and SK is uploaded */
-                  <div className="w-full md:w-64">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-3xs font-bold text-gray-400 uppercase">Progres Penyusunan</span>
-                      <span className="text-xs font-bold text-emerald-700">{currentProgress}%</span>
+                  {thesis.status === 'in_progress' && (
+                    /* Progress bar if supervisor is assigned and SK is uploaded */
+                    <div className="w-full md:w-64">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-3xs font-bold text-gray-400 uppercase">Progres Penyusunan</span>
+                        <span className="text-xs font-bold text-emerald-700">{currentProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                        <div
+                          className="bg-emerald-600 h-1.5 rounded-full transition-all duration-500"
+                          style={{ width: `${currentProgress}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
-                      <div 
-                        className="bg-emerald-600 h-1.5 rounded-full transition-all duration-500" 
-                        style={{ width: `${currentProgress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        }))}
+            );
+          }))}
       </div>
     </div>
   );

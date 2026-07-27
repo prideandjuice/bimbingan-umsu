@@ -7,7 +7,7 @@ import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, EventType, Ava
 import axios from 'axios';
 
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
-const DB_VERSION = '7';
+const DB_VERSION = '11';
 const VERSION_KEY = 'db_version';
 
 const KEYS = {
@@ -42,7 +42,7 @@ const SEED_USERS: AppUser[] = [
         id: 'user-admin-1',
         name: 'Super Admin',
         email: 'admin@umsu.ac.id',
-        role: 'admin',
+        role: 'superadmin',
         isVerified: true,
         avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
     },
@@ -85,42 +85,9 @@ const SEED_USERS: AppUser[] = [
     },
 ];
 
-const SEED_PROPOSALS: Proposal[] = [
-    {
-        id: 'prop-demo-1',
-        studentId: 'user-student-1',
-        studentName: 'Mahasiswa Demo',
-        studentNpm: '2210000001',
-        department: 'Magister Ilmu Komunikasi',
-        abstract: 'Analisis strategi komunikasi digital dalam meningkatkan brand awareness dan keterlibatan publik pada institusi akademis.',
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-    },
-];
+const SEED_PROPOSALS: Proposal[] = [];
 
-const SEED_PROPOSAL_TITLES: ProposalTitle[] = [
-    {
-        id: 'title-demo-1',
-        proposalId: 'prop-demo-1',
-        title: 'Strategi Komunikasi Digital Kampus dalam Era Transformasi Teknologi Informasi',
-        abstract: 'Penelitian ini berfokus pada analisis strategi komunikasi pemasaran digital yang diterapkan oleh institusi pendidikan tinggi dalam membangun brand equity dan meningkatkan interaksi publik di media sosial.',
-        status: 'PENDING',
-    },
-    {
-        id: 'title-demo-2',
-        proposalId: 'prop-demo-1',
-        title: 'Analisis Pola Komunikasi Organisasi pada Manajemen Pelayanan Akademik Publik',
-        abstract: 'Studi ini meneliti efektivitas aliran informasi internal antara dosen, tenaga kependidikan, dan mahasiswa dalam mengoptimalkan kualitas pelayanan akademik berbasis sistem digital.',
-        status: 'PENDING',
-    },
-    {
-        id: 'title-demo-3',
-        proposalId: 'prop-demo-1',
-        title: 'Pengaruh Media Sosial Instagram terhadap Persepsi Reputasi Lembaga Akademik',
-        abstract: 'Penelitian kuantitatif yang menguji korelasi antara intensitas publikasi konten edukatif di Instagram dengan persepsi keunggulan reputasi institusi di mata mahasiswa baru.',
-        status: 'PENDING',
-    },
-];
+const SEED_PROPOSAL_TITLES: ProposalTitle[] = [];
 
 const SEED_EVENT_TYPES: EventType[] = [
     {
@@ -152,40 +119,7 @@ const SEED_AVAILABILITY_RULES: AvailabilityRule[] = [
     { id: 'ar-3', lecturerId: 'user-lecturer-1', dayOfWeek: 5, startTime: '09:00', endTime: '11:30' },
 ];
 
-const SEED_BOOKINGS: Booking[] = [
-    {
-        id: 'booking-1',
-        thesisId: 'thesis-1',
-        studentId: 'user-student-1',
-        studentName: 'Mahasiswa Demo',
-        studentNpm: '2210000001',
-        lecturerId: 'user-lecturer-1',
-        lecturerName: 'Prof. Dr. Irwan, M.Si',
-        eventTypeId: 'et-1',
-        eventTypeName: 'Konsultasi Bimbingan Proposal',
-        date: '2026-07-28',
-        timeSlot: '09:30 - 10:00',
-        status: 'pending',
-        notes: 'Mohon masukan untuk instrumen kuesioner pada Bab 3.',
-        createdAt: new Date().toISOString(),
-    },
-    {
-        id: 'booking-2',
-        thesisId: 'thesis-2',
-        studentId: 'user-student-2',
-        studentName: 'ELVIRA RAHMADEWI',
-        studentNpm: '2210000002',
-        lecturerId: 'user-lecturer-1',
-        lecturerName: 'Prof. Dr. Irwan, M.Si',
-        eventTypeId: 'et-2',
-        eventTypeName: 'Review Bab IV & V (Hasil & Pembahasan)',
-        date: '2026-07-29',
-        timeSlot: '13:00 - 13:45',
-        status: 'confirmed',
-        notes: 'Pembahasan hasil olah data SPSS & pengujian hipotesis.',
-        createdAt: new Date().toISOString(),
-    },
-];
+const SEED_BOOKINGS: Booking[] = [];
 
 function seedIfEmpty(): void {
     if (!localStorage.getItem(KEYS.users)) {

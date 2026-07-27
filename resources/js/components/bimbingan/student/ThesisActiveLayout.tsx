@@ -34,6 +34,7 @@ interface ThesisActiveLayoutProps {
   currentProgress: number;
   handleSubmitGuidance: (date: string, notes: string, revisions: string, progress: number) => void;
   handleBookMeeting: (eventTypeId: string, date: string, slot: string, notes: string) => void;
+  initialTab?: 'info' | 'guidances' | 'bookings';
 }
 
 export default function ThesisActiveLayout({
@@ -47,8 +48,15 @@ export default function ThesisActiveLayout({
   currentProgress,
   handleSubmitGuidance,
   handleBookMeeting,
+  initialTab = 'info',
 }: ThesisActiveLayoutProps) {
-  const [activeTab, setActiveTab] = useState<'info' | 'guidances' | 'bookings'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'guidances' | 'bookings'>(initialTab);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Track mana sesi bimbingan yang di-expand detailnya (default: opsi pertama)
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(myGuidances[0]?.id || null);

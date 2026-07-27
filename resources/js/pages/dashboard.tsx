@@ -67,14 +67,12 @@ export default function Dashboard({
 
         if (!foundUser) {
             // Tentukan default role berdasarkan email domain (default: student)
-            let role: 'admin' | 'superadmin' | 'prodi' | 'lecturer' | 'student' | 'guest' = backendRole as any;
+            let role: 'superadmin' | 'prodi' | 'lecturer' | 'student' | 'guest' = backendRole as any;
             
             if (role === 'guest' && auth.user.email.toLowerCase().endsWith('@umsu.ac.id')) {
                 const email = auth.user.email.toLowerCase();
-                if (email.includes('superadmin')) {
+                if (email.includes('admin') || email.includes('superadmin')) {
                     role = 'superadmin';
-                } else if (email.includes('admin')) {
-                    role = 'admin';
                 } else if (email.includes('prodi') || email.includes('kaprodi')) {
                     role = 'prodi';
                 } else if (email.includes('lecturer') || email.includes('dosen') || email.includes('irwan')) {

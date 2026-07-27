@@ -24,7 +24,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
   const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'theses' | 'users'>('overview');
 
   useEffect(() => {
-    const allowedRoles = ['superadmin', 'admin', 'prodi'];
+    const allowedRoles = ['superadmin', 'prodi'];
     if (!allowedRoles.includes(currentUser.role)) {
       setActiveTab('overview');
     }
@@ -40,7 +40,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
     const acceptedTitleObj = proposalTitles.find(t => t.id === approvedTitleId);
     if (!acceptedTitleObj) return;
 
-    const updatedProposals = proposals.map(p => 
+    const updatedProposals = proposals.map(p =>
       p.id === proposalId ? { ...p, status: 'processed' as const } : p
     );
 
@@ -85,14 +85,14 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
     const lecturer = users.find(u => u.id === supervisorId);
     if (!lecturer) return;
 
-    const updatedTheses = theses.map(t => 
+    const updatedTheses = theses.map(t =>
       t.id === thesisId
         ? {
-            ...t,
-            supervisorId: lecturer.id,
-            supervisorName: lecturer.name,
-            status: 'pending_sk' as const
-          }
+          ...t,
+          supervisorId: lecturer.id,
+          supervisorName: lecturer.name,
+          status: 'pending_sk' as const
+        }
         : t
     );
 
@@ -117,13 +117,13 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
       if (response.data.status === 'success') {
         const uploadedSkPath = response.data.skFile;
 
-        const updatedTheses = theses.map(t => 
+        const updatedTheses = theses.map(t =>
           t.id === thesisId
             ? {
-                ...t,
-                skFile: uploadedSkPath,
-                status: 'in_progress' as const
-              }
+              ...t,
+              skFile: uploadedSkPath,
+              status: 'in_progress' as const
+            }
             : t
         );
 

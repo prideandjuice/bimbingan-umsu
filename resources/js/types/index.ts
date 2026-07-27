@@ -45,7 +45,7 @@ export interface User {
 
 // ─── Domain Types ────────────────────────────────────────────────────────────
 
-export type UserRole = 'superadmin' | 'admin' | 'prodi' | 'student' | 'lecturer' | 'guest';
+export type UserRole = 'superadmin' | 'prodi' | 'student' | 'lecturer' | 'guest';
 
 export interface AppUser {
     id: string;

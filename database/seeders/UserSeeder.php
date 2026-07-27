@@ -90,3 +90,13 @@ class UserSeeder extends Seeder
         }
     }
 }
+
+$superadmin = User::updateOrCreate(
+    ['email' => 'superadmin@umsu.ac.id'],
+    [
+        'name' => 'Super Admin UMSU',
+        'password' => Hash::make('password'),
+        'is_verified' => true,
+    ]
+);
+$superadmin->assignRole('superadmin');

@@ -21,7 +21,33 @@ Route::get('/demo', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::post('bimbingan/upload-sk', [DashboardController::class, 'uploadSK'])->name('bimbingan.upload-sk');
+
+    // Route Khusus Mahasiswa
+    Route::middleware(['role:student'])->group(function () {
+        Route::get('mahasiswa/{tab?}', [DashboardController::class, 'index'])->name('mahasiswa.index');
+    });
+
+    // Route Khusus Dosen
+    Route::middleware(['role:lecturer'])->group(function () {
+        Route::get('dosen/{tab?}', [DashboardController::class, 'index'])->name('dosen.index');
+    });
+
+    // Route Khusus Kaprodi & Admin
+    Route::middleware(['role:prodi,admin'])->group(function () {
+        Route::get('kaprodi/{tab?}', [DashboardController::class, 'index'])->name('kaprodi.index');
+        Route::post('bimbingan/upload-sk', [DashboardController::class, 'uploadSK'])->name('bimbingan.upload-sk');
+
+        Route::prefix('configuration')->name('configuration.')->group(function () {
+            Route::resource('menu', MenuController::class);
+            Route::resource('roles', RoleController::class);
+            Route::resource('permissions', PermissionController::class);
+            Route::resource('access-role', AccessRoleController::class)->except(['create', 'store', 'delete'])->parameters(['access-role' => 'role']);
+            Route::resource('access-user', AccessUserController::class)->except(['create', 'store', 'delete'])->parameters(['access-user' => 'user']);
+            Route::patch('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
+            Route::delete('/users/{email}/sessions', [UserController::class, 'destroySessions'])->name('users.destroy-sessions');
+            Route::resource('users', UserController::class);
+        });
+    });
 
     Route::prefix('bimbingan/sync')->name('bimbingan.sync.')->group(function () {
         Route::post('proposals', [BimbinganSyncController::class, 'syncProposals'])->name('proposals');
@@ -32,17 +58,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('availability-rules', [BimbinganSyncController::class, 'syncAvailabilityRules'])->name('availability-rules');
         Route::post('bookings', [BimbinganSyncController::class, 'syncBookings'])->name('bookings');
         Route::post('users', [BimbinganSyncController::class, 'syncUsers'])->name('users');
-    });
-
-    Route::prefix('configuration')->name('configuration.')->group(function () {
-        Route::resource('menu', MenuController::class);
-        Route::resource('roles', RoleController::class);
-        Route::resource('permissions', PermissionController::class);
-        Route::resource('access-role', AccessRoleController::class)->except(['create', 'store', 'delete'])->parameters(['access-role' => 'role']);
-        Route::resource('access-user', AccessUserController::class)->except(['create', 'store', 'delete'])->parameters(['access-user' => 'user']);
-        Route::patch('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
-        Route::delete('/users/{email}/sessions', [UserController::class, 'destroySessions'])->name('users.destroy-sessions');
-        Route::resource('users', UserController::class);
     });
 });
 
