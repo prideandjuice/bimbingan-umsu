@@ -67,11 +67,13 @@ export default function Dashboard({
 
         if (!foundUser) {
             // Tentukan default role berdasarkan email domain (default: student)
-            let role: 'admin' | 'prodi' | 'lecturer' | 'student' | 'guest' = backendRole as any;
+            let role: 'admin' | 'superadmin' | 'prodi' | 'lecturer' | 'student' | 'guest' = backendRole as any;
             
             if (role === 'guest' && auth.user.email.toLowerCase().endsWith('@umsu.ac.id')) {
                 const email = auth.user.email.toLowerCase();
-                if (email.includes('admin')) {
+                if (email.includes('superadmin')) {
+                    role = 'superadmin';
+                } else if (email.includes('admin')) {
                     role = 'admin';
                 } else if (email.includes('prodi') || email.includes('kaprodi')) {
                     role = 'prodi';
@@ -137,7 +139,7 @@ export default function Dashboard({
             <Head title="Dashboard — Sistem Bimbingan Skripsi UMSU" />
 
             <div className="max-w-7xl mx-auto px-4 py-8 w-full">
-                {(appUser.role === 'admin' || appUser.role === 'prodi') && (
+                {(appUser.role === 'superadmin' || appUser.role === 'admin' || appUser.role === 'prodi') && (
                     <AdminDashboard currentUser={appUser} onRefresh={refresh} />
                 )}
                 {appUser.role === 'lecturer' && (

@@ -21,16 +21,16 @@ export default function AdminSidebar({
     <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm h-fit">
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-          currentUser.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+          currentUser.role === 'admin' || currentUser.role === 'superadmin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
         }`}>
           <GraduationCap className="w-5 h-5" />
         </div>
         <div>
           <h3 className="font-display font-bold text-gray-900 text-sm">
-            {currentUser.role === 'admin' ? 'Admin Portal' : 'Kaprodi Portal'}
+            {currentUser.role === 'admin' || currentUser.role === 'superadmin' ? 'Admin Portal' : 'Kaprodi Portal'}
           </h3>
           <p className="text-xs text-gray-500">
-            {currentUser.role === 'admin' ? 'Administrator' : (currentUser.department || 'Program Studi')}
+            {currentUser.role === 'admin' || currentUser.role === 'superadmin' ? 'Administrator' : (currentUser.department || 'Program Studi')}
           </p>
         </div>
       </div>
@@ -47,7 +47,7 @@ export default function AdminSidebar({
           Ringkasan Sistem
         </button>
 
-        {currentUser.role === 'prodi' && (
+        {(currentUser.role === 'prodi' || currentUser.role === 'superadmin') && (
           <button
             onClick={() => setActiveTab('proposals')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${

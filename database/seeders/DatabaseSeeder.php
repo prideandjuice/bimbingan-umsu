@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             MenuSeeder::class,
             UserSeeder::class,
-            ProposalSeeder::class,
+            // ProposalSeeder::class,
         ]);
     }
 }
