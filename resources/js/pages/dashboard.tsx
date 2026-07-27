@@ -3,7 +3,6 @@ import { Head, usePage } from '@inertiajs/react';
 import { DB } from '@/db';
 import type { AppUser, SharedData, BreadcrumbItem, Proposal, ProposalTitle, Thesis, Guidance, EventType, AvailabilityRule, Booking } from '@/types';
 import AppLayout from '@/layouts/app-layout';
-
 import AdminDashboard from '@/components/bimbingan/admindashboard';
 import GuestDashboard from '@/components/bimbingan/guestdashboard';
 import LecturerDashboard from '@/components/bimbingan/lecturedashboard';
@@ -68,19 +67,16 @@ export default function Dashboard({
         if (!foundUser) {
             // Tentukan default role berdasarkan email domain (default: student)
             let role: 'superadmin' | 'prodi' | 'lecturer' | 'student' | 'guest' = backendRole as any;
-            
+
             if (role === 'guest' && auth.user.email.toLowerCase().endsWith('@umsu.ac.id')) {
                 const email = auth.user.email.toLowerCase();
                 if (email.includes('admin') || email.includes('superadmin')) {
                     role = 'superadmin';
                 } else if (email.includes('prodi') || email.includes('kaprodi')) {
                     role = 'prodi';
-                } else if (email.includes('lecturer') || email.includes('dosen') || email.includes('irwan')) {
-                    role = 'lecturer';
-                } else {
-                    role = 'student';
                 }
             }
+
 
             foundUser = {
                 id: `user-${Date.now()}`,
@@ -137,7 +133,7 @@ export default function Dashboard({
             <Head title="Dashboard — Sistem Bimbingan Skripsi UMSU" />
 
             <div className="max-w-7xl mx-auto px-4 py-8 w-full">
-                {(appUser.role === 'superadmin' || appUser.role === 'admin' || appUser.role === 'prodi') && (
+                {(appUser.role === 'superadmin' || appUser.role === 'prodi') && (
                     <AdminDashboard currentUser={appUser} onRefresh={refresh} />
                 )}
                 {appUser.role === 'lecturer' && (
