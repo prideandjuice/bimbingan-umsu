@@ -19,7 +19,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $users = User::all()->map(function ($u) {
+        $users = User::with('roles')->get()->map(function ($u) {
             //User::all(): Mengambil semua record dari tabel users di database.
             //->map(function ($u): Memproses/mengubah setiap objek user satu per satu (dimana $u adalah satu individu user) di dalam memory sebelum dikembalikan ke variabel $users.
             $role = $u->roles->first()?->name;
