@@ -73,7 +73,7 @@ export default function BookingsTab({
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold mb-2">
             <CalendarIcon className="w-3.5 h-3.5" />
-            <span>Cal.com Scheduling Manager</span>
+            <span>Sistem Penjadwalan Bimbingan Dosen UMSU</span>
           </div>
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
             Persetujuan Jadwal Bimbingan
@@ -112,35 +112,27 @@ export default function BookingsTab({
                   : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
               }`}
             >
-              Semua ({myBookings.length})
+              Semua
             </button>
             <button
               onClick={() => setActiveFilter('pending')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 activeFilter === 'pending'
                   ? 'bg-amber-600 text-white shadow-xs'
                   : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
               }`}
             >
-              <span>Menunggu</span>
-              {pendingCount > 0 && (
-                <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">
-                  {pendingCount}
-                </span>
-              )}
+              Menunggu
             </button>
             <button
               onClick={() => setActiveFilter('confirmed')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 activeFilter === 'confirmed'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
               }`}
             >
-              <span>Disetujui</span>
-              <span className="bg-emerald-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">
-                {confirmedCount}
-              </span>
+              Disetujui
             </button>
             <button
               onClick={() => setActiveFilter('rejected')}
@@ -150,7 +142,7 @@ export default function BookingsTab({
                   : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
               }`}
             >
-              Ditolak ({rejectedCount})
+              Ditolak
             </button>
             <button
               onClick={() => setActiveFilter('completed')}
@@ -160,7 +152,7 @@ export default function BookingsTab({
                   : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
               }`}
             >
-              Selesai ({completedCount})
+              Selesai
             </button>
           </div>
 
@@ -249,7 +241,7 @@ export default function BookingsTab({
                     <div className="flex items-center gap-3 flex-wrap md:justify-end">
                       <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-300">
                         <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                        <span>{b.date} • {b.timeSlot}</span>
+                        <span>{b.date} • {b.timeSlot.includes('WIB') ? b.timeSlot : `${b.timeSlot} WIB`}</span>
                       </div>
 
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border ${status.badge}`}>

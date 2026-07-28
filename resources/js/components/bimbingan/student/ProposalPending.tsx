@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Clock, FileText, CheckCircle2, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Proposal, ProposalTitle } from '@/types';
+import RichTextDisplay from '../RichTextDisplay';
 
 interface ProposalPendingProps {
   myProposal: Proposal;
@@ -137,9 +138,9 @@ export default function ProposalPending({ myProposal, proposalTitles, onRefresh 
                     </div>
 
                     <div className="bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-xl shadow-2xs">
-                      <div
-                        className="text-xs md:text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-normal ql-editor p-0 min-h-0 border-none select-text"
-                        dangerouslySetInnerHTML={{ __html: t.abstract || 'Belum ada deskripsi latar belakang yang ditulis.' }}
+                      <RichTextDisplay
+                        content={t.abstract}
+                        fallback="Belum ada deskripsi latar belakang yang ditulis."
                       />
                     </div>
                   </div>

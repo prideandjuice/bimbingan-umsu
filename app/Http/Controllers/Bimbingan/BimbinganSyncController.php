@@ -258,6 +258,7 @@ class BimbinganSyncController extends Controller
                         'lecturer_id' => $rule['lecturerId'],
                         'name' => $rule['name'] ?? ($lecturer ? $lecturer->name : null),
                         'is_default' => isset($rule['isDefault']) ? (bool)$rule['isDefault'] : false,
+                        'rules' => $rule['rules'] ?? null,
                         'day_of_week' => $rule['dayOfWeek'],
                         'start_time' => $rule['startTime'],
                         'end_time' => $rule['endTime'],

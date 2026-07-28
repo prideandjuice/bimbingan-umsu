@@ -10,18 +10,27 @@ import OverviewTab from './admin/OverviewTab';
 import ProposalsTab from './admin/ProposalsTab';
 import ThesesTab from './admin/ThesesTab';
 import UsersTab from './admin/UsersTab';
+import RoleFooter from './RoleFooter';
 
 interface AdminDashboardProps {
   currentUser: AppUser;
   onRefresh: () => void;
+  activeTab?: string;
 }
 
-export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboardProps) {
+export default function AdminDashboard({ currentUser, onRefresh, activeTab: propActiveTab }: AdminDashboardProps) {
   const [users, setUsers] = useState<AppUser[]>(DB.getUsers());
   const [proposals, setProposals] = useState<Proposal[]>(DB.getProposals());
   const [proposalTitles, setProposalTitles] = useState<ProposalTitle[]>(DB.getProposalTitles());
   const [theses, setTheses] = useState<Thesis[]>(DB.getTheses());
-  const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'theses' | 'users'>('overview');
+
+  const initialTab: 'overview' | 'proposals' | 'theses' | 'users' =
+    propActiveTab === 'proposals' || propActiveTab === 'verifikasi-proposal' ? 'proposals'
+    : propActiveTab === 'theses' || propActiveTab === 'skripsi-pembimbing' ? 'theses'
+    : propActiveTab === 'users' || propActiveTab === 'manajemen-pengguna' ? 'users'
+    : 'overview';
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'theses' | 'users'>(initialTab);
 
   useEffect(() => {
     const allowedRoles = ['superadmin', 'prodi'];
@@ -223,6 +232,10 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
             handleUpdateUserRole={handleUpdateUserRole}
           />
         )}
+      </div>
+
+      <div className="lg:col-span-12">
+        <RoleFooter role={currentUser.role} currentUser={currentUser} />
       </div>
     </div>
   );

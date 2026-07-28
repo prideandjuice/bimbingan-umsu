@@ -17,8 +17,10 @@ class Availability extends Model
 
     protected $fillable = [
         'id',
+        'availability_id',
         'lecturer_id',
         'name',
+        'slug',
         'is_default',
         'rules',
         'day_of_week',

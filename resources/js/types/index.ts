@@ -45,7 +45,7 @@ export interface User {
 
 // ─── Domain Types ────────────────────────────────────────────────────────────
 
-export type UserRole = 'superadmin' | 'prodi' | 'student' | 'lecturer' | 'guest';
+export type UserRole = 'superadmin' | 'admin' | 'prodi' | 'student' | 'lecturer' | 'guest';
 
 export interface AppUser {
     id: string;
@@ -116,6 +116,14 @@ export interface EventType {
     description?: string;
 }
 
+export interface AvailabilityRuleConfig {
+    sessionName?: string;
+    maxQuotaPerSession?: number;
+    maxQuotaTotal?: number;
+    sessionDurationMinutes?: number;
+    [key: string]: any;
+}
+
 export interface AvailabilityRule {
     id: string;
     lecturerId: string;
@@ -123,6 +131,7 @@ export interface AvailabilityRule {
     startTime: string;
     endTime: string;
     isDefault?: boolean;
+    rules?: AvailabilityRuleConfig;
 }
 
 export interface Booking {

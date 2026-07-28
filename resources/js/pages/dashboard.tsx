@@ -16,6 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface DashboardProps {
+    activeTab?: string;
     dbUsers?: AppUser[];
     dbProposals?: Proposal[];
     dbProposalTitles?: ProposalTitle[];
@@ -27,6 +28,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({
+    activeTab = 'overview',
     dbUsers = [],
     dbProposals = [],
     dbProposalTitles = [],
@@ -61,12 +63,12 @@ export default function Dashboard({
         const users = DB.getUsers();
         let foundUser = users.find((u) => u.email.toLowerCase() === auth.user.email.toLowerCase());
 
-        const backendIsVerified = auth.user.is_verified ?? false;
-        const backendRole = (auth.user.roles && auth.user.roles.length > 0) ? auth.user.roles[0] : 'student';
+        const backendIsVerified = Boolean((auth.user as any).is_verified);
+        const backendRole = (auth.user.roles && auth.user.roles.length > 0) ? (auth.user.roles[0] as any) : 'student';
 
         if (!foundUser) {
             // Tentukan default role berdasarkan email domain (default: student)
-            let role: 'superadmin' | 'prodi' | 'lecturer' | 'student' | 'guest' = backendRole as any;
+            let role: 'superadmin' | 'prodi' | 'lecturer' | 'student' | 'guest' = backendRole;
 
             if (role === 'guest' && auth.user.email.toLowerCase().endsWith('@umsu.ac.id')) {
                 const email = auth.user.email.toLowerCase();
@@ -76,7 +78,6 @@ export default function Dashboard({
                     role = 'prodi';
                 }
             }
-
 
             foundUser = {
                 id: `user-${Date.now()}`,
@@ -95,7 +96,7 @@ export default function Dashboard({
             if (foundUser.isVerified !== backendIsVerified || foundUser.role !== backendRole) {
                 foundUser = {
                     ...foundUser,
-                    role: backendRole as any,
+                    role: backendRole,
                     isVerified: backendIsVerified,
                 };
                 const updatedUsers = users.map((u) => (u.email.toLowerCase() === foundUser!.email.toLowerCase() ? foundUser! : u));
@@ -104,8 +105,10 @@ export default function Dashboard({
         }
 
         // Sinkronisasi status active user di local storage mock database
-        DB.setCurrentUser(foundUser);
-        setAppUser(foundUser);
+        if (foundUser) {
+            DB.setCurrentUser(foundUser);
+            setAppUser(foundUser);
+        }
     }, [auth.user, tick, dbUsers]);
 
     if (!appUser) {
@@ -134,13 +137,13 @@ export default function Dashboard({
 
             <div className="max-w-7xl mx-auto px-4 py-8 w-full">
                 {(appUser.role === 'superadmin' || appUser.role === 'prodi') && (
-                    <AdminDashboard currentUser={appUser} onRefresh={refresh} />
+                    <AdminDashboard currentUser={appUser} onRefresh={refresh} activeTab={activeTab} />
                 )}
                 {appUser.role === 'lecturer' && (
-                    <LecturerDashboard currentUser={appUser} onRefresh={refresh} />
+                    <LecturerDashboard currentUser={appUser} onRefresh={refresh} activeTab={activeTab} />
                 )}
                 {appUser.role === 'student' && (
-                    <StudentDashboard currentUser={appUser} onRefresh={refresh} />
+                    <StudentDashboard currentUser={appUser} onRefresh={refresh} activeTab={activeTab} />
                 )}
                 {appUser.role === 'guest' && (
                     <GuestDashboard currentUser={appUser} onRefresh={refresh} />

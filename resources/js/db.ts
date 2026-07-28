@@ -7,7 +7,7 @@ import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, EventType, Ava
 import axios from 'axios';
 
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
-const DB_VERSION = '11';
+const DB_VERSION = '12';
 const VERSION_KEY = 'db_version';
 
 const KEYS = {
@@ -114,9 +114,48 @@ const SEED_EVENT_TYPES: EventType[] = [
 ];
 
 const SEED_AVAILABILITY_RULES: AvailabilityRule[] = [
-    { id: 'ar-1', lecturerId: 'user-lecturer-1', dayOfWeek: 1, startTime: '09:00', endTime: '12:00' },
-    { id: 'ar-2', lecturerId: 'user-lecturer-1', dayOfWeek: 3, startTime: '13:00', endTime: '16:00' },
-    { id: 'ar-3', lecturerId: 'user-lecturer-1', dayOfWeek: 5, startTime: '09:00', endTime: '11:30' },
+    {
+        id: 'ar-1',
+        lecturerId: 'user-lecturer-1',
+        dayOfWeek: 1,
+        startTime: '09:00',
+        endTime: '12:00',
+        isDefault: true,
+        rules: {
+            sessionName: 'Sesi Pagi',
+            maxQuotaPerSession: 5,
+            maxQuotaTotal: 20,
+            sessionDurationMinutes: 30,
+        },
+    },
+    {
+        id: 'ar-2',
+        lecturerId: 'user-lecturer-1',
+        dayOfWeek: 3,
+        startTime: '13:00',
+        endTime: '16:00',
+        isDefault: false,
+        rules: {
+            sessionName: 'Sesi Siang',
+            maxQuotaPerSession: 5,
+            maxQuotaTotal: 20,
+            sessionDurationMinutes: 45,
+        },
+    },
+    {
+        id: 'ar-3',
+        lecturerId: 'user-lecturer-1',
+        dayOfWeek: 5,
+        startTime: '09:00',
+        endTime: '11:30',
+        isDefault: false,
+        rules: {
+            sessionName: 'Sesi Khusus',
+            maxQuotaPerSession: 3,
+            maxQuotaTotal: 10,
+            sessionDurationMinutes: 30,
+        },
+    },
 ];
 
 const SEED_BOOKINGS: Booking[] = [];

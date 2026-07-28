@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CheckCircle2,
   Clock,
@@ -19,6 +19,8 @@ import {
   X,
 } from 'lucide-react';
 import type { AppUser, Thesis, Guidance, Booking, EventType, AvailabilityRule, Proposal } from '@/types';
+import RichTextDisplay from '../RichTextDisplay';
+import CalComBookingView from './CalComBookingView';
 import { toast } from 'sonner';
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -138,6 +140,28 @@ export default function ThesisActiveLayout({
         </div>
       </div>
 
+      {/* Alert Warning jika SK Pembimbing belum diterbitkan oleh Admin */}
+      {!myThesis.skFile && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 p-5 rounded-2xl flex items-start gap-4 text-left shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5 animate-pulse text-amber-600" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold text-sm text-amber-900 dark:text-amber-200">
+                Menunggu Terbitnya SK Bimbingan dari Admin
+              </h4>
+              <span className="text-3xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-md">
+                Bimbingan Belum Aktif
+              </span>
+            </div>
+            <p className="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+              Dosen Pembimbing Anda (<strong>{myThesis.supervisorName || 'Dosen Pembimbing'}</strong>) telah ditunjuk oleh Kaprodi. Namun, <strong>sesi bimbingan dan janji temu konsultasi belum dapat dilakukan</strong> karena file Surat Keterangan (SK) Pembimbing resmi belum diterbitkan / diunggah oleh Admin. Mohon menunggu proses unggah SK oleh Admin.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 2. Sub Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-100 dark:border-zinc-800 pb-1 text-left">
         <button
@@ -196,9 +220,9 @@ export default function ThesisActiveLayout({
             <p className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
               Deskripsi Latar Belakang / Abstrak Proposal:
             </p>
-            <div 
-              className="text-xs md:text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-normal ql-editor p-0 min-h-0 border-none select-text"
-              dangerouslySetInnerHTML={{ __html: parentProposal?.abstract || 'Latar belakang proposal ini telah diverifikasi dan disetujui oleh Ketua Program Studi.' }}
+            <RichTextDisplay
+              content={parentProposal?.abstract}
+              fallback="Latar belakang proposal ini telah diverifikasi dan disetujui oleh Ketua Program Studi."
             />
           </div>
 
@@ -364,79 +388,17 @@ export default function ThesisActiveLayout({
 
       {/* TAB 3: Janji Temu Bimbingan */}
       {activeTab === 'bookings' && (
-        <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm space-y-6 text-left">
-          <div className="border-b border-gray-100 dark:border-zinc-800 pb-4 flex items-center justify-between gap-4">
-            <div>
-              <h3 className="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-emerald-600" />
-                Janji Temu Konsultasi
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Jadwalkan sesi tatap muka atau konsultasi online dengan Dosen Pembimbing Anda (<strong>{myThesis.supervisorName || 'Prof. Dr. Irwan, M.Si'}</strong>).
-              </p>
-            </div>
-          </div>
-
-          {/* Jadwal Ketersediaan Dosen */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider text-muted-foreground">
-              Jadwal Ketersediaan Dosen Pembimbing
-            </h4>
-
-            {mySupervisorAvailability.length === 0 ? (
-              <div className="bg-gray-50 dark:bg-zinc-900/50 border border-dashed border-gray-200 dark:border-zinc-800 rounded-2xl p-6 text-center text-xs text-muted-foreground">
-                Dosen pembimbing Anda belum mengatur jadwal ketersediaan jam bimbingan.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {mySupervisorAvailability.map((rule) => (
-                  <div
-                    key={rule.id}
-                    className={`bg-white dark:bg-zinc-900 border ${
-                      rule.isDefault
-                        ? 'border-emerald-200 dark:border-emerald-900/60 shadow-xs'
-                        : 'border-gray-100 dark:border-zinc-800'
-                    } rounded-2xl p-4 space-y-3 flex flex-col justify-between`}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
-                          {DAY_NAMES[rule.dayOfWeek] || 'Hari'}
-                        </span>
-
-                        {rule.isDefault ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-900/50">
-                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                            Jadwal Utama Dosen
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 text-[10px] font-medium">
-                            Jadwal Cadangan
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-gray-800 dark:text-gray-200">
-                        <Clock className="w-4 h-4 text-emerald-600" />
-                        <span>{rule.startTime} - {rule.endTime} WIB</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setSelectedRule(rule);
-                        setShowBookingModal(true);
-                      }}
-                      className="w-full py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Ajukan Janji Temu</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="space-y-6 text-left">
+          {/* UMSU Interactive Booking Component */}
+          <CalComBookingView
+            myThesis={myThesis}
+            availabilityRules={mySupervisorAvailability}
+            disabled={!myThesis.skFile}
+            onBookMeeting={(date, timeSlot, notes) => {
+              handleBookMeeting('default-session', date, timeSlot, notes);
+              toast.success(`Pengajuan janji temu bimbingan pada tanggal ${date} (${timeSlot}) berhasil dikirim!`);
+            }}
+          />
 
           {/* Riwayat Janji Temu Mahasiswa */}
           <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 space-y-3">
@@ -492,7 +454,7 @@ export default function ThesisActiveLayout({
                         Ajukan Janji Temu Bimbingan
                       </h3>
                       <p className="text-[11px] text-muted-foreground">
-                        {DAY_NAMES[selectedRule.dayOfWeek]} ({selectedRule.startTime} - {selectedRule.endTime})
+                        {DAY_NAMES[selectedRule.dayOfWeek]} ({selectedRule.startTime} - {selectedRule.endTime} WIB)
                       </p>
                     </div>
                   </div>
@@ -511,7 +473,7 @@ export default function ThesisActiveLayout({
                     handleBookMeeting(
                       'default-session',
                       bookingDate,
-                      `${selectedRule.startTime} - ${selectedRule.endTime}`,
+                      `${selectedRule.startTime} - ${selectedRule.endTime} WIB`,
                       bookingNotes
                     );
                     setShowBookingModal(false);

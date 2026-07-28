@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileText, Check, ChevronDown, ChevronUp, BookOpen, X, Sparkles, FileUp, ShieldCheck, Search } from 'lucide-react';
 import type { Proposal, ProposalTitle } from '@/types';
+import RichTextDisplay from '../RichTextDisplay';
 
 interface ProposalsTabProps {
   proposals: Proposal[];
@@ -243,9 +244,9 @@ export default function ProposalsTab({
                               </div>
 
                               <div className="bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-xl shadow-2xs">
-                                <div
-                                  className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-normal ql-editor p-0 min-h-0 border-none select-text"
-                                  dangerouslySetInnerHTML={{ __html: titleItem.abstract || 'Belum ada deskripsi latar belakang.' }}
+                                <RichTextDisplay
+                                  content={titleItem.abstract}
+                                  fallback="Belum ada deskripsi latar belakang."
                                 />
                               </div>
 
@@ -318,9 +319,9 @@ export default function ProposalsTab({
               </div>
 
               <div className="bg-emerald-50/30 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-5 rounded-2xl">
-                <div
-                  className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-normal ql-editor p-0 min-h-0 border-none select-text"
-                  dangerouslySetInnerHTML={{ __html: selectedTitleForModal.titleItem.abstract || 'Belum ada latar belakang yang ditulis.' }}
+                <RichTextDisplay
+                  content={selectedTitleForModal.titleItem.abstract}
+                  fallback="Belum ada latar belakang yang ditulis."
                 />
               </div>
             </div>

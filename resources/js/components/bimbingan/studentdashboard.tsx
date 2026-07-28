@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle2,
+  XCircle,
   AlertCircle,
   UserCheck,
   TrendingUp,
@@ -25,26 +26,26 @@ import StudentSidebarNav from './student/StudentSidebarNav';
 import StudentWelcomeHeader from './student/StudentWelcomeHeader';
 import ThesisJourneyTimeline from './student/ThesisJourneyTimeline';
 import AcademicGuidelineCard from './student/AcademicGuidelineCard';
+import RoleFooter from './RoleFooter';
+import RichTextDisplay from './RichTextDisplay';
 
 interface StudentDashboardProps {
   currentUser: AppUser;
   onRefresh: () => void;
+  activeTab?: string;
 }
 
-export default function StudentDashboard({ currentUser, onRefresh }: StudentDashboardProps) {
+export default function StudentDashboard({ currentUser, onRefresh, activeTab: propActiveTab }: StudentDashboardProps) {
   const { url } = usePage();
 
-  // Determine active tab from URL
-  let activeTab: 'overview' | 'pengajuan-judul' | 'status-judul' | 'log-bimbingan' | 'booking-jadwal' = 'overview';
-  if (url.includes('/mahasiswa/pengajuan-judul')) {
-    activeTab = 'pengajuan-judul';
-  } else if (url.includes('/mahasiswa/status-judul')) {
-    activeTab = 'status-judul';
-  } else if (url.includes('/mahasiswa/log-bimbingan')) {
-    activeTab = 'log-bimbingan';
-  } else if (url.includes('/mahasiswa/booking-jadwal')) {
-    activeTab = 'booking-jadwal';
-  }
+  // Active tab received from Controller prop or URL fallback
+  const activeTab: 'overview' | 'pengajuan-judul' | 'status-judul' | 'log-bimbingan' | 'booking-jadwal' =
+    (propActiveTab && propActiveTab !== 'overview' ? propActiveTab as any : null) ||
+    (url.includes('/mahasiswa/pengajuan-judul') ? 'pengajuan-judul'
+      : url.includes('/mahasiswa/status-judul') ? 'status-judul'
+      : url.includes('/mahasiswa/log-bimbingan') ? 'log-bimbingan'
+      : url.includes('/mahasiswa/booking-jadwal') ? 'booking-jadwal'
+      : 'overview');
 
   // DB States
   const [proposals, setProposals] = useState(DB.getProposals());
@@ -57,6 +58,7 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
 
   // Find student's current status
   const myProposal = proposals.find(p => p.studentId === currentUser.id);
+  const myTitles = myProposal ? proposalTitles.filter(t => String(t.proposalId) === String(myProposal.id)) : [];
   const myThesis = theses.find(t => t.studentId === currentUser.id);
   const myGuidances = myThesis ? guidances.filter(g => g.thesisId === myThesis.id) : [];
   const myBookings = bookings.filter(b => b.studentId === currentUser.id);
@@ -143,7 +145,9 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
   const verifiedGuidances = myGuidances.filter(g => g.status === 'verified');
   const currentProgress = verifiedGuidances.length > 0 ? Math.max(...verifiedGuidances.map(g => g.progress)) : 0;
   const mySupervisorEventTypes = myThesis?.supervisorId ? eventTypes.filter(et => et.lecturerId === myThesis.supervisorId) : [];
-  const mySupervisorAvailability = myThesis?.supervisorId ? availabilityRules.filter(ar => ar.lecturerId === myThesis.supervisorId) : availabilityRules;
+  const mySupervisorAvailability = (myThesis?.supervisorId 
+    ? availabilityRules.filter(ar => ar.lecturerId === myThesis.supervisorId) 
+    : availabilityRules).filter(ar => Boolean(ar.isDefault));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="student-dashboard-layout">
@@ -361,31 +365,92 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
                 <ProposalForm currentUser={currentUser} onSubmitProposal={onSubmitProposal} />
               ) : (
                 <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm space-y-6 text-left">
-                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 dark:border-zinc-800 pb-5">
                     <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-6 h-6" />
+                      </div>
                       <div>
-                        <h3 className="font-bold text-base text-gray-900 dark:text-white">Pengajuan Judul Berhasil Terkirim</h3>
-                        <p className="text-xs text-muted-foreground">Status draf proposal Anda saat ini sedang diproses oleh Kaprodi.</p>
+                        <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-white">Pengajuan Judul Berhasil Terkirim</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">Draf proposal alternatif judul Anda saat ini sedang dalam peninjauan oleh Kaprodi.</p>
                       </div>
                     </div>
+
+                    <span className="bg-amber-100/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-semibold px-4 py-1.5 rounded-full self-start md:self-auto shrink-0">
+                      Menunggu Keputusan Kaprodi
+                    </span>
                   </div>
 
-                  <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-5 rounded-2xl space-y-3">
-                    <p className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
-                      Abstrak / Latar Belakang Proposal Asal:
-                    </p>
-                    <p className="text-xs md:text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
-                      {myProposal.abstract || 'Abstrak telah disimpan dalam draf pengajuan proposal.'}
-                    </p>
-                  </div>
+                  {/* Daftar 3 Alternatif Judul Skripsi yang Diajukan */}
+                  {myTitles.length > 0 ? (
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-emerald-600" />
+                        Alternatif Judul & Latar Belakang yang Diajukan ({myTitles.length})
+                      </h4>
+
+                      <div className="space-y-4">
+                        {myTitles.map((t, idx) => (
+                          <div
+                            key={t.id || idx}
+                            className="bg-emerald-50/30 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-5 rounded-2xl space-y-3"
+                          >
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="inline-block bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-3xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md">
+                                Opsi {idx + 1}
+                              </span>
+
+                              <span
+                                className={`text-3xs font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${
+                                  t.status === 'ACCEPTED'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : t.status === 'REJECTED'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}
+                              >
+                                {t.status === 'ACCEPTED' && <CheckCircle2 className="w-3 h-3" />}
+                                {t.status === 'REJECTED' && <XCircle className="w-3 h-3" />}
+                                {t.status === 'PENDING' && <Clock className="w-3 h-3" />}
+                                {t.status === 'ACCEPTED' ? 'Disetujui Kaprodi' : t.status === 'REJECTED' ? 'Ditolak' : 'Menunggu Review'}
+                              </span>
+                            </div>
+
+                            <h4 className="font-bold text-sm md:text-base text-gray-900 dark:text-white leading-snug">
+                              {t.title}
+                            </h4>
+
+                            <div className="pt-1">
+                              <p className="text-3xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider mb-1.5">
+                                Latar Belakang / Abstrak:
+                              </p>
+                              <RichTextDisplay
+                                content={t.abstract}
+                                fallback="Abstrak telah disimpan dalam draf pengajuan proposal."
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-5 rounded-2xl space-y-3">
+                      <p className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
+                        Abstrak / Latar Belakang Proposal Asal:
+                      </p>
+                      <RichTextDisplay
+                        content={myProposal?.abstract}
+                        fallback="Abstrak telah disimpan dalam draf pengajuan proposal."
+                      />
+                    </div>
+                  )}
 
                   <div className="pt-2 flex justify-end">
                     <Link
                       href="/mahasiswa/status-judul"
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/10 transition-all"
                     >
-                      <span>Cek Status Seleksi Judul</span>
+                      <span>Cek Detail Status Seleksi Judul</span>
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
@@ -537,6 +602,10 @@ export default function StudentDashboard({ currentUser, onRefresh }: StudentDash
             )}
           </div>
         )}
+      </div>
+
+      <div className="lg:col-span-12">
+        <RoleFooter role={currentUser.role} currentUser={currentUser} />
       </div>
     </div>
   );

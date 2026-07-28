@@ -38,35 +38,32 @@ export default function UsersTab({ users, currentUser, handleUpdateUserRole }: U
     <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm text-left" id="tab-users-content">
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-xl font-bold text-gray-900">Manajemen Pengguna & Verifikasi</h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Atur hak akses akun pendaftar Google SSO. Verifikasi akun guest menjadi Mahasiswa (NPM) atau Dosen (NIDN).
-          </p>
+          <h2 className="text-lg font-bold text-gray-800">Manajemen Pengguna & Verifikasi</h2>
+          <p className="text-xs text-gray-500">Atur hak akses akun pendaftar Google SSO. Verifikasi akun guest menjadi Mahasiswa (NPM) atau Dosen (NIDN).</p>
         </div>
 
-        {/* Search user */}
-        <div className="relative">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+        <div className="relative w-full md:w-64">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari nama, email, NPM, NIDN..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full md:w-64"
+            className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-9 pr-4 py-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:bg-white focus:outline-none"
           />
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-gray-100 text-3xs font-bold uppercase text-gray-400 tracking-wider">
-              <th className="py-3 px-4">Pengguna</th>
-              <th className="py-3 px-4">Peran (Role)</th>
-              <th className="py-3 px-4">Nomor Identitas</th>
-              <th className="py-3 px-4">Prodi / Departemen</th>
-              <th className="py-3 px-4">Status Verifikasi</th>
-              <th className="py-3 px-4 text-right">Aksi</th>
+            <tr className="border-b border-gray-100 text-3xs uppercase font-bold tracking-wider text-gray-400">
+              <th className="pb-3 px-4">Pengguna</th>
+              <th className="pb-3 px-4">Peran (Role)</th>
+              <th className="pb-3 px-4">Nomor Identitas</th>
+              <th className="pb-3 px-4">Prodi / Departemen</th>
+              <th className="pb-3 px-4">Status Verifikasi</th>
+              <th className="pb-3 px-4 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 text-sm">
