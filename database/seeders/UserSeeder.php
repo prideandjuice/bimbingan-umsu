@@ -21,6 +21,14 @@ class UserSeeder extends Seeder
                 'is_verified' => true,
             ],
             [
+                'name' => 'admin',
+                'username' => 'admin',
+                'email' => 'admin@umsu.ac.id',
+                'role' => 'admin',
+                'department' => null,
+                'is_verified' => true,
+            ],
+            [
                 'name' => 'prodi',
                 'username' => 'prodi',
                 'email' => 'prodi@umsu.ac.id',

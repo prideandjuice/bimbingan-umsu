@@ -14,14 +14,23 @@ class EventType extends Model
 
     protected $fillable = [
         'id',
+        'availability_id',
         'lecturer_id',
         'name',
+        'slug',
         'duration',
         'description',
+        'location_type',
+        'location_details',
     ];
 
     public function lecturer()
     {
         return $this->belongsTo(User::class, 'lecturer_id');
+    }
+
+    public function availability()
+    {
+        return $this->belongsTo(Availability::class, 'availability_id');
     }
 }

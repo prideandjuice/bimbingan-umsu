@@ -19,10 +19,10 @@ return new class extends Migration
                 $table->string('slug')->nullable()->after('name');
             }
             if (!Schema::hasColumn('event_types', 'location_type')) {
-                $table->string('location_type')->default('offline')->after('description');
+                $table->string('location_type')->default('offline')->after('description')->nullable();
             }
             if (!Schema::hasColumn('event_types', 'location_details')) {
-                $table->text('location_details')->nullable()->after('location_type');
+                $table->text('location_details')->after('location_type')->nullable();
             }
         });
     }
@@ -34,8 +34,8 @@ return new class extends Migration
     {
         Schema::table('event_types', function (Blueprint $table) {
             $cols = [];
-            if (Schema::hasColumn('event_types', 'availability_id')) $cols[] = 'availability_id';
-            if (Schema::hasColumn('event_types', 'slug')) $cols[] = 'slug';
+            if (Schema::hasColumn('event_types', 'location_type')) $cols[] = 'location_type';
+            if (Schema::hasColumn('event_types', 'location_details')) $cols[] = 'location_details';
             if (!empty($cols)) {
                 $table->dropColumn($cols);
             }

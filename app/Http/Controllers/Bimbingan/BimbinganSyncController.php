@@ -215,22 +215,48 @@ class BimbinganSyncController extends Controller
     public function syncEventTypes(Request $request)
     {
         try {
-            $lecturerId = auth()->id();
-            if ($lecturerId) {
-                $incomingIds = collect($request->input('eventTypes', []))->pluck('id')->toArray();
-                EventType::where('lecturer_id', $lecturerId)->whereNotIn('id', $incomingIds)->delete();
+            $defaultLecturer = User::whereHas('roles', function ($q) {
+                $q->where('name', 'lecturer');
+            })->first() ?? User::where('email', 'irwan@umsu.ac.id')->first() ?? User::first();
 
-                foreach ($request->input('eventTypes', []) as $et) {
-                    EventType::updateOrCreate(
-                        ['id' => $et['id']],
-                        [
-                            'lecturer_id' => $et['lecturerId'],
-                            'name' => $et['name'],
-                            'duration' => $et['duration'],
-                            'description' => $et['description'] ?? null,
-                        ]
-                    );
+            $lecturerId = auth()->id() ?? $defaultLecturer?->id;
+
+            $incoming = $request->input('eventTypes', []);
+            $incomingIds = collect($incoming)->pluck('id')->toArray();
+
+            if ($lecturerId) {
+                EventType::where('lecturer_id', $lecturerId)->whereNotIn('id', $incomingIds)->delete();
+            }
+
+            foreach ($incoming as $et) {
+                $targetLecturerId = $et['lecturerId'] ?? null;
+                if (!$targetLecturerId || !User::where('id', $targetLecturerId)->exists()) {
+                    $targetLecturerId = $lecturerId;
                 }
+
+                $availId = $et['availabilityId'] ?? null;
+                if ($availId && !Availability::where('id', $availId)->exists()) {
+                    $availId = null;
+                }
+                if (!$availId) {
+                    $defaultAvail = Availability::where('lecturer_id', $targetLecturerId)->where('is_default', true)->first()
+                        ?? Availability::where('lecturer_id', $targetLecturerId)->first();
+                    $availId = $defaultAvail?->id;
+                }
+
+                EventType::updateOrCreate(
+                    ['id' => $et['id']],
+                    [
+                        'availability_id' => $availId,
+                        'lecturer_id' => $targetLecturerId,
+                        'name' => $et['name'],
+                        'slug' => $et['slug'] ?? \Illuminate\Support\Str::slug($et['name']),
+                        'duration' => $et['duration'] ?? 30,
+                        'description' => $et['description'] ?? null,
+                        'location_type' => $et['locationType'] ?? 'offline',
+                        'location_details' => $et['locationDetails'] ?? null,
+                    ]
+                );
             }
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
@@ -242,7 +268,12 @@ class BimbinganSyncController extends Controller
     public function syncAvailabilityRules(Request $request)
     {
         try {
-            $lecturerId = auth()->id();
+            $defaultLecturer = User::whereHas('roles', function ($q) {
+                $q->where('name', 'lecturer');
+            })->first() ?? User::where('email', 'irwan@umsu.ac.id')->first() ?? User::first();
+
+            $lecturerId = auth()->id() ?? $defaultLecturer?->id;
+
             if ($lecturerId) {
                 // Registrasi / panggil AvailabilityObserver secara eksplisit
                 Availability::observe(\App\Observers\AvailabilityObserver::class);
@@ -251,11 +282,16 @@ class BimbinganSyncController extends Controller
                 Availability::where('lecturer_id', $lecturerId)->whereNotIn('id', $incomingIds)->delete();
 
                 foreach ($request->input('availabilityRules', []) as $rule) {
-                    $lecturer = User::find($rule['lecturerId'] ?? $lecturerId);
+                    $targetLecturerId = $rule['lecturerId'] ?? null;
+                    if (!$targetLecturerId || !User::where('id', $targetLecturerId)->exists()) {
+                        $targetLecturerId = $lecturerId;
+                    }
+
+                    $lecturer = User::find($targetLecturerId);
                     $availability = Availability::find($rule['id']) ?? new Availability(['id' => $rule['id']]);
 
                     $availability->fill([
-                        'lecturer_id' => $rule['lecturerId'],
+                        'lecturer_id' => $targetLecturerId,
                         'name' => $rule['name'] ?? ($lecturer ? $lecturer->name : null),
                         'is_default' => isset($rule['isDefault']) ? (bool)$rule['isDefault'] : false,
                         'rules' => $rule['rules'] ?? null,
@@ -278,7 +314,17 @@ class BimbinganSyncController extends Controller
     public function syncBookings(Request $request)
     {
         try {
-            foreach ($request->input('bookings', []) as $booking) {
+            $user = auth()->user();
+            $incomingBookings = $request->input('bookings', []);
+            $incomingIds = collect($incomingBookings)->pluck('id')->toArray();
+
+            if ($user && $user->hasRole('student')) {
+                Appointment::where('student_id', $user->id)
+                    ->whereNotIn('id', $incomingIds)
+                    ->delete();
+            }
+
+            foreach ($incomingBookings as $booking) {
                 $studentId = $booking['studentId'] ?? null;
                 if (!$studentId || !User::where('id', $studentId)->exists()) {
                     $studentId = auth()->id() ?? User::first()?->id;

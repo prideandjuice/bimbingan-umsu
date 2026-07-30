@@ -1,11 +1,11 @@
 // components/bimbingan/lecturer/LecturerSidebar.tsx
 import { Link } from '@inertiajs/react';
-import { UserCheck, Users, Calendar, Clock, Briefcase } from 'lucide-react';
+import { UserCheck, Users, Calendar, Clock, Briefcase, Layers } from 'lucide-react';
 import type { AppUser, Booking, Guidance, Thesis } from '@/types';
 
 interface LecturerSidebarProps {
   currentUser: AppUser;
-  activeTab: 'students' | 'scheduling' | 'bookings';
+  activeTab: 'students' | 'eventTypes' | 'scheduling' | 'bookings';
   myStudents: Thesis[];
   myBookings: Booking[];
   setSelectedThesisId: (id: string | null) => void;
@@ -72,7 +72,20 @@ export default function LecturerSidebar({
           )}
         </Link>
 
-        {/* Option 2: Ketersediaan Waktu */}
+        {/* Option 2: Jenis Bimbingan */}
+        <Link
+          href="/dosen/jenis-bimbingan"
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'eventTypes'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <Layers className="w-4.5 h-4.5" />
+          <span>Jenis Bimbingan</span>
+        </Link>
+
+        {/* Option 3: Ketersediaan Waktu */}
         <Link
           href="/dosen/ketersediaan-waktu"
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${

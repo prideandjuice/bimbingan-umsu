@@ -19,13 +19,9 @@ class DashboardController extends Controller
 {
     public function index(Request $request, $tab = 'overview')
     {
-<<<<<<< HEAD
         $activeTab = $tab ?: $request->route('tab') ?: 'overview';
 
-        $users = User::all()->map(function ($u) {
-=======
         $users = User::with('roles')->get()->map(function ($u) {
->>>>>>> 16cbd2370db496579c39d3fa051d3ddfff99b452
             //User::all(): Mengambil semua record dari tabel users di database.
             //->map(function ($u): Memproses/mengubah setiap objek user satu per satu (dimana $u adalah satu individu user) di dalam memory sebelum dikembalikan ke variabel $users.
             $role = $u->roles->first()?->name;
@@ -119,17 +115,24 @@ class DashboardController extends Controller
         $eventTypes = EventType::all()->map(function ($et) {
             return [
                 'id' => $et->id,
+                'availabilityId' => $et->availability_id ? (string)$et->availability_id : null,
                 'lecturerId' => (string)$et->lecturer_id,
                 'name' => $et->name,
+                'slug' => $et->slug,
                 'duration' => (int)$et->duration,
                 'description' => $et->description,
+                'locationType' => $et->location_type ?? 'offline',
+                'locationDetails' => $et->location_details ?: (($et->location_type === 'online') ? 'Google Meet UMSU' : 'Ruang Dosen Gedung A / Ruang Prodi UMSU'),
             ];
         });
 
         $availabilityRules = Availability::all()->map(function ($a) {
             return [
                 'id' => $a->id,
+                'availabilityId' => $a->availability_id,
                 'lecturerId' => (string)$a->lecturer_id,
+                'name' => $a->name,
+                'slug' => $a->slug,
                 'dayOfWeek' => (int)$a->day_of_week,
                 'startTime' => $a->start_time,
                 'endTime' => $a->end_time,
@@ -214,5 +217,85 @@ class DashboardController extends Controller
         }
 
         return response()->json(['status' => 'error', 'message' => 'File not uploaded'], 400);
+    }
+
+    public function bookingSlugPage(Request $request, $slug)
+    {
+        $eventType = EventType::with('lecturer')->where('slug', $slug)->first();
+
+        if (!$eventType) {
+            $eventType = EventType::with('lecturer')->where('id', $slug)->first()
+                ?? EventType::with('lecturer')->first();
+        }
+
+        $lecturer = $eventType ? $eventType->lecturer : User::whereHas('roles', fn($q) => $q->where('name', 'lecturer'))->first();
+
+        $availabilities = [];
+        if ($lecturer) {
+            $query = Availability::where('lecturer_id', $lecturer->id);
+
+            if ($eventType && $eventType->availability_id) {
+                $linked = (clone $query)->where(function ($q) use ($eventType) {
+                    $q->where('id', $eventType->availability_id)
+                      ->orWhere('availability_id', $eventType->availability_id);
+                })->get();
+
+                if ($linked->count() > 0) {
+                    $availabilities = $linked->map(function ($a) {
+                        return [
+                            'id' => (string) $a->id,
+                            'availabilityId' => (string) $a->id,
+                            'lecturerId' => (string) $a->lecturer_id,
+                            'name' => $a->name,
+                            'dayOfWeek' => (int) $a->day_of_week,
+                            'startTime' => substr($a->start_time, 0, 5),
+                            'endTime' => substr($a->end_time, 0, 5),
+                            'isDefault' => (bool) $a->is_default,
+                            'rules' => $a->rules,
+                        ];
+                    });
+                }
+            }
+
+            if (empty($availabilities) || count($availabilities) === 0) {
+                $availabilities = $query->get()->map(function ($a) {
+                    return [
+                        'id' => (string) $a->id,
+                        'availabilityId' => (string) $a->id,
+                        'lecturerId' => (string) $a->lecturer_id,
+                        'name' => $a->name,
+                        'dayOfWeek' => (int) $a->day_of_week,
+                        'startTime' => substr($a->start_time, 0, 5),
+                        'endTime' => substr($a->end_time, 0, 5),
+                        'isDefault' => (bool) $a->is_default,
+                        'rules' => $a->rules,
+                    ];
+                });
+            }
+        }
+
+        return Inertia::render('bimbingan/BookingSlugPage', [
+            'slug' => $slug,
+            'eventType' => $eventType ? [
+                'id' => (string) $eventType->id,
+                'lecturerId' => (string) $eventType->lecturer_id,
+                'availabilityId' => (string) $eventType->availability_id,
+                'name' => $eventType->name,
+                'slug' => $eventType->slug,
+                'duration' => (int) $eventType->duration,
+                'description' => $eventType->description,
+                'locationType' => $eventType->location_type ?? 'offline',
+                'locationDetails' => $eventType->location_details ?: (($eventType->location_type === 'online') ? 'Google Meet UMSU' : 'Ruang Dosen Gedung A / Ruang Prodi UMSU'),
+            ] : null,
+            'lecturer' => $lecturer ? [
+                'id' => (string) $lecturer->id,
+                'name' => $lecturer->name,
+                'email' => $lecturer->email,
+                'nidn' => $lecturer->nidn ?? '0012345678',
+                'department' => $lecturer->department ?? 'Magister Ilmu Komunikasi',
+                'avatar' => $lecturer->profile_photo ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
+            ] : null,
+            'availabilityRules' => $availabilities,
+        ]);
     }
 }

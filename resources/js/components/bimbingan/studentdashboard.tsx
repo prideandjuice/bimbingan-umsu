@@ -142,6 +142,14 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
     refreshLocalData();
   };
 
+  const onCancelBooking = (bookingId: string) => {
+    const updated = bookings.filter((b) => b.id !== bookingId);
+    setBookings(updated);
+    DB.saveBookings(updated);
+    refreshLocalData();
+    toast.success('Pengajuan janji temu berhasil dibatalkan/dihapus.');
+  };
+
   const verifiedGuidances = myGuidances.filter(g => g.status === 'verified');
   const currentProgress = verifiedGuidances.length > 0 ? Math.max(...verifiedGuidances.map(g => g.progress)) : 0;
   const mySupervisorEventTypes = myThesis?.supervisorId ? eventTypes.filter(et => et.lecturerId === myThesis.supervisorId) : [];
@@ -570,6 +578,7 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
                 currentProgress={currentProgress}
                 handleSubmitGuidance={onAddGuidanceLog}
                 handleBookMeeting={onBookMeeting}
+                handleCancelBooking={onCancelBooking}
                 initialTab="bookings"
               />
             ) : (

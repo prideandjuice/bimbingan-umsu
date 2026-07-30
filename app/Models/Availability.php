@@ -37,4 +37,9 @@ class Availability extends Model
     {
         return $this->belongsTo(User::class, 'lecturer_id');
     }
+
+    public function eventTypes()
+    {
+        return $this->hasMany(EventType::class, 'availability_id');
+    }
 }

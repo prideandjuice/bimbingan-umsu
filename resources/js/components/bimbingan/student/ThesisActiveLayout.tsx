@@ -17,6 +17,7 @@ import {
   Plus,
   Send,
   X,
+  Trash2,
 } from 'lucide-react';
 import type { AppUser, Thesis, Guidance, Booking, EventType, AvailabilityRule, Proposal } from '@/types';
 import RichTextDisplay from '../RichTextDisplay';
@@ -36,6 +37,7 @@ interface ThesisActiveLayoutProps {
   currentProgress: number;
   handleSubmitGuidance: (date: string, notes: string, revisions: string, progress: number) => void;
   handleBookMeeting: (eventTypeId: string, date: string, slot: string, notes: string) => void;
+  handleCancelBooking?: (bookingId: string) => void;
   initialTab?: 'info' | 'guidances' | 'bookings';
 }
 
@@ -50,6 +52,7 @@ export default function ThesisActiveLayout({
   currentProgress,
   handleSubmitGuidance,
   handleBookMeeting,
+  handleCancelBooking,
   initialTab = 'info',
 }: ThesisActiveLayoutProps) {
   const [activeTab, setActiveTab] = useState<'info' | 'guidances' | 'bookings'>(initialTab);
@@ -68,6 +71,16 @@ export default function ThesisActiveLayout({
   const [selectedRule, setSelectedRule] = useState<AvailabilityRule | null>(null);
   const [bookingDate, setBookingDate] = useState(new Date().toISOString().split('T')[0]);
   const [bookingNotes, setBookingNotes] = useState('');
+  const [removedBookingIds, setRemovedBookingIds] = useState<string[]>([]);
+
+  const visibleBookings = myBookings.filter((b) => !removedBookingIds.includes(b.id));
+
+  const handleDeleteBookingItem = (id: string) => {
+    setRemovedBookingIds((prev) => [...prev, id]);
+    if (handleCancelBooking) {
+      handleCancelBooking(id);
+    }
+  };
 
   const toggleGuidanceDetail = (id: string) => {
     setExpandedGuidanceId(prev => (prev === id ? null : id));
@@ -393,9 +406,11 @@ export default function ThesisActiveLayout({
           <CalComBookingView
             myThesis={myThesis}
             availabilityRules={mySupervisorAvailability}
+            eventType={mySupervisorEventTypes?.[0]}
+            myBookings={myBookings}
             disabled={!myThesis.skFile}
             onBookMeeting={(date, timeSlot, notes) => {
-              handleBookMeeting('default-session', date, timeSlot, notes);
+              handleBookMeeting(mySupervisorEventTypes?.[0]?.id || 'default-session', date, timeSlot, notes);
               toast.success(`Pengajuan janji temu bimbingan pada tanggal ${date} (${timeSlot}) berhasil dikirim!`);
             }}
           />
@@ -403,14 +418,14 @@ export default function ThesisActiveLayout({
           {/* Riwayat Janji Temu Mahasiswa */}
           <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 space-y-3">
             <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider text-muted-foreground">
-              Riwayat Pengajuan Janji Temu Saya ({myBookings.length})
+              Riwayat Pengajuan Janji Temu Saya ({visibleBookings.length})
             </h4>
 
-            {myBookings.length === 0 ? (
+            {visibleBookings.length === 0 ? (
               <p className="text-xs text-muted-foreground italic">Belum ada pengajuan janji temu.</p>
             ) : (
               <div className="space-y-2.5">
-                {myBookings.map((b) => (
+                {visibleBookings.map((b) => (
                   <div
                     key={b.id}
                     className="bg-gray-50/70 dark:bg-zinc-800/30 border border-gray-100 dark:border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
@@ -423,17 +438,30 @@ export default function ThesisActiveLayout({
                       {b.notes && <p className="text-muted-foreground text-[11px] font-light">"{b.notes}"</p>}
                     </div>
 
-                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1 rounded-full shrink-0 self-start sm:self-auto ${
-                      b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                      b.status === 'rejected' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
-                      b.status === 'completed' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                      'bg-amber-100 text-amber-800 border border-amber-200'
-                    }`}>
-                      {b.status === 'confirmed' ? '✓ Disetujui Dosen' :
-                       b.status === 'rejected' ? '✕ Ditolak Dosen' :
-                       b.status === 'completed' ? '✔️ Selesai' :
-                       '⏳ Menunggu Konfirmasi Dosen'}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1 rounded-full ${
+                        b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                        b.status === 'rejected' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
+                        b.status === 'completed' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                        'bg-amber-100 text-amber-800 border border-amber-200'
+                      }`}>
+                        {b.status === 'confirmed' ? '✓ Disetujui Dosen' :
+                         b.status === 'rejected' ? '✕ Ditolak Dosen' :
+                         b.status === 'completed' ? '✔️ Selesai' :
+                         '⏳ Menunggu Konfirmasi Dosen'}
+                      </span>
+
+                      {handleCancelBooking && b.status === 'pending' && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBookingItem(b.id)}
+                          title="Batalkan & Hapus Janji Temu Ini"
+                          className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-200 transition-all cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

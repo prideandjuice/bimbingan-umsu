@@ -11,12 +11,16 @@ import {
   Send,
   X,
   AlertCircle,
+  MapPin,
+  CheckCircle2,
 } from 'lucide-react';
-import type { Thesis, AvailabilityRule } from '@/types';
+import type { Thesis, AvailabilityRule, EventType, Booking } from '@/types';
 
 interface CalComBookingViewProps {
   myThesis: Thesis;
   availabilityRules: AvailabilityRule[];
+  eventType?: EventType;
+  myBookings?: Booking[];
   onBookMeeting: (date: string, timeSlot: string, notes: string) => void;
   disabled?: boolean;
 }
@@ -24,6 +28,8 @@ interface CalComBookingViewProps {
 export default function CalComBookingView({
   myThesis,
   availabilityRules,
+  eventType,
+  myBookings = [],
   onBookMeeting,
   disabled = false,
 }: CalComBookingViewProps) {
@@ -31,9 +37,47 @@ export default function CalComBookingView({
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-  // State initialized to current real-time month & today's date
-  const [currentDate, setCurrentDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedDay, setSelectedDay] = useState<number>(() => today.getDate());
+  // Filter rules matching linked eventType availabilityId if specified
+  const targetAvailabilityId = eventType?.availabilityId;
+  const linkedRules = (targetAvailabilityId && availabilityRules?.length > 0)
+    ? availabilityRules.filter(
+        (r) => String(r.id) === String(targetAvailabilityId) || String(r.availabilityId) === String(targetAvailabilityId)
+      )
+    : [];
+
+  const defaultOnlyRules = availabilityRules?.filter((r) => Boolean(r.isDefault)) || [];
+  const activeRules = linkedRules.length > 0
+    ? linkedRules
+    : defaultOnlyRules.length > 0
+    ? defaultOnlyRules
+    : (availabilityRules && availabilityRules.length > 0)
+    ? availabilityRules
+    : [
+        { id: 'ar-1', lecturerId: 'user-lecturer-1', dayOfWeek: 1, startTime: '16:00', endTime: '16:30', isDefault: true },
+      ];
+
+  // Helper: Find first available day starting from today
+  const getInitialAvailableDate = () => {
+    for (let offset = 0; offset < 60; offset++) {
+      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
+      const dayOfWeek = d.getDay();
+      const rules = activeRules.filter((r) => Number(r.dayOfWeek) === Number(dayOfWeek));
+      if (rules.length > 0) {
+        return {
+          monthDate: new Date(d.getFullYear(), d.getMonth(), 1),
+          day: d.getDate(),
+        };
+      }
+    }
+    return {
+      monthDate: new Date(today.getFullYear(), today.getMonth(), 1),
+      day: today.getDate(),
+    };
+  };
+
+  const initialDateInfo = getInitialAvailableDate();
+  const [currentDate, setCurrentDate] = useState(() => initialDateInfo.monthDate);
+  const [selectedDay, setSelectedDay] = useState<number>(() => initialDateInfo.day);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [bookingNotes, setBookingNotes] = useState('');
   const [showConfirmStep, setShowConfirmStep] = useState(false);
@@ -74,19 +118,6 @@ export default function CalComBookingView({
       dateObj.getDate() === today.getDate()
     );
   };
-
-  // Active availability rules (only show default schedule rules where isDefault === true)
-  const defaultOnlyRules = availabilityRules?.filter((r) => Boolean(r.isDefault)) || [];
-  const activeRules = defaultOnlyRules.length > 0
-    ? defaultOnlyRules
-    : (availabilityRules && availabilityRules.length > 0)
-    ? availabilityRules
-    : [
-        { id: 'ar-1', lecturerId: 'user-lecturer-1', dayOfWeek: 1, startTime: '09:00', endTime: '12:00', isDefault: true },
-        { id: 'ar-2', lecturerId: 'user-lecturer-1', dayOfWeek: 2, startTime: '11:00', endTime: '12:00', isDefault: true },
-        { id: 'ar-3', lecturerId: 'user-lecturer-1', dayOfWeek: 3, startTime: '13:00', endTime: '16:00', isDefault: true },
-        { id: 'ar-4', lecturerId: 'user-lecturer-1', dayOfWeek: 4, startTime: '09:00', endTime: '12:00', isDefault: true },
-      ];
 
   // Helper: Get rules for a specific day of week
   const getRulesForDayOfWeek = (dayOfWeek: number) => {
@@ -160,15 +191,28 @@ export default function CalComBookingView({
 
   const dynamicSlots = generateDynamicSlots(currentSelectedRules);
 
+  const formattedSelectedDateText = `${dayNamesFull[selectedDayOfWeek]}, ${selectedDay} ${monthNames[month]} ${year}`;
+
+  const paddedMonth = String(month + 1).padStart(2, '0');
+  const paddedDay = String(selectedDay).padStart(2, '0');
+  const formattedDateStr = `${year}-${paddedMonth}-${paddedDay}`;
+
+  // Strict check: only match exact YYYY-MM-DD date
+  const existingBookingForDate = myBookings?.find((b) => {
+    if (b.status === 'rejected') return false;
+    const bDate = b.date.includes('T') ? b.date.split('T')[0] : b.date;
+    return bDate === formattedDateStr;
+  });
+
   const handleSelectSlot = (slot: SlotItem) => {
-    if (disabled || isSelectedDatePast || isPastTimeSlot(selectedDateObj, slot.slotStart)) return;
+    if (disabled || isSelectedDatePast || isPastTimeSlot(selectedDateObj, slot.slotStart) || Boolean(existingBookingForDate)) return;
     setSelectedTimeSlot(slot.fullSlotText);
     setShowConfirmStep(true);
   };
 
   const handleConfirmSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTimeSlot || disabled || isSelectedDatePast) return;
+    if (!selectedTimeSlot || disabled || isSelectedDatePast || Boolean(existingBookingForDate)) return;
 
     const paddedMonth = String(month + 1).padStart(2, '0');
     const paddedDay = String(selectedDay).padStart(2, '0');
@@ -179,8 +223,6 @@ export default function CalComBookingView({
     setSelectedTimeSlot(null);
     setBookingNotes('');
   };
-
-  const formattedSelectedDateText = `${dayNamesFull[selectedDayOfWeek]}, ${selectedDay} ${monthNames[month]} ${year}`;
 
   return (
     <div className="bg-white border border-gray-200/90 rounded-3xl p-6 md:p-8 text-gray-900 shadow-sm space-y-6 text-left relative overflow-hidden font-sans">
@@ -239,19 +281,23 @@ export default function CalComBookingView({
           </div>
 
           <div className="space-y-3 pt-2">
-            <h2 className="font-black text-lg md:text-xl text-gray-900 leading-snug">
-              Konsultasi Bimbingan Skripsi
+            <h2 className="font-black text-lg md:text-xl text-gray-900 leading-snug capitalize">
+              {eventType?.name || 'Konsultasi Bimbingan Skripsi'}
             </h2>
 
             <div className="space-y-2.5 text-xs text-gray-700 font-semibold">
               <div className="flex items-center gap-2.5">
                 <Clock className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>30 Menit Sesi</span>
+                <span>{eventType?.duration || 30} Menit Sesi</span>
               </div>
 
               <div className="flex items-center gap-2.5">
-                <Video className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>Ruang Dosen / Google Meet UMSU</span>
+                {eventType?.locationType === 'online' ? (
+                  <Video className="w-4 h-4 text-emerald-700 shrink-0" />
+                ) : (
+                  <MapPin className="w-4 h-4 text-emerald-700 shrink-0" />
+                )}
+                <span>{eventType?.locationDetails || (eventType?.locationType === 'online' ? 'Google Meet UMSU' : 'Ruang Dosen Gedung A / Ruang Prodi UMSU')}</span>
               </div>
 
               <div className="flex items-center gap-2.5">
@@ -262,6 +308,12 @@ export default function CalComBookingView({
                 </span>
               </div>
             </div>
+
+            {eventType?.description && (
+              <p className="text-xs text-muted-foreground italic pt-1">
+                "{eventType.description}"
+              </p>
+            )}
           </div>
 
           {/* Rincian Ketersediaan Waktu Dosen */}
@@ -429,21 +481,33 @@ export default function CalComBookingView({
               <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
                 {dynamicSlots.map((slot) => {
                   const slotPassed = isPastTimeSlot(selectedDateObj, slot.slotStart);
+                  const isBooked = Boolean(existingBookingForDate);
+
+                  let btnBg = 'bg-emerald-50/90 hover:bg-emerald-700 border border-emerald-300 hover:border-emerald-700 text-emerald-950 hover:text-white cursor-pointer hover:scale-[1.01] shadow-2xs';
+                  let btnText = 'Pilih Slot Sesi →';
+
+                  if (disabled || slotPassed) {
+                    btnBg = 'bg-gray-100 border border-gray-300 text-gray-700 cursor-not-allowed font-extrabold';
+                    btnText = slotPassed ? 'Sudah Lewat' : 'Belum Dibuka';
+                  } else if (isBooked) {
+                    btnBg = 'bg-emerald-100/90 border border-emerald-400 text-emerald-950 font-bold cursor-not-allowed shadow-2xs';
+                    btnText = '✓ Sudah Didaftarkan';
+                  }
 
                   return (
                     <button
                       key={slot.slotStart}
                       type="button"
-                      disabled={disabled || slotPassed}
+                      disabled={disabled || slotPassed || isBooked}
                       onClick={() => handleSelectSlot(slot)}
-                      className={`w-full text-xs py-3 px-4 rounded-xl flex items-center justify-between transition-all group ${
-                        disabled || slotPassed
-                          ? 'bg-gray-100 border border-gray-300 text-gray-700 cursor-not-allowed font-extrabold'
-                          : 'bg-emerald-50/90 hover:bg-emerald-700 border border-emerald-300 hover:border-emerald-700 text-emerald-950 hover:text-white cursor-pointer hover:scale-[1.01] shadow-2xs'
-                      }`}
+                      className={`w-full text-xs py-3 px-4 rounded-xl flex items-center justify-between transition-all group ${btnBg}`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <span className={`w-2.5 h-2.5 rounded-full ${slotPassed ? 'bg-gray-500' : 'bg-emerald-600 group-hover:bg-white group-hover:scale-125'} transition-all`} />
+                        {isBooked ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                        ) : (
+                          <span className={`w-2.5 h-2.5 rounded-full ${slotPassed ? 'bg-gray-500' : 'bg-emerald-600 group-hover:bg-white group-hover:scale-125'} transition-all`} />
+                        )}
                         <div className="text-left font-mono">
                           <span className="font-extrabold font-sans text-xs block">{slot.sessionName}</span>
                           <span className="font-mono text-[11px] font-bold opacity-90">{slot.slotStart} - {slot.slotEnd} WIB</span>
@@ -451,9 +515,9 @@ export default function CalComBookingView({
                       </div>
 
                       <span className={`text-[11px] font-sans font-bold transition-colors ${
-                        slotPassed ? 'text-gray-600 font-extrabold' : 'text-emerald-800 group-hover:text-white'
+                        disabled || slotPassed ? 'text-gray-600 font-extrabold' : isBooked ? 'text-emerald-800 font-extrabold' : 'text-emerald-800 group-hover:text-white'
                       }`}>
-                        {slotPassed ? 'Sudah Lewat' : 'Pilih Slot Sesi →'}
+                        {btnText}
                       </span>
                     </button>
                   );

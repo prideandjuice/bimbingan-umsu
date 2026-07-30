@@ -61,5 +61,8 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
+// Route Halaman Booking publik berdasarkan Slug Jenis Bimbingan
+Route::get('bimbingan/{slug}', [DashboardController::class, 'bookingSlugPage'])->name('bimbingan.booking-slug');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
