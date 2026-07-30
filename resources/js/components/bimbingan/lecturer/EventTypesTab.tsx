@@ -198,6 +198,18 @@ export default function EventTypesTab({
                   ? `-- Gunakan Jadwal Utama (${DAY_NAMES[defaultAvail.dayOfWeek]}: ${defaultAvail.startTime} - ${defaultAvail.endTime} WIB) --`
                   : '-- Gunakan Jadwal Utama (Default) --'}
               </option>
+              {myAvailabilities
+                .filter((a) => !a.isDefault)
+                .map((a) => {
+                  const dayName = DAY_NAMES[a.dayOfWeek] || 'Hari';
+                  const ruleName = a.name || a.rules?.sessionName || `Jadwal ${dayName}`;
+                  const durText = a.rules?.sessionDurationMinutes ? ` • Durasi: ${a.rules.sessionDurationMinutes} Min` : '';
+                  return (
+                    <option key={a.id} value={a.id}>
+                      {ruleName} ({dayName}: {a.startTime} - {a.endTime} WIB{durText})
+                    </option>
+                  );
+                })}
             </select>
             <p className="text-[10px] text-muted-foreground mt-1">
               Pilih jadwal ketersediaan khusus jika bimbingan ini hanya dibuka pada hari & jam tertentu.
@@ -230,8 +242,8 @@ export default function EventTypesTab({
                 type="button"
                 onClick={() => setEtLocationType('offline')}
                 className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${etLocationType === 'offline'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-2xs font-bold'
-                    : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400 hover:border-emerald-300'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-2xs font-bold'
+                  : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400 hover:border-emerald-300'
                   }`}
               >
                 <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -242,8 +254,8 @@ export default function EventTypesTab({
                 type="button"
                 onClick={() => setEtLocationType('online')}
                 className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${etLocationType === 'online'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-2xs font-bold'
-                    : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400 hover:border-emerald-300'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-2xs font-bold'
+                  : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400 hover:border-emerald-300'
                   }`}
               >
                 <Video className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -438,6 +450,18 @@ export default function EventTypesTab({
                       ? `-- Gunakan Jadwal Utama (${DAY_NAMES[defaultAvail.dayOfWeek]}: ${defaultAvail.startTime} - ${defaultAvail.endTime} WIB) --`
                       : '-- Gunakan Jadwal Utama (Default) --'}
                   </option>
+                  {myAvailabilities
+                    .filter((a) => !a.isDefault)
+                    .map((a) => {
+                      const dayName = DAY_NAMES[a.dayOfWeek] || 'Hari';
+                      const ruleName = a.name || a.rules?.sessionName || `Jadwal ${dayName}`;
+                      const durText = a.rules?.sessionDurationMinutes ? ` • Durasi: ${a.rules.sessionDurationMinutes} Min` : '';
+                      return (
+                        <option key={a.id} value={a.id}>
+                          {ruleName} ({dayName}: {a.startTime} - {a.endTime} WIB{durText})
+                        </option>
+                      );
+                    })}
                 </select>
               </div>
 
@@ -453,8 +477,8 @@ export default function EventTypesTab({
                     type="button"
                     onClick={() => setEditEtLocationType('offline')}
                     className={`p-2 rounded-xl border text-[11px] font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer ${editEtLocationType === 'offline'
-                        ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold'
-                        : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold'
+                      : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400'
                       }`}
                   >
                     <span>📍 Tatap Muka</span>
@@ -464,8 +488,8 @@ export default function EventTypesTab({
                     type="button"
                     onClick={() => setEditEtLocationType('online')}
                     className={`p-2 rounded-xl border text-[11px] font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer ${editEtLocationType === 'online'
-                        ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold'
-                        : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold'
+                      : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400'
                       }`}
                   >
                     <span>📹 Online</span>
