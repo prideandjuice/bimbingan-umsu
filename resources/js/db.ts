@@ -7,7 +7,7 @@ import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, EventType, Ava
 import axios from 'axios';
 
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
-const DB_VERSION = '12';
+const DB_VERSION = '13';
 const VERSION_KEY = 'db_version';
 
 const KEYS = {

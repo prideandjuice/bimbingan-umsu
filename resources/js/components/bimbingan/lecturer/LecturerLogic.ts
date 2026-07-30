@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import { DB } from '@/db';
-import type { AppUser, Guidance, EventType, AvailabilityRule, AvailabilityRuleConfig, Booking } from '@/types';
+import type { AppUser, Guidance, Thesis, EventType, AvailabilityRule, AvailabilityRuleConfig, Booking } from '@/types';
 import { toast } from 'sonner';
 
 interface LecturerLogicOptions {

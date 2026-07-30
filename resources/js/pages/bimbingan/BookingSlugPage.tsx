@@ -40,25 +40,18 @@ export default function BookingSlugPage({
   const targetAvailabilityId = eventType?.availabilityId;
   const linkedRules = (targetAvailabilityId && availabilityRules.length > 0)
     ? availabilityRules.filter(
-        (r) => String(r.id) === String(targetAvailabilityId) || String(r.availabilityId) === String(targetAvailabilityId)
+        (r) =>
+          String(r.id) === String(targetAvailabilityId) ||
+          String(r.availabilityId) === String(targetAvailabilityId) ||
+          (r.name && r.name.trim() === targetAvailabilityId.trim()) ||
+          (r.rules?.sessionName && r.rules.sessionName.trim() === targetAvailabilityId.trim())
       )
     : [];
 
+  const defaultOnlyRules = availabilityRules?.filter((r) => Boolean(r.isDefault)) || [];
   const activeRules = linkedRules.length > 0
     ? linkedRules
-    : (availabilityRules && availabilityRules.length > 0)
-    ? availabilityRules.filter((r) => Boolean(r.isDefault))
-    : [
-        {
-          id: 'ar-1',
-          lecturerId: 'user-lecturer-1',
-          dayOfWeek: 1,
-          startTime: '16:00',
-          endTime: '16:30',
-          isDefault: true,
-          rules: { sessionName: 'Sesi Pagi', maxQuotaPerSession: 5, sessionDurationMinutes: 30 },
-        },
-      ];
+    : defaultOnlyRules;
 
   // Helper: Find first available day starting from today
   const getInitialAvailableDate = () => {
@@ -91,6 +84,7 @@ export default function BookingSlugPage({
   const [bookingNotes, setBookingNotes] = useState('');
 
   // UI Flow State
+  const [showConfirmStep, setShowConfirmStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -427,6 +421,7 @@ export default function BookingSlugPage({
                           onClick={() => {
                             setSelectedDay(dayNum);
                             setSelectedTimeSlot(null);
+                            setShowConfirmStep(false);
                           }}
                           className={`h-10 rounded-full flex flex-col items-center justify-center transition-all cursor-pointer relative ${btnStyle}`}
                         >
@@ -479,11 +474,14 @@ export default function BookingSlugPage({
                         </label>
                         <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
                           {availableSlots.map((slot, idx) => {
-                            const isSelectedSlot = selectedTimeSlot === slot;
+                            const isSelectedSlot = selectedTimeSlot === `${slot} WIB`;
                             return (
                               <button
                                 key={idx}
-                                onClick={() => setSelectedTimeSlot(slot)}
+                                onClick={() => {
+                                  setSelectedTimeSlot(`${slot} WIB`);
+                                  setShowConfirmStep(true);
+                                }}
                                 className={`w-full p-3 rounded-2xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer border ${
                                   isSelectedSlot
                                     ? 'bg-emerald-700 text-white border-emerald-700 shadow-md shadow-emerald-700/20'

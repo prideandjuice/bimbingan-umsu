@@ -1,5 +1,5 @@
 // components/bimbingan/lecturer/EventTypesTab.tsx
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Layers,
   Plus,
@@ -34,6 +34,15 @@ interface EventTypesTabProps {
 }
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const DAY_ABBR = ['Ming', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+const generateSlug = (name: string) => {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-');
+};
 
 export default function EventTypesTab({
   myEventTypes,
@@ -59,11 +68,86 @@ export default function EventTypesTab({
   const [editEtLocationType, setEditEtLocationType] = useState<'offline' | 'online'>('offline');
   const [editEtLocationDetails, setEditEtLocationDetails] = useState('');
 
+  // Real-time grouping of availabilities by schedule name matching Schedule Cards
+  const groupedAvailabilities = useMemo(() => {
+    if (!myAvailabilities || myAvailabilities.length === 0) {
+      return [];
+    }
+
+    const map = new Map<
+      string,
+      {
+        name: string;
+        isDefault: boolean;
+        rules: AvailabilityRule[];
+      }
+    >();
+
+    myAvailabilities.forEach((ar) => {
+      const name = ar.name?.trim() || ar.rules?.sessionName?.trim() || 'Bimbingan Judul Skripsi';
+      if (!map.has(name)) {
+        map.set(name, {
+          name,
+          isDefault: ar.isDefault ?? false,
+          rules: [],
+        });
+      }
+      const item = map.get(name)!;
+      item.rules.push(ar);
+      if (ar.isDefault) item.isDefault = true;
+    });
+
+    const result: {
+      name: string;
+      isDefault: boolean;
+      summary: string;
+      rules: AvailabilityRule[];
+    }[] = [];
+
+    map.forEach((item) => {
+      const daysMap = new Map<number, { startTime: string; endTime: string }[]>();
+      item.rules.forEach((r) => {
+        if (!daysMap.has(r.dayOfWeek)) daysMap.set(r.dayOfWeek, []);
+        daysMap.get(r.dayOfWeek)!.push({ startTime: r.startTime, endTime: r.endTime });
+      });
+
+      const activeDays: number[] = [];
+      let timeRangeStr = '08:00 - 16:00 WIB';
+
+      [1, 2, 3, 4, 5, 6, 0].forEach((d) => {
+        if (daysMap.has(d)) {
+          activeDays.push(d);
+          const slots = daysMap.get(d)!;
+          if (slots.length > 0) {
+            timeRangeStr = `${slots[0].startTime} - ${slots[0].endTime} WIB`;
+          }
+        }
+      });
+
+      let daysSummary = '';
+      if (activeDays.length > 0) {
+        daysSummary = activeDays.map((d) => DAY_ABBR[d]).join(', ');
+      } else {
+        daysSummary = 'Belum ada hari diatur';
+      }
+
+      result.push({
+        name: item.name,
+        isDefault: item.isDefault,
+        summary: `${daysSummary}, ${timeRangeStr}`,
+        rules: item.rules,
+      });
+    });
+
+    return result;
+  }, [myAvailabilities]);
+
+  const defaultGroup = useMemo(() => {
+    return groupedAvailabilities.find((g) => g.isDefault) || groupedAvailabilities[0];
+  }, [groupedAvailabilities]);
+
   const onSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
-    const selectedAvail = myAvailabilities.find((a) => String(a.id) === String(etAvailabilityId) || String(a.availabilityId) === String(etAvailabilityId));
-    const duration = selectedAvail?.rules?.sessionDurationMinutes || 30;
-
     const defaultLocation =
       etLocationType === 'online'
         ? 'Google Meet UMSU'
@@ -71,7 +155,7 @@ export default function EventTypesTab({
 
     handleAddEventType(
       etName.trim(),
-      Number(duration),
+      Number(etDuration || 30),
       etDescription.trim(),
       etAvailabilityId || undefined,
       etLocationType,
@@ -81,6 +165,7 @@ export default function EventTypesTab({
     setEtName('');
     setEtDescription('');
     setEtAvailabilityId('');
+    setEtDuration(30);
     setEtLocationType('offline');
     setEtLocationDetails('');
   };
@@ -100,12 +185,10 @@ export default function EventTypesTab({
       alert('Nama jenis bimbingan wajib diisi.');
       return;
     }
-    const selectedAvail = myAvailabilities.find((a) => String(a.id) === String(editEtAvailabilityId) || String(a.availabilityId) === String(editEtAvailabilityId));
-    const duration = selectedAvail?.rules?.sessionDurationMinutes || editingEt.duration || 30;
 
     handleUpdateEventType(editingEt.id, {
       name: editEtName.trim(),
-      duration: Number(duration),
+      duration: Number(editEtDuration || 30),
       description: editEtDescription.trim(),
       availabilityId: editEtAvailabilityId || undefined,
       locationType: editEtLocationType,
@@ -115,19 +198,23 @@ export default function EventTypesTab({
     setEditingEt(null);
   };
 
-  const defaultAvail = myAvailabilities.find((a) => a.isDefault);
-
   const getLinkedAvailabilityLabel = (availId?: string) => {
-    const targetId = availId || defaultAvail?.id || defaultAvail?.availabilityId;
-    if (!targetId) return 'Jadwal Utama Dosen';
+    if (!availId) {
+      return defaultGroup ? `${defaultGroup.name} (${defaultGroup.summary})` : 'Jadwal Utama Dosen';
+    }
 
-    const found = myAvailabilities.find((a) => String(a.id) === String(targetId) || String(a.availabilityId) === String(targetId));
-    if (!found) return 'Jadwal Utama Dosen';
+    const foundGroup = groupedAvailabilities.find((g) => g.name === availId);
+    if (foundGroup) {
+      return `${foundGroup.name} (${foundGroup.summary})`;
+    }
 
-    const dayName = DAY_NAMES[found.dayOfWeek] || 'Hari';
-    const ruleName = found.name || found.rules?.sessionName || `Jadwal ${dayName}`;
-    const durInfo = found.rules?.sessionDurationMinutes ? ` • Durasi: ${found.rules.sessionDurationMinutes} Menit` : '';
-    return `${ruleName} (${dayName}: ${found.startTime} - ${found.endTime} WIB${durInfo})`;
+    const foundRule = myAvailabilities.find((a) => String(a.id) === String(availId));
+    if (foundRule) {
+      const name = foundRule.name || foundRule.rules?.sessionName || 'Jadwal Bimbingan';
+      return `${name} (${DAY_NAMES[foundRule.dayOfWeek]}: ${foundRule.startTime} - ${foundRule.endTime} WIB)`;
+    }
+
+    return 'Jadwal Utama Dosen';
   };
 
   return (
@@ -159,18 +246,45 @@ export default function EventTypesTab({
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          <div className="space-y-1">
-            <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-              Nama Jenis Bimbingan *
-            </label>
-            <input
-              type="text"
-              required
-              value={etName}
-              onChange={(e) => setEtName(e.target.value)}
-              placeholder="Contoh: Konsultasi Bimbingan Proposal"
-              className="w-full p-2.5 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                Nama Jenis Bimbingan *
+              </label>
+              <input
+                type="text"
+                required
+                value={etName}
+                onChange={(e) => setEtName(e.target.value)}
+                placeholder="Contoh: Konsultasi Bimbingan Proposal"
+                className="w-full p-2.5 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
+              />
+              {etName.trim() && (
+                <p className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1 truncate">
+                  <Globe className="w-3 h-3 shrink-0" />
+                  <span>Slug Real-time: <strong>/bimbingan/{generateSlug(etName)}</strong></span>
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Durasi Sesi Bimbingan *</span>
+              </label>
+              <select
+                value={etDuration}
+                onChange={(e) => setEtDuration(Number(e.target.value))}
+                className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-bold"
+              >
+                <option value={15}>15 Menit / Sesi</option>
+                <option value={30}>30 Menit / Sesi</option>
+                <option value={45}>45 Menit / Sesi</option>
+                <option value={60}>60 Menit (1 Jam) / Sesi</option>
+                <option value={90}>90 Menit (1.5 Jam) / Sesi</option>
+                <option value={120}>120 Menit (2 Jam) / Sesi</option>
+              </select>
+            </div>
           </div>
 
           {/* RELATED AVAILABILITY SELECTOR */}
@@ -185,44 +299,33 @@ export default function EventTypesTab({
                 const selectedId = e.target.value;
                 setEtAvailabilityId(selectedId);
                 if (selectedId) {
-                  const selectedAvail = myAvailabilities.find((a) => String(a.id) === String(selectedId) || String(a.availabilityId) === String(selectedId));
-                  if (selectedAvail?.rules?.sessionDurationMinutes) {
-                    setEtDuration(selectedAvail.rules.sessionDurationMinutes);
+                  const selectedGroup = groupedAvailabilities.find((g) => g.name === selectedId);
+                  const firstRule = selectedGroup?.rules[0];
+                  if (firstRule?.rules?.sessionDurationMinutes) {
+                    setEtDuration(firstRule.rules.sessionDurationMinutes);
                   }
                 }
               }}
               className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
             >
               <option value="">
-                {defaultAvail
-                  ? `-- Gunakan Jadwal Utama (${DAY_NAMES[defaultAvail.dayOfWeek]}: ${defaultAvail.startTime} - ${defaultAvail.endTime} WIB) --`
-                  : '-- Gunakan Jadwal Utama (Default) --'}
+                {defaultGroup
+                  ? `Jadwal Utama Default (${defaultGroup.name}: ${defaultGroup.summary})`
+                  : 'Jadwal Utama Default'}
               </option>
-              {myAvailabilities
-                .filter((a) => !a.isDefault)
-                .map((a) => {
-                  const dayName = DAY_NAMES[a.dayOfWeek] || 'Hari';
-                  const ruleName = a.name || a.rules?.sessionName || `Jadwal ${dayName}`;
-                  const durText = a.rules?.sessionDurationMinutes ? ` • Durasi: ${a.rules.sessionDurationMinutes} Min` : '';
-                  return (
-                    <option key={a.id} value={a.id}>
-                      {ruleName} ({dayName}: {a.startTime} - {a.endTime} WIB{durText})
-                    </option>
-                  );
-                })}
             </select>
             <p className="text-[10px] text-muted-foreground mt-1">
               Pilih jadwal ketersediaan khusus jika bimbingan ini hanya dibuka pada hari & jam tertentu.
             </p>
             {(() => {
-              const activeAvail = etAvailabilityId
-                ? myAvailabilities.find((a) => String(a.id) === String(etAvailabilityId) || String(a.availabilityId) === String(etAvailabilityId))
-                : defaultAvail;
-              if (activeAvail?.rules?.sessionDurationMinutes) {
+              const activeGroup = etAvailabilityId
+                ? groupedAvailabilities.find((g) => g.name === etAvailabilityId)
+                : defaultGroup;
+              if (activeGroup) {
                 return (
                   <div className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold border border-emerald-200 dark:border-emerald-900/50">
                     <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Jadwal Terpasang: <strong>{DAY_NAMES[activeAvail.dayOfWeek]}, {activeAvail.startTime} - {activeAvail.endTime} WIB</strong> ({activeAvail.rules.sessionDurationMinutes} Menit / Sesi)</span>
+                    <span>Jadwal Terpasang: <strong>{activeGroup.name}</strong> ({activeGroup.summary})</span>
                   </div>
                 );
               }
@@ -414,16 +517,43 @@ export default function EventTypesTab({
             </div>
 
             <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                  Nama Jenis Bimbingan *
-                </label>
-                <input
-                  type="text"
-                  value={editEtName}
-                  onChange={(e) => setEditEtName(e.target.value)}
-                  className="w-full p-2.5 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-medium"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                    Nama Jenis Bimbingan *
+                  </label>
+                  <input
+                    type="text"
+                    value={editEtName}
+                    onChange={(e) => setEditEtName(e.target.value)}
+                    className="w-full p-2.5 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-medium"
+                  />
+                  {editEtName.trim() && (
+                    <p className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1 truncate">
+                      <Globe className="w-3 h-3 shrink-0" />
+                      <span>Slug: <strong>/bimbingan/{generateSlug(editEtName)}</strong></span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Durasi Sesi Bimbingan *</span>
+                  </label>
+                  <select
+                    value={editEtDuration}
+                    onChange={(e) => setEditEtDuration(Number(e.target.value))}
+                    className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200 font-bold"
+                  >
+                    <option value={15}>15 Menit / Sesi</option>
+                    <option value={30}>30 Menit / Sesi</option>
+                    <option value={45}>45 Menit / Sesi</option>
+                    <option value={60}>60 Menit (1 Jam) / Sesi</option>
+                    <option value={90}>90 Menit (1.5 Jam) / Sesi</option>
+                    <option value={120}>120 Menit (2 Jam) / Sesi</option>
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -437,31 +567,20 @@ export default function EventTypesTab({
                     const selectedId = e.target.value;
                     setEditEtAvailabilityId(selectedId);
                     if (selectedId) {
-                      const selectedAvail = myAvailabilities.find((a) => String(a.id) === String(selectedId) || String(a.availabilityId) === String(selectedId));
-                      if (selectedAvail?.rules?.sessionDurationMinutes) {
-                        setEditEtDuration(selectedAvail.rules.sessionDurationMinutes);
+                      const selectedGroup = groupedAvailabilities.find((g) => g.name === selectedId);
+                      const firstRule = selectedGroup?.rules[0];
+                      if (firstRule?.rules?.sessionDurationMinutes) {
+                        setEditEtDuration(firstRule.rules.sessionDurationMinutes);
                       }
                     }
                   }}
                   className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200 font-medium"
                 >
                   <option value="">
-                    {defaultAvail
-                      ? `-- Gunakan Jadwal Utama (${DAY_NAMES[defaultAvail.dayOfWeek]}: ${defaultAvail.startTime} - ${defaultAvail.endTime} WIB) --`
-                      : '-- Gunakan Jadwal Utama (Default) --'}
+                    {defaultGroup
+                      ? `Jadwal Utama Default (${defaultGroup.name}: ${defaultGroup.summary})`
+                      : 'Jadwal Utama Default'}
                   </option>
-                  {myAvailabilities
-                    .filter((a) => !a.isDefault)
-                    .map((a) => {
-                      const dayName = DAY_NAMES[a.dayOfWeek] || 'Hari';
-                      const ruleName = a.name || a.rules?.sessionName || `Jadwal ${dayName}`;
-                      const durText = a.rules?.sessionDurationMinutes ? ` • Durasi: ${a.rules.sessionDurationMinutes} Min` : '';
-                      return (
-                        <option key={a.id} value={a.id}>
-                          {ruleName} ({dayName}: {a.startTime} - {a.endTime} WIB{durText})
-                        </option>
-                      );
-                    })}
                 </select>
               </div>
 

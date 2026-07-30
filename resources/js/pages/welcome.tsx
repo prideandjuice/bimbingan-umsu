@@ -24,29 +24,18 @@ export default function Welcome() {
                         </div>
 
                         <nav className="flex items-center gap-3">
-                            {auth.user ? (
-                                <Link
-                                    href={route('dashboard')}
-                                    className="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors"
-                                >
-                                    Ke Dashboard
-                                </Link>
-                            ) : (
-                                <>
-                                    <Link
-                                        href={route('login')}
-                                        className="text-gray-600 hover:text-gray-900 text-sm font-medium px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
-                                    >
-                                        Masuk
-                                    </Link>
-                                    <Link
-                                        href={route('register')}
-                                        className="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors"
-                                    >
-                                        Daftar
-                                    </Link>
-                                </>
-                            )}
+                            <Link
+                                href={route('login')}
+                                className="text-gray-600 hover:text-gray-900 text-sm font-medium px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
+                            >
+                                Masuk
+                            </Link>
+                            <Link
+                                href={route('register')}
+                                className="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors"
+                            >
+                                Daftar
+                            </Link>
                         </nav>
                     </div>
                 </header>
@@ -67,29 +56,18 @@ export default function Welcome() {
                                 mengelola seluruh proses bimbingan skripsi UMSU.
                             </p>
                             <div className="flex flex-wrap gap-3">
-                                {auth.user ? (
-                                    <Link
-                                        href={route('dashboard')}
-                                        className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-sm px-6 py-3 rounded-xl transition-colors"
-                                    >
-                                        Buka Dashboard →
-                                    </Link>
-                                ) : (
-                                    <>
-                                        <Link
-                                            href={route('login')}
-                                            className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-sm px-6 py-3 rounded-xl transition-colors"
-                                        >
-                                            Masuk ke Sistem
-                                        </Link>
-                                        <Link
-                                            href={route('register')}
-                                            className="bg-emerald-800 hover:bg-emerald-700 text-white border border-emerald-700 font-semibold text-sm px-6 py-3 rounded-xl transition-colors"
-                                        >
-                                            Buat Akun Baru
-                                        </Link>
-                                    </>
-                                )}
+                                <Link
+                                    href={route('login')}
+                                    className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-sm px-6 py-3 rounded-xl transition-colors"
+                                >
+                                    Masuk ke Sistem
+                                </Link>
+                                <Link
+                                    href={route('register')}
+                                    className="bg-emerald-800 hover:bg-emerald-700 text-white border border-emerald-700 font-semibold text-sm px-6 py-3 rounded-xl transition-colors"
+                                >
+                                    Buat Akun Baru
+                                </Link>
                             </div>
                         </div>
                     </div>
