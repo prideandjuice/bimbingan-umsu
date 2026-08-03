@@ -143,52 +143,71 @@ export function useLecturerLogic({ currentUser, onRefresh, propActiveTab }: Lect
       isDefault,
       rules,
     };
-    const updated = availabilityRules.map((ar) =>
-      ar.lecturerId === currentUser.id && isDefault ? { ...ar, isDefault: false } : ar
-    );
-    updated.unshift(newAr);
-    DB.saveAvailabilityRules(updated);
-    refreshLocalData();
+    setAvailabilityRules((prev) => {
+      const scheduleName = rules?.sessionName?.trim();
+      const updated = prev.map((ar) => {
+        if (ar.lecturerId === currentUser.id && isDefault) {
+          const arName = ar.name?.trim() || ar.rules?.sessionName?.trim();
+          if (scheduleName && arName && arName.toLowerCase() === scheduleName.toLowerCase()) {
+            return { ...ar, isDefault: true };
+          } else {
+            return { ...ar, isDefault: false };
+          }
+        }
+        return ar;
+      });
+      updated.unshift(newAr);
+      DB.saveAvailabilityRules(updated);
+      return updated;
+    });
+    onRefresh();
   };
 
   const handleUpdateAvailability = (id: string, updatedRule: Partial<AvailabilityRule>) => {
-    const updated = availabilityRules.map((ar) => {
-      if (ar.id === id) {
-        return { ...ar, ...updatedRule };
-      }
-      return ar;
+    setAvailabilityRules((prev) => {
+      const updated = prev.map((ar) => (ar.id === id ? { ...ar, ...updatedRule } : ar));
+      DB.saveAvailabilityRules(updated);
+      return updated;
     });
-    DB.saveAvailabilityRules(updated);
-    refreshLocalData();
+    onRefresh();
   };
 
   const handleToggleDefaultAvailability = (id: string) => {
-    const target = availabilityRules.find((ar) => ar.id === id);
-    const nextDefault = !target?.isDefault;
+    setAvailabilityRules((prev) => {
+      const target = prev.find((ar) => ar.id === id);
+      const nextDefault = !target?.isDefault;
 
-    const updated = availabilityRules.map((ar) => {
-      if (ar.lecturerId !== currentUser.id) return ar;
-      if (ar.id === id) return { ...ar, isDefault: nextDefault };
-      return nextDefault ? { ...ar, isDefault: false } : ar;
+      const updated = prev.map((ar) => {
+        if (ar.lecturerId !== currentUser.id) return ar;
+        if (ar.id === id) return { ...ar, isDefault: nextDefault };
+        return nextDefault ? { ...ar, isDefault: false } : ar;
+      });
+      DB.saveAvailabilityRules(updated);
+      return updated;
     });
-    DB.saveAvailabilityRules(updated);
-    refreshLocalData();
+    onRefresh();
   };
 
-  const handleDeleteAvailability = (id: string) => {
-    const updated = availabilityRules.filter((ar) => ar.id !== id);
-    DB.saveAvailabilityRules(updated);
-    refreshLocalData();
+  const handleDeleteAvailability = (id: string | string[]) => {
+    const idsToDelete = Array.isArray(id) ? id : [id];
+    setAvailabilityRules((prev) => {
+      const updated = prev.filter((ar) => !idsToDelete.includes(ar.id));
+      DB.saveAvailabilityRules(updated);
+      return updated;
+    });
+    onRefresh();
   };
 
   const handleSetAllAvailabilities = (newRules: AvailabilityRule[]) => {
-    const otherUsersRules = availabilityRules.filter(
-      (ar) => String(ar.lecturerId) !== String(currentUser.id) && ar.lecturerId !== 'user-lecturer-1'
-    );
-    const updated = [...newRules, ...otherUsersRules];
-    setAvailabilityRules(updated);
-    DB.saveAvailabilityRules(updated);
-    refreshLocalData();
+    setAvailabilityRules((prev) => {
+      const otherUsersRules = prev.filter(
+        (ar) => String(ar.lecturerId) !== String(currentUser.id) && ar.lecturerId !== 'user-lecturer-1'
+      );
+      const updated = [...newRules, ...otherUsersRules];
+      DB.saveAvailabilityRules(updated);
+      return updated;
+    });
+    onRefresh();
   };
 
   const handleAddEventType = (
@@ -197,7 +216,8 @@ export function useLecturerLogic({ currentUser, onRefresh, propActiveTab }: Lect
     description: string,
     availabilityId?: string,
     locationType?: 'offline' | 'online',
-    locationDetails?: string
+    locationDetails?: string,
+    maxQuotaPerSession: number = 5
   ) => {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     const newEt: EventType = {
@@ -207,34 +227,72 @@ export function useLecturerLogic({ currentUser, onRefresh, propActiveTab }: Lect
       name,
       slug,
       duration,
+      maxQuotaPerSession,
       description,
       locationType: locationType || 'offline',
       locationDetails: locationDetails || 'Ruang Dosen / Google Meet UMSU',
     };
-    const updated = [...eventTypes, newEt];
-    DB.saveEventTypes(updated);
-    refreshLocalData();
+    setEventTypes((prev) => {
+      const updated = [...prev, newEt];
+      DB.saveEventTypes(updated);
+      return updated;
+    });
+
+    setAvailabilityRules((prev) => {
+      const updatedRules = prev.map((ar) => ({
+        ...ar,
+        rules: {
+          ...ar.rules,
+          maxQuotaPerSession: maxQuotaPerSession,
+        },
+      }));
+      DB.saveAvailabilityRules(updatedRules);
+      return updatedRules;
+    });
+
+    onRefresh();
     toast.success('Jenis Bimbingan baru berhasil ditambahkan!');
   };
 
   const handleUpdateEventType = (id: string, updatedEt: Partial<EventType>) => {
-    const updated = eventTypes.map((et) => {
-      if (et.id === id) {
-        const nextName = updatedEt.name !== undefined ? updatedEt.name : et.name;
-        const slug = nextName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-        return { ...et, ...updatedEt, slug };
-      }
-      return et;
+    setEventTypes((prev) => {
+      const updated = prev.map((et) => {
+        if (et.id === id) {
+          const nextName = updatedEt.name !== undefined ? updatedEt.name : et.name;
+          const slug = nextName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+          return { ...et, ...updatedEt, slug };
+        }
+        return et;
+      });
+      DB.saveEventTypes(updated);
+      return updated;
     });
-    DB.saveEventTypes(updated);
-    refreshLocalData();
+
+    if (updatedEt.maxQuotaPerSession !== undefined) {
+      setAvailabilityRules((prev) => {
+        const updatedRules = prev.map((ar) => ({
+          ...ar,
+          rules: {
+            ...ar.rules,
+            maxQuotaPerSession: updatedEt.maxQuotaPerSession,
+          },
+        }));
+        DB.saveAvailabilityRules(updatedRules);
+        return updatedRules;
+      });
+    }
+
+    onRefresh();
     toast.success('Jenis Bimbingan berhasil diperbarui!');
   };
 
   const handleDeleteEventType = (id: string) => {
-    const updated = eventTypes.filter((et) => et.id !== id);
-    DB.saveEventTypes(updated);
-    refreshLocalData();
+    setEventTypes((prev) => {
+      const updated = prev.filter((et) => et.id !== id);
+      DB.saveEventTypes(updated);
+      return updated;
+    });
+    onRefresh();
     toast.success('Jenis Bimbingan berhasil dihapus.');
   };
 

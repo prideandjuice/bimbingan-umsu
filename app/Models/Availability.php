@@ -23,15 +23,21 @@ class Availability extends Model
         'slug',
         'is_default',
         'rules',
-        'day_of_week',
-        'start_time',
-        'end_time',
     ];
 
     protected $casts = [
         'is_default' => 'boolean',
         'rules' => 'array',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = 'ar-' . (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+    }
 
     public function lecturer()
     {

@@ -252,6 +252,7 @@ class BimbinganSyncController extends Controller
                         'name' => $et['name'],
                         'slug' => $et['slug'] ?? \Illuminate\Support\Str::slug($et['name']),
                         'duration' => $et['duration'] ?? 30,
+                        'max_quota_per_session' => $et['maxQuotaPerSession'] ?? 1,
                         'description' => $et['description'] ?? null,
                         'location_type' => $et['locationType'] ?? 'offline',
                         'location_details' => $et['locationDetails'] ?? null,
@@ -275,32 +276,105 @@ class BimbinganSyncController extends Controller
             $lecturerId = auth()->id() ?? $defaultLecturer?->id;
 
             if ($lecturerId) {
-                // Registrasi / panggil AvailabilityObserver secara eksplisit
                 Availability::observe(\App\Observers\AvailabilityObserver::class);
 
-                $incomingIds = collect($request->input('availabilityRules', []))->pluck('id')->toArray();
+                $incomingRules = $request->input('availabilityRules', []);
+
+                // Group by schedule name so 1 Schedule Card = EXACTLY 1 Row in DB
+                $grouped = [];
+                foreach ($incomingRules as $rule) {
+                    $name = trim($rule['name'] ?? $rule['rules']['sessionName'] ?? 'Bimbingan Judul Skripsi');
+                    if (!isset($grouped[$name])) {
+                        $grouped[$name] = [
+                            'id' => $rule['id'],
+                            'name' => $name,
+                            'lecturerId' => $rule['lecturerId'] ?? $lecturerId,
+                            'isDefault' => !empty($rule['isDefault']),
+                            'sessionDurationMinutes' => $rule['rules']['sessionDurationMinutes'] ?? 30,
+                            'maxQuotaPerSession' => $rule['rules']['maxQuotaPerSession'] ?? 1,
+                            'maxQuotaTotal' => $rule['rules']['maxQuotaTotal'] ?? 20,
+                            'slots' => [],
+                        ];
+                    }
+
+                    if (isset($rule['rules']['slots']) && is_array($rule['rules']['slots'])) {
+                        $grouped[$name]['slots'] = $rule['rules']['slots'];
+                    } else {
+                        $grouped[$name]['slots'][] = [
+                            'dayOfWeek' => (int) $rule['dayOfWeek'],
+                            'startTime' => $rule['startTime'],
+                            'endTime' => $rule['endTime'],
+                        ];
+                    }
+
+                    if (!empty($rule['isDefault'])) {
+                        $grouped[$name]['isDefault'] = true;
+                    }
+                }
+
+                $incomingIds = collect($grouped)->pluck('id')->toArray();
                 Availability::where('lecturer_id', $lecturerId)->whereNotIn('id', $incomingIds)->delete();
 
-                foreach ($request->input('availabilityRules', []) as $rule) {
-                    $targetLecturerId = $rule['lecturerId'] ?? null;
-                    if (!$targetLecturerId || !User::where('id', $targetLecturerId)->exists()) {
+                $dayNames = [
+                    0 => 'Minggu',
+                    1 => 'Senin',
+                    2 => 'Selasa',
+                    3 => 'Rabu',
+                    4 => 'Kamis',
+                    5 => 'Jumat',
+                    6 => 'Sabtu',
+                ];
+                $dayCodes = [
+                    'minggu' => 0,
+                    'senin' => 1,
+                    'selasa' => 2,
+                    'rabu' => 3,
+                    'kamis' => 4,
+                    'jumat' => 5,
+                    'sabtu' => 6,
+                ];
+
+                foreach ($grouped as $group) {
+                    $targetLecturerId = $group['lecturerId'];
+                    if (!User::where('id', $targetLecturerId)->exists()) {
                         $targetLecturerId = $lecturerId;
                     }
 
-                    $lecturer = User::find($targetLecturerId);
-                    $availability = Availability::find($rule['id']) ?? new Availability(['id' => $rule['id']]);
+                    $formattedSlots = [];
+                    foreach ($group['slots'] as $s) {
+                        $dNum = 1;
+                        if (isset($s['dayOfWeek']) && is_numeric($s['dayOfWeek'])) {
+                            $dNum = (int) $s['dayOfWeek'];
+                        } elseif (isset($s['day']) && is_string($s['day']) && isset($dayCodes[strtolower($s['day'])])) {
+                            $dNum = $dayCodes[strtolower($s['day'])];
+                        }
 
+                        $dName = isset($s['day']) && is_string($s['day']) && trim($s['day']) !== ''
+                            ? ucfirst(trim($s['day']))
+                            : ($dayNames[$dNum] ?? 'Senin');
+
+                        $formattedSlots[] = [
+                            'day' => $dName,
+                            'dayOfWeek' => $dNum,
+                            'startTime' => $s['startTime'],
+                            'endTime' => $s['endTime'],
+                        ];
+                    }
+
+                    $targetId = !empty($group['id']) ? $group['id'] : 'ar-' . (string) \Illuminate\Support\Str::uuid();
+                    $availability = Availability::find($targetId) ?? new Availability(['id' => $targetId]);
                     $availability->fill([
                         'lecturer_id' => $targetLecturerId,
-                        'name' => $rule['name'] ?? ($lecturer ? $lecturer->name : null),
-                        'is_default' => isset($rule['isDefault']) ? (bool)$rule['isDefault'] : false,
-                        'rules' => $rule['rules'] ?? null,
-                        'day_of_week' => $rule['dayOfWeek'],
-                        'start_time' => $rule['startTime'],
-                        'end_time' => $rule['endTime'],
+                        'name' => $group['name'],
+                        'is_default' => (bool) $group['isDefault'],
+                        'rules' => [
+                            'sessionName' => $group['name'],
+                            'sessionDurationMinutes' => (int) $group['sessionDurationMinutes'],
+                            'maxQuotaPerSession' => (int) $group['maxQuotaPerSession'],
+                            'maxQuotaTotal' => (int) $group['maxQuotaTotal'],
+                            'slots' => $formattedSlots,
+                        ],
                     ]);
-
-                    // Memanggil save() untuk memicu event observer (saving/created/updated)
                     $availability->save();
                 }
             }

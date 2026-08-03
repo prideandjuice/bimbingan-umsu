@@ -19,6 +19,7 @@ class EventType extends Model
         'name',
         'slug',
         'duration',
+        'max_quota_per_session',
         'description',
         'location_type',
         'location_details',

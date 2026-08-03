@@ -120,6 +120,7 @@ class DashboardController extends Controller
                 'name' => $et->name,
                 'slug' => $et->slug,
                 'duration' => (int)$et->duration,
+                'maxQuotaPerSession' => $et->max_quota_per_session ? (int)$et->max_quota_per_session : null,
                 'description' => $et->description,
                 'locationType' => $et->location_type ?? 'offline',
                 'locationDetails' => $et->location_details ?: (($et->location_type === 'online') ? 'Google Meet UMSU' : 'Ruang Dosen Gedung A / Ruang Prodi UMSU'),
@@ -219,37 +220,62 @@ class DashboardController extends Controller
         return response()->json(['status' => 'error', 'message' => 'File not uploaded'], 400);
     }
 
-    public function bookingSlugPage(Request $request, $slug)
+    public function bookingSlugPage(Request $request, $param1, $param2 = null)
     {
-        $eventType = EventType::with('lecturer')->where('slug', $slug)->first();
+        $lecturerUsername = $param2 !== null ? $param1 : null;
+        $slug = $param2 !== null ? $param2 : $param1;
+
+        $lecturer = null;
+        if ($lecturerUsername && $lecturerUsername !== 'bimbingan') {
+            $cleanLecturerStr = str_replace('-', '%', $lecturerUsername);
+            $lecturer = User::where('name', 'like', '%' . $cleanLecturerStr . '%')
+                ->orWhere('email', 'like', $lecturerUsername . '%')
+                ->first();
+        }
+
+        $eventTypeQuery = EventType::with('lecturer')->where('slug', $slug);
+        if ($lecturer) {
+            $eventTypeQuery->where('lecturer_id', $lecturer->id);
+        }
+        $eventType = $eventTypeQuery->first() ?? EventType::with('lecturer')->where('slug', $slug)->first();
 
         if (!$eventType) {
             $eventType = EventType::with('lecturer')->where('id', $slug)->first()
                 ?? EventType::with('lecturer')->first();
         }
 
-        $lecturer = $eventType ? $eventType->lecturer : User::whereHas('roles', fn($q) => $q->where('name', 'lecturer'))->first();
+        if (!$lecturer) {
+            $lecturer = $eventType ? $eventType->lecturer : User::whereHas('roles', fn($q) => $q->where('name', 'lecturer'))->first();
+        }
 
         $availabilities = [];
         if ($lecturer) {
             $query = Availability::where('lecturer_id', $lecturer->id);
 
             if ($eventType && $eventType->availability_id) {
-                $linked = (clone $query)->where(function ($q) use ($eventType) {
+                $targetAvail = Availability::find($eventType->availability_id);
+                $targetName = $targetAvail ? $targetAvail->name : $eventType->availability_id;
+
+                $linked = (clone $query)->where(function ($q) use ($eventType, $targetName) {
                     $q->where('id', $eventType->availability_id)
-                      ->orWhere('availability_id', $eventType->availability_id);
+                      ->orWhere('availability_id', $eventType->availability_id)
+                      ->orWhere('name', $eventType->availability_id);
+                    if ($targetName) {
+                        $q->orWhere('name', $targetName);
+                    }
                 })->get();
 
                 if ($linked->count() > 0) {
                     $availabilities = $linked->map(function ($a) {
+                        $firstSlot = $a->rules['slots'][0] ?? ['dayOfWeek' => 1, 'startTime' => '08:00', 'endTime' => '16:00'];
                         return [
                             'id' => (string) $a->id,
                             'availabilityId' => (string) $a->id,
                             'lecturerId' => (string) $a->lecturer_id,
                             'name' => $a->name,
-                            'dayOfWeek' => (int) $a->day_of_week,
-                            'startTime' => substr($a->start_time, 0, 5),
-                            'endTime' => substr($a->end_time, 0, 5),
+                            'dayOfWeek' => (int) ($firstSlot['dayOfWeek'] ?? 1),
+                            'startTime' => (string) ($firstSlot['startTime'] ?? '08:00'),
+                            'endTime' => (string) ($firstSlot['endTime'] ?? '16:00'),
                             'isDefault' => (bool) $a->is_default,
                             'rules' => $a->rules,
                         ];
@@ -259,14 +285,15 @@ class DashboardController extends Controller
 
             if (empty($availabilities) || count($availabilities) === 0) {
                 $availabilities = $query->get()->map(function ($a) {
+                    $firstSlot = $a->rules['slots'][0] ?? ['dayOfWeek' => 1, 'startTime' => '08:00', 'endTime' => '16:00'];
                     return [
                         'id' => (string) $a->id,
                         'availabilityId' => (string) $a->id,
                         'lecturerId' => (string) $a->lecturer_id,
                         'name' => $a->name,
-                        'dayOfWeek' => (int) $a->day_of_week,
-                        'startTime' => substr($a->start_time, 0, 5),
-                        'endTime' => substr($a->end_time, 0, 5),
+                        'dayOfWeek' => (int) ($firstSlot['dayOfWeek'] ?? 1),
+                        'startTime' => (string) ($firstSlot['startTime'] ?? '08:00'),
+                        'endTime' => (string) ($firstSlot['endTime'] ?? '16:00'),
                         'isDefault' => (bool) $a->is_default,
                         'rules' => $a->rules,
                     ];
@@ -283,6 +310,7 @@ class DashboardController extends Controller
                 'name' => $eventType->name,
                 'slug' => $eventType->slug,
                 'duration' => (int) $eventType->duration,
+                'maxQuotaPerSession' => $eventType->max_quota_per_session ? (int) $eventType->max_quota_per_session : null,
                 'description' => $eventType->description,
                 'locationType' => $eventType->location_type ?? 'offline',
                 'locationDetails' => $eventType->location_details ?: (($eventType->location_type === 'online') ? 'Google Meet UMSU' : 'Ruang Dosen Gedung A / Ruang Prodi UMSU'),

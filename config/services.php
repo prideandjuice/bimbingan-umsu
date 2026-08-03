@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'umsu' => [
+        'api_url' => env('API_UMSU'),
+    ],
+
 ];

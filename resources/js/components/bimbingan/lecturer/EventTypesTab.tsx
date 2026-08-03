@@ -1,5 +1,5 @@
-// components/bimbingan/lecturer/EventTypesTab.tsx
 import { useState, useMemo } from 'react';
+import { usePage } from '@inertiajs/react';
 import {
   Layers,
   Plus,
@@ -14,6 +14,8 @@ import {
   ExternalLink,
   MapPin,
   Video,
+  Users,
+  Calendar,
 } from 'lucide-react';
 import type { AvailabilityRule, EventType } from '@/types';
 import { toast } from 'sonner';
@@ -27,7 +29,8 @@ interface EventTypesTabProps {
     description: string,
     availabilityId?: string,
     locationType?: 'offline' | 'online',
-    locationDetails?: string
+    locationDetails?: string,
+    maxQuotaPerSession?: number
   ) => void;
   handleUpdateEventType: (id: string, updatedEt: Partial<EventType>) => void;
   handleDeleteEventType: (id: string) => void;
@@ -54,6 +57,7 @@ export default function EventTypesTab({
   // Form State
   const [etName, setEtName] = useState('');
   const [etDuration, setEtDuration] = useState<number>(30);
+  const [etMaxQuota, setEtMaxQuota] = useState<number>(5);
   const [etDescription, setEtDescription] = useState('');
   const [etAvailabilityId, setEtAvailabilityId] = useState<string>('');
   const [etLocationType, setEtLocationType] = useState<'offline' | 'online'>('offline');
@@ -63,6 +67,7 @@ export default function EventTypesTab({
   const [editingEt, setEditingEt] = useState<EventType | null>(null);
   const [editEtName, setEditEtName] = useState('');
   const [editEtDuration, setEditEtDuration] = useState<number>(30);
+  const [editEtMaxQuota, setEditEtMaxQuota] = useState<number>(5);
   const [editEtDescription, setEditEtDescription] = useState('');
   const [editEtAvailabilityId, setEditEtAvailabilityId] = useState<string>('');
   const [editEtLocationType, setEditEtLocationType] = useState<'offline' | 'online'>('offline');
@@ -107,19 +112,30 @@ export default function EventTypesTab({
     map.forEach((item) => {
       const daysMap = new Map<number, { startTime: string; endTime: string }[]>();
       item.rules.forEach((r) => {
-        if (!daysMap.has(r.dayOfWeek)) daysMap.set(r.dayOfWeek, []);
-        daysMap.get(r.dayOfWeek)!.push({ startTime: r.startTime, endTime: r.endTime });
+        const slotsList = (r.rules?.slots && r.rules.slots.length > 0)
+          ? r.rules.slots
+          : [{ dayOfWeek: r.dayOfWeek, startTime: r.startTime, endTime: r.endTime }];
+
+        slotsList.forEach((s: any) => {
+          const d = Number(s.dayOfWeek);
+          if (!daysMap.has(d)) daysMap.set(d, []);
+          daysMap.get(d)!.push({ startTime: s.startTime, endTime: s.endTime });
+        });
       });
 
       const activeDays: number[] = [];
-      let timeRangeStr = '08:00 - 16:00 WIB';
+      const daySlotsStrings: string[] = [];
 
       [1, 2, 3, 4, 5, 6, 0].forEach((d) => {
         if (daysMap.has(d)) {
           activeDays.push(d);
           const slots = daysMap.get(d)!;
           if (slots.length > 0) {
-            timeRangeStr = `${slots[0].startTime} - ${slots[0].endTime} WIB`;
+            const sortedSlots = [...slots].sort((a, b) => a.startTime.localeCompare(b.startTime));
+            const slotStr = sortedSlots.map((s) => `${s.startTime} - ${s.endTime}`).join(', ');
+            if (!daySlotsStrings.includes(slotStr)) {
+              daySlotsStrings.push(slotStr);
+            }
           }
         }
       });
@@ -130,6 +146,8 @@ export default function EventTypesTab({
       } else {
         daysSummary = 'Belum ada hari diatur';
       }
+
+      const timeRangeStr = daySlotsStrings.length > 0 ? `${daySlotsStrings.join('; ')} WIB` : '08:00 - 16:00 WIB';
 
       result.push({
         name: item.name,
@@ -159,13 +177,15 @@ export default function EventTypesTab({
       etDescription.trim(),
       etAvailabilityId || undefined,
       etLocationType,
-      etLocationDetails.trim() || defaultLocation
+      etLocationDetails.trim() || defaultLocation,
+      Number(etMaxQuota || 5)
     );
 
     setEtName('');
     setEtDescription('');
     setEtAvailabilityId('');
     setEtDuration(30);
+    setEtMaxQuota(5);
     setEtLocationType('offline');
     setEtLocationDetails('');
   };
@@ -173,6 +193,8 @@ export default function EventTypesTab({
   const openEditModal = (et: EventType) => {
     setEditingEt(et);
     setEditEtName(et.name);
+    setEditEtDuration(et.duration || 30);
+    setEditEtMaxQuota(et.maxQuotaPerSession || 5);
     setEditEtDescription(et.description || '');
     setEditEtAvailabilityId(et.availabilityId || '');
     setEditEtLocationType(et.locationType || 'offline');
@@ -189,6 +211,7 @@ export default function EventTypesTab({
     handleUpdateEventType(editingEt.id, {
       name: editEtName.trim(),
       duration: Number(editEtDuration || 30),
+      maxQuotaPerSession: Number(editEtMaxQuota || 5),
       description: editEtDescription.trim(),
       availabilityId: editEtAvailabilityId || undefined,
       locationType: editEtLocationType,
@@ -211,11 +234,14 @@ export default function EventTypesTab({
     const foundRule = myAvailabilities.find((a) => String(a.id) === String(availId));
     if (foundRule) {
       const name = foundRule.name || foundRule.rules?.sessionName || 'Jadwal Bimbingan';
-      return `${name} (${DAY_NAMES[foundRule.dayOfWeek]}: ${foundRule.startTime} - ${foundRule.endTime} WIB)`;
+      return name;
     }
 
     return 'Jadwal Utama Dosen';
   };
+
+  const { props } = usePage<{ auth?: { user?: { name?: string; email?: string } } }>();
+  const userSlug = generateSlug(props.auth?.user?.name || 'lecturer');
 
   return (
     <div className="space-y-6 text-left max-w-4xl mx-auto" id="event-types-tab-container">
@@ -246,7 +272,7 @@ export default function EventTypesTab({
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1">
               <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
                 Nama Jenis Bimbingan *
@@ -262,7 +288,7 @@ export default function EventTypesTab({
               {etName.trim() && (
                 <p className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1 truncate">
                   <Globe className="w-3 h-3 shrink-0" />
-                  <span>Slug Real-time: <strong>/bimbingan/{generateSlug(etName)}</strong></span>
+                  <span>Slug Real-time: <strong>/{userSlug}/{generateSlug(etName)}</strong></span>
                 </p>
               )}
             </div>
@@ -275,62 +301,51 @@ export default function EventTypesTab({
               <select
                 value={etDuration}
                 onChange={(e) => setEtDuration(Number(e.target.value))}
-                className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-bold"
+                className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-semibold"
               >
                 <option value={15}>15 Menit / Sesi</option>
                 <option value={30}>30 Menit / Sesi</option>
                 <option value={45}>45 Menit / Sesi</option>
-                <option value={60}>60 Menit (1 Jam) / Sesi</option>
-                <option value={90}>90 Menit (1.5 Jam) / Sesi</option>
-                <option value={120}>120 Menit (2 Jam) / Sesi</option>
+                <option value={60}>60 Menit / Sesi</option>
+                <option value={90}>90 Menit / Sesi</option>
+                <option value={120}>120 Menit / Sesi</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Batas Kuota Mhs / Sesi *</span>
+              </label>
+              <select
+                value={etMaxQuota}
+                onChange={(e) => setEtMaxQuota(Number(e.target.value))}
+                className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-semibold"
+              >
+                <option value={1}>1 Orang / Sesi</option>
+                <option value={2}>2 Orang / Sesi</option>
+                <option value={3}>3 Orang / Sesi</option>
+                <option value={4}>4 Orang / Sesi</option>
+                <option value={5}>5 Orang / Sesi</option>
+                <option value={10}>10 Orang / Sesi</option>
+                <option value={15}>15 Orang / Sesi</option>
+                <option value={20}>20 Orang / Sesi</option>
               </select>
             </div>
           </div>
 
-          {/* RELATED AVAILABILITY SELECTOR */}
+          {/* AUTOMATIC DEFAULT SCHEDULE BADGE */}
           <div className="space-y-1 md:col-span-2">
             <label className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-              <LinkIcon className="w-3.5 h-3.5" />
-              <span>Pilih Jadwal Ketersediaan</span>
+              <Clock className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Jadwal Ketersediaan Terpasang (Otomatis Default)</span>
             </label>
-            <select
-              value={etAvailabilityId}
-              onChange={(e) => {
-                const selectedId = e.target.value;
-                setEtAvailabilityId(selectedId);
-                if (selectedId) {
-                  const selectedGroup = groupedAvailabilities.find((g) => g.name === selectedId);
-                  const firstRule = selectedGroup?.rules[0];
-                  if (firstRule?.rules?.sessionDurationMinutes) {
-                    setEtDuration(firstRule.rules.sessionDurationMinutes);
-                  }
-                }
-              }}
-              className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
-            >
-              <option value="">
-                {defaultGroup
-                  ? `Jadwal Utama Default (${defaultGroup.name}: ${defaultGroup.summary})`
-                  : 'Jadwal Utama Default'}
-              </option>
-            </select>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Pilih jadwal ketersediaan khusus jika bimbingan ini hanya dibuka pada hari & jam tertentu.
-            </p>
-            {(() => {
-              const activeGroup = etAvailabilityId
-                ? groupedAvailabilities.find((g) => g.name === etAvailabilityId)
-                : defaultGroup;
-              if (activeGroup) {
-                return (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold border border-emerald-200 dark:border-emerald-900/50">
-                    <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Jadwal Terpasang: <strong>{activeGroup.name}</strong> ({activeGroup.summary})</span>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+            <div className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 text-xs font-medium border border-emerald-200/80 dark:border-emerald-900/50 w-full">
+
+              <span>
+                <strong>{defaultGroup ? defaultGroup.name : 'Jadwal Utama Default'}</strong> {defaultGroup?.summary ? `(${defaultGroup.summary})` : ''}
+              </span>
+            </div>
           </div>
 
           {/* LOKASI PERTEMUAN FIELD */}
@@ -349,7 +364,7 @@ export default function EventTypesTab({
                   : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400 hover:border-emerald-300'
                   }`}
               >
-                <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+
                 <span>📍 Tatap Muka (Offline)</span>
               </button>
 
@@ -361,7 +376,7 @@ export default function EventTypesTab({
                   : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400 hover:border-emerald-300'
                   }`}
               >
-                <Video className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+
                 <span>📹 Online (Google Meet)</span>
               </button>
             </div>
@@ -383,22 +398,22 @@ export default function EventTypesTab({
 
           <div className="space-y-1 md:col-span-2">
             <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-              Deskripsi / Petunjuk untuk Mahasiswa
+              Deskripsi / Petunjuk untuk Mahasiswa (Opsional)
             </label>
             <textarea
               rows={2}
               value={etDescription}
               onChange={(e) => setEtDescription(e.target.value)}
-              placeholder="Penjelasan ringkas mengenai persiapan berkas atau topik bimbingan..."
+              placeholder="Contoh: Silakan mendaftar 1 hari sebelum bimbingan dan membawa draf bab 1 yang sudah diprint."
               className="w-full p-2.5 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium resize-none"
             />
           </div>
         </div>
 
-        <div className="flex justify-end pt-2">
+        <div className="flex items-center justify-end gap-2 pt-2">
           <button
             type="submit"
-            className="py-2.5 px-6 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-xs hover:shadow-md"
+            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
             <span>Simpan Jenis Bimbingan</span>
@@ -406,29 +421,31 @@ export default function EventTypesTab({
         </div>
       </form>
 
-      {/* List Event Types */}
+      {/* List Existing Event Types */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <h3 className="font-bold text-base text-gray-900 dark:text-white">
-              Daftar Jenis Bimbingan ({myEventTypes.length})
-            </h3>
-          </div>
-        </div>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <span>Daftar Jenis Bimbingan Aktif</span>
+          <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-mono">
+            {myEventTypes.length}
+          </span>
+        </h3>
 
         {myEventTypes.length === 0 ? (
-          <div className="bg-gray-50 dark:bg-zinc-900/50 border border-dashed border-gray-200 dark:border-zinc-800 rounded-3xl p-8 text-center text-xs text-muted-foreground">
-            Belum ada jenis bimbingan yang dikonfigurasi. Tambahkan jenis bimbingan baru di atas.
+          <div className="bg-white dark:bg-zinc-900 border border-dashed border-gray-200 dark:border-zinc-800 rounded-3xl p-8 text-center space-y-3">
+            <Calendar className="w-10 h-10 text-emerald-500 mx-auto opacity-40" />
+            <p className="text-xs text-muted-foreground">
+              Belum ada jenis bimbingan yang dibuat. Silakan tambahkan pada form di atas.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {myEventTypes.map((et) => {
               const linkedLabel = getLinkedAvailabilityLabel(et.availabilityId);
+
               return (
                 <div
                   key={et.id}
-                  className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 space-y-3 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-800 transition-all flex flex-col justify-between"
+                  className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800/80 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-all space-y-3"
                 >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
@@ -438,14 +455,14 @@ export default function EventTypesTab({
                         </h4>
                         {et.slug && (
                           <a
-                            href={`/bimbingan/${et.slug}`}
+                            href={`/${userSlug}/${et.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline transition-all group"
                             title="Klik untuk membuka halaman booking di tab baru"
                           >
                             <Globe className="w-3.5 h-3.5 text-emerald-500 group-hover:scale-110 transition-transform" />
-                            <span>/bimbingan/{et.slug}</span>
+                            <span>/{userSlug}/{et.slug}</span>
                             <ExternalLink className="w-3 h-3 text-emerald-500 opacity-70 group-hover:opacity-100 ml-0.5" />
                           </a>
                         )}
@@ -517,7 +534,7 @@ export default function EventTypesTab({
             </div>
 
             <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
                     Nama Jenis Bimbingan *
@@ -554,34 +571,41 @@ export default function EventTypesTab({
                     <option value={120}>120 Menit (2 Jam) / Sesi</option>
                   </select>
                 </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Batas Kuota Mhs / Sesi *</span>
+                  </label>
+                  <select
+                    value={editEtMaxQuota}
+                    onChange={(e) => setEditEtMaxQuota(Number(e.target.value))}
+                    className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200 font-bold"
+                  >
+                    <option value={1}>1 Orang / Sesi</option>
+                    <option value={2}>2 Orang / Sesi</option>
+                    <option value={3}>3 Orang / Sesi</option>
+                    <option value={4}>4 Orang / Sesi</option>
+                    <option value={5}>5 Orang / Sesi</option>
+                    <option value={10}>10 Orang / Sesi</option>
+                    <option value={15}>15 Orang / Sesi</option>
+                    <option value={20}>20 Orang / Sesi</option>
+                  </select>
+                </div>
               </div>
 
+              {/* AUTOMATIC DEFAULT SCHEDULE BADGE EDIT */}
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                  <LinkIcon className="w-3.5 h-3.5" />
-                  <span>Pilih Jadwal Ketersediaan</span>
+                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Jadwal Ketersediaan Terpasang (Otomatis Default)</span>
                 </label>
-                <select
-                  value={editEtAvailabilityId}
-                  onChange={(e) => {
-                    const selectedId = e.target.value;
-                    setEditEtAvailabilityId(selectedId);
-                    if (selectedId) {
-                      const selectedGroup = groupedAvailabilities.find((g) => g.name === selectedId);
-                      const firstRule = selectedGroup?.rules[0];
-                      if (firstRule?.rules?.sessionDurationMinutes) {
-                        setEditEtDuration(firstRule.rules.sessionDurationMinutes);
-                      }
-                    }
-                  }}
-                  className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200 font-medium"
-                >
-                  <option value="">
-                    {defaultGroup
-                      ? `Jadwal Utama Default (${defaultGroup.name}: ${defaultGroup.summary})`
-                      : 'Jadwal Utama Default'}
-                  </option>
-                </select>
+                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 text-xs font-medium border border-emerald-200/80 dark:border-emerald-900/50 w-full">
+                  <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    Jadwal Terpasang: <strong>{defaultGroup ? defaultGroup.name : 'Jadwal Utama Default'}</strong> {defaultGroup?.summary ? `(${defaultGroup.summary})` : ''}
+                  </span>
+                </div>
               </div>
 
               {/* LOKASI PERTEMUAN EDIT FIELD */}

@@ -6,6 +6,8 @@
 import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, EventType, AvailabilityRule, Booking } from '@/types';
 import axios from 'axios';
 
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
 const DB_VERSION = '13';
 const VERSION_KEY = 'db_version';

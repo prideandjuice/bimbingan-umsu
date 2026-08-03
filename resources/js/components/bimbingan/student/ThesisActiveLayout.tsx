@@ -127,7 +127,7 @@ export default function ThesisActiveLayout({
               <div>
                 <p className="text-[11px] text-emerald-200/80 uppercase font-semibold tracking-wider">Dosen Pembimbing</p>
                 <p className="text-xs md:text-sm font-bold text-white">
-                  {myThesis.supervisorName ? myThesis.supervisorName : 'Prof. Dr. Irwan, M.Si'}
+                  {myThesis.supervisorName ? myThesis.supervisorName : 'Belum Ditentukan'}
                 </p>
               </div>
             </div>
@@ -247,7 +247,7 @@ export default function ThesisActiveLayout({
                 Status Dosen Pembimbing
               </h4>
               <p className="text-xs text-muted-foreground leading-normal">
-                Dosen pembimbing Anda adalah <strong>{myThesis.supervisorName || 'Prof. Dr. Irwan, M.Si'}</strong>. Anda dapat melihat riwayat bimbingan pada tab Log Bimbingan.
+                Dosen pembimbing Anda adalah <strong>{myThesis.supervisorName || 'Belum Ditentukan'}</strong>. Anda dapat melihat riwayat bimbingan pada tab Log Bimbingan.
               </p>
             </div>
 
@@ -347,7 +347,7 @@ export default function ThesisActiveLayout({
                           <div>
                             <span className="text-[10px] text-muted-foreground block font-light">Dosen Evaluator:</span>
                             <span className="font-bold text-gray-800 dark:text-gray-200">
-                              {myThesis.supervisorName || 'Prof. Dr. Irwan, M.Si'}
+                              {myThesis.supervisorName || 'Belum Ditentukan'}
                             </span>
                           </div>
                           <div>

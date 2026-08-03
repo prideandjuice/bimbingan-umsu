@@ -64,7 +64,8 @@ export default function Dashboard({
         let foundUser = users.find((u) => u.email.toLowerCase() === auth.user.email.toLowerCase());
 
         const backendIsVerified = Boolean((auth.user as any).is_verified);
-        const backendRole = (auth.user.roles && auth.user.roles.length > 0) ? (auth.user.roles[0] as any) : 'student';
+        const rawRole = (auth.user.roles && auth.user.roles.length > 0) ? auth.user.roles[0] : (auth.user as any).role;
+        const backendRole = typeof rawRole === 'object' && rawRole !== null ? (rawRole.name || 'student') : (rawRole || 'student');
 
         if (!foundUser) {
             // Tentukan default role berdasarkan email domain (default: student)
@@ -92,8 +93,9 @@ export default function Dashboard({
             // Simpan ke list users di LocalStorage
             DB.saveUsers([...users, foundUser]);
         } else {
-            // Sinkronisasi status jika berbeda dengan backend
-            if (foundUser.isVerified !== backendIsVerified || foundUser.role !== backendRole) {
+            // Sinkronisasi status jika berbeda dengan backend atau role berupa objek
+            const currentRoleStr = typeof foundUser.role === 'object' && foundUser.role !== null ? (foundUser.role as any).name : foundUser.role;
+            if (foundUser.isVerified !== backendIsVerified || currentRoleStr !== backendRole) {
                 foundUser = {
                     ...foundUser,
                     role: backendRole,

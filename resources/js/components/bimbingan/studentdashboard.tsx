@@ -121,7 +121,7 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
 
   const onBookMeeting = (eventTypeId: string, date: string, slot: string, notes: string) => {
     if (!myThesis) return;
-    const supervisorName = myThesis.supervisorName || 'Prof. Dr. Irwan, M.Si';
+    const supervisorName = myThesis.supervisorName || 'Dosen Pembimbing';
     const newBooking: Booking = {
       id: `booking-${Date.now()}`,
       thesisId: myThesis.id,
@@ -153,9 +153,9 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
   const verifiedGuidances = myGuidances.filter(g => g.status === 'verified');
   const currentProgress = verifiedGuidances.length > 0 ? Math.max(...verifiedGuidances.map(g => g.progress)) : 0;
   const mySupervisorEventTypes = myThesis?.supervisorId ? eventTypes.filter(et => et.lecturerId === myThesis.supervisorId) : [];
-  const mySupervisorAvailability = (myThesis?.supervisorId 
-    ? availabilityRules.filter(ar => ar.lecturerId === myThesis.supervisorId) 
-    : availabilityRules).filter(ar => Boolean(ar.isDefault));
+  const mySupervisorAvailability = myThesis?.supervisorId
+    ? availabilityRules.filter(ar => String(ar.lecturerId) === String(myThesis.supervisorId) || ar.lecturerId === 'user-lecturer-1')
+    : availabilityRules;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="student-dashboard-layout">
@@ -208,14 +208,16 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
                   <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                     <UserCheck className="w-5.5 h-5.5" />
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    {myThesis ? 'Ditetapkan' : 'Belum Ada'}
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    myThesis?.supervisorName ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {myThesis?.supervisorName ? 'Ditetapkan' : 'Belum Ada'}
                   </span>
                 </div>
                 <div>
                   <p className="text-[11px] font-semibold text-muted-foreground">Dosen Pembimbing</p>
                   <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5 truncate">
-                    {myThesis?.supervisorName || 'Prof. Dr. Irwan, M.Si'}
+                    {myThesis?.supervisorName ? myThesis.supervisorName : 'Belum Ditentukan'}
                   </p>
                 </div>
               </div>

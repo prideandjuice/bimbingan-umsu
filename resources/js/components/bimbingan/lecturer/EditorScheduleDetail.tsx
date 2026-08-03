@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Edit3,
   CalendarCheck2,
+  Users,
 } from 'lucide-react';
 import type { AvailabilityRule, AvailabilityRuleConfig } from '@/types';
 import { toast } from 'sonner';
@@ -58,6 +59,13 @@ export default function ScheduleDetailEditor({
   const [isDefault, setIsDefault] = useState(true);
   const [isSaved, setIsSaved] = useState<boolean>(true);
 
+  const initialMatchingRule = myAvailabilities.find(
+    (ar) => (ar.name?.trim() || ar.rules?.sessionName?.trim() || 'Bimbingan Judul Skripsi') === initialScheduleName
+  );
+  const [maxQuotaPerSession, setMaxQuotaPerSession] = useState<number>(
+    initialMatchingRule?.rules?.maxQuotaPerSession || 1
+  );
+
   // Weekly hours state for 7 days (0: Minggu .. 6: Sabtu)
   const [weeklyHours, setWeeklyHours] = useState<Record<number, DaySchedule>>({
     0: { enabled: false, slots: [] },
@@ -98,23 +106,37 @@ export default function ScheduleDetailEditor({
       setIsDefault(myAvailabilities.length === 0);
       setIsSaved(false);
     } else {
+      const DAY_CODES_MAP: Record<string, number> = {
+        minggu: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6,
+      };
+
       matchingRules.forEach((ar) => {
-        const day = ar.dayOfWeek;
-        if (day >= 0 && day <= 6) {
-          initial[day].enabled = true;
-          const exists = initial[day].slots.some(
-            (s) => s.startTime === ar.startTime && s.endTime === ar.endTime
-          );
-          if (!exists) {
-            initial[day].slots.push({
-              startTime: ar.startTime,
-              endTime: ar.endTime,
-            });
+        const slotsList = (ar.rules?.slots && Array.isArray(ar.rules.slots) && ar.rules.slots.length > 0)
+          ? ar.rules.slots
+          : [{ dayOfWeek: ar.dayOfWeek, startTime: ar.startTime, endTime: ar.endTime }];
+
+        slotsList.forEach((slotItem: any) => {
+          let day = 1;
+          if (slotItem.dayOfWeek !== undefined && slotItem.dayOfWeek !== null && !isNaN(Number(slotItem.dayOfWeek))) {
+            day = Number(slotItem.dayOfWeek);
+          } else if (typeof slotItem.day === 'string' && DAY_CODES_MAP[slotItem.day.toLowerCase()] !== undefined) {
+            day = DAY_CODES_MAP[slotItem.day.toLowerCase()];
           }
-          if (ar.isDefault) {
-            defaultFound = true;
+
+          if (day >= 0 && day <= 6) {
+            initial[day].enabled = true;
+            const exists = initial[day].slots.some(
+              (s) => s.startTime === slotItem.startTime && s.endTime === slotItem.endTime
+            );
+            if (!exists) {
+              initial[day].slots.push({
+                startTime: slotItem.startTime,
+                endTime: slotItem.endTime,
+              });
+            }
           }
-        }
+        });
+        if (ar.isDefault) defaultFound = true;
       });
 
       setWeeklyHours(initial);
@@ -123,7 +145,7 @@ export default function ScheduleDetailEditor({
     }
   }, [initialScheduleName, myAvailabilities]);
 
-  // Toggle Day Enable/Disable
+  // Toggle Day Enable/Disable (Local state update)
   const handleToggleDay = (day: number) => {
     setWeeklyHours((prev) => {
       const current = prev[day];
@@ -135,14 +157,14 @@ export default function ScheduleDetailEditor({
           slots: nextEnabled
             ? current.slots.length > 0
               ? current.slots
-              : [{ startTime: '08:00', endTime: '09:00' }]
+              : [{ startTime: '08:00', endTime: '16:00' }]
             : current.slots,
         },
       };
     });
   };
 
-  // Add extra slot interval for a day
+  // Add extra slot interval for a day (Local state update)
   const handleAddSlot = (day: number) => {
     setWeeklyHours((prev) => {
       const current = prev[day];
@@ -165,7 +187,7 @@ export default function ScheduleDetailEditor({
     });
   };
 
-  // Remove a slot interval
+  // Remove a slot interval (Local state update)
   const handleRemoveSlot = (day: number, slotIndex: number) => {
     setWeeklyHours((prev) => {
       const current = prev[day];
@@ -180,7 +202,7 @@ export default function ScheduleDetailEditor({
     });
   };
 
-  // Update slot times
+  // Update slot times (Local state update)
   const handleUpdateSlotTime = (
     day: number,
     slotIndex: number,
@@ -205,12 +227,19 @@ export default function ScheduleDetailEditor({
     });
   };
 
-
-
-  // Save all weekly hours
+  // Save all weekly hours into 1 single AvailabilityRule per Schedule Card when SAVE button is clicked
   const handleSave = () => {
-    const newRulesList: AvailabilityRule[] = [];
-    const nextWeeklyHours: Record<number, DaySchedule> = { ...weeklyHours };
+    const DAY_NAMES_MAP: Record<number, string> = {
+      0: 'Minggu',
+      1: 'Senin',
+      2: 'Selasa',
+      3: 'Rabu',
+      4: 'Kamis',
+      5: 'Jumat',
+      6: 'Sabtu',
+    };
+
+    const allSlots: { day: string; dayOfWeek: number; startTime: string; endTime: string }[] = [];
 
     Object.entries(weeklyHours).forEach(([dayStr, daySched]) => {
       const day = Number(dayStr);
@@ -218,32 +247,39 @@ export default function ScheduleDetailEditor({
         const sortedSlots = [...daySched.slots].sort((a, b) =>
           a.startTime.localeCompare(b.startTime)
         );
-        nextWeeklyHours[day] = { enabled: true, slots: sortedSlots };
-        sortedSlots.forEach((slot, idx) => {
-          newRulesList.push({
-            id: `ar-${Date.now()}-${day}-${idx}`,
-            lecturerId: 'user-lecturer-1',
+        sortedSlots.forEach((slot) => {
+          allSlots.push({
+            day: DAY_NAMES_MAP[day] || 'Senin',
             dayOfWeek: day,
             startTime: slot.startTime,
             endTime: slot.endTime,
-            isDefault: isDefault,
-            name: scheduleName,
-            rules: {
-              sessionName: scheduleName,
-              maxQuotaPerSession: 5,
-              maxQuotaTotal: 20,
-              sessionDurationMinutes: 30,
-            },
           });
         });
-      } else {
-        nextWeeklyHours[day] = { enabled: false, slots: [] };
       }
     });
 
-    setWeeklyHours(nextWeeklyHours);
+    const firstSlot = allSlots[0] || { day: 'Senin', dayOfWeek: 1, startTime: '08:00', endTime: '16:00' };
+
+    const singleScheduleRule: AvailabilityRule = {
+      id: `ar-${Date.now()}`,
+      lecturerId: 'user-lecturer-1',
+      dayOfWeek: firstSlot.dayOfWeek,
+      startTime: firstSlot.startTime,
+      endTime: firstSlot.endTime,
+      isDefault: isDefault,
+      name: scheduleName,
+      rules: {
+        sessionName: scheduleName,
+        maxQuotaPerSession: Number(maxQuotaPerSession || 1),
+        maxQuotaTotal: 20,
+        sessionDurationMinutes: 30,
+        slots: allSlots,
+      },
+    };
+
     setIsSaved(true);
-    onSaveSchedule(newRulesList, scheduleName, isDefault);
+    onSaveSchedule([singleScheduleRule], scheduleName, isDefault);
+    toast.success(`Jadwal ketersediaan "${scheduleName}" berhasil disimpan!`);
   };
 
   // Reset & Reconfigure Schedule
@@ -323,6 +359,28 @@ export default function ScheduleDetailEditor({
 
         {/* Top Right Controls */}
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
+          {/* Max Quota Per Session Selector */}
+          <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-emerald-200/80 dark:border-zinc-700 px-3 py-1 rounded-xl shadow-2xs">
+            <Users className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span className="text-xs font-semibold text-emerald-900 dark:text-zinc-300">
+              Batas Kuota:
+            </span>
+            <select
+              value={maxQuotaPerSession}
+              onChange={(e) => setMaxQuotaPerSession(Number(e.target.value))}
+              className="bg-transparent text-xs font-bold text-emerald-900 dark:text-white focus:outline-none cursor-pointer"
+            >
+              <option value={1}>1 Org / Sesi</option>
+              <option value={2}>2 Org / Sesi</option>
+              <option value={3}>3 Org / Sesi</option>
+              <option value={4}>4 Org / Sesi</option>
+              <option value={5}>5 Org / Sesi</option>
+              <option value={10}>10 Org / Sesi</option>
+              <option value={15}>15 Org / Sesi</option>
+              <option value={20}>20 Org / Sesi</option>
+            </select>
+          </div>
+
           {/* Set as default toggle */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-emerald-900 dark:text-zinc-300">

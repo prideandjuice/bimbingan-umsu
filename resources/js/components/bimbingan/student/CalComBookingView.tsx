@@ -39,20 +39,37 @@ export default function CalComBookingView({
 
   // Filter rules matching linked eventType availabilityId if specified
   const targetAvailabilityId = eventType?.availabilityId;
-  const linkedRules = (targetAvailabilityId && availabilityRules?.length > 0)
-    ? availabilityRules.filter(
-        (r) =>
-          String(r.id) === String(targetAvailabilityId) ||
-          String(r.availabilityId) === String(targetAvailabilityId) ||
-          (r.name && r.name.trim() === targetAvailabilityId.trim()) ||
-          (r.rules?.sessionName && r.rules.sessionName.trim() === targetAvailabilityId.trim())
-      )
-    : [];
+  let linkedRules: AvailabilityRule[] = [];
+  if (targetAvailabilityId && availabilityRules?.length > 0) {
+    const targetRule = availabilityRules.find((r) => String(r.id) === String(targetAvailabilityId));
+    const targetName = targetRule?.name || targetRule?.rules?.sessionName || targetAvailabilityId;
 
-  const defaultOnlyRules = availabilityRules?.filter((r) => Boolean(r.isDefault)) || [];
+    linkedRules = availabilityRules.filter(
+      (r) =>
+        String(r.id) === String(targetAvailabilityId) ||
+        String(r.availabilityId) === String(targetAvailabilityId) ||
+        (r.name && r.name.trim().toLowerCase() === targetName.trim().toLowerCase()) ||
+        (r.rules?.sessionName && r.rules.sessionName.trim().toLowerCase() === targetName.trim().toLowerCase())
+    );
+  }
+
+  const defaultRules = availabilityRules?.filter((r) => Boolean(r.isDefault)) || [];
+  let defaultGroupRules: AvailabilityRule[] = [];
+  if (defaultRules.length > 0) {
+    const defaultName = defaultRules[0]?.name || defaultRules[0]?.rules?.sessionName;
+    defaultGroupRules = availabilityRules.filter(
+      (r) =>
+        Boolean(r.isDefault) ||
+        (defaultName && r.name && r.name.trim().toLowerCase() === defaultName.trim().toLowerCase()) ||
+        (defaultName && r.rules?.sessionName && r.rules.sessionName.trim().toLowerCase() === defaultName.trim().toLowerCase())
+    );
+  }
+
   const activeRules = linkedRules.length > 0
     ? linkedRules
-    : defaultOnlyRules;
+    : defaultGroupRules.length > 0
+    ? defaultGroupRules
+    : availabilityRules || [];
 
   // Helper: Find first available day starting from today
   const getInitialAvailableDate = () => {
@@ -122,9 +139,27 @@ export default function CalComBookingView({
     );
   };
 
+  const DAY_CODES_MAP: Record<string, number> = {
+    minggu: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6,
+  };
+
   // Helper: Get rules for a specific day of week
   const getRulesForDayOfWeek = (dayOfWeek: number) => {
-    return activeRules.filter((r) => Number(r.dayOfWeek) === Number(dayOfWeek));
+    return activeRules.filter((r) => {
+      if (Number(r.dayOfWeek) === Number(dayOfWeek)) return true;
+      if (r.rules?.slots && Array.isArray(r.rules.slots)) {
+        return r.rules.slots.some((s: any) => {
+          let d = 1;
+          if (s.dayOfWeek !== undefined && s.dayOfWeek !== null && !isNaN(Number(s.dayOfWeek))) {
+            d = Number(s.dayOfWeek);
+          } else if (typeof s.day === 'string' && DAY_CODES_MAP[s.day.toLowerCase()] !== undefined) {
+            d = DAY_CODES_MAP[s.day.toLowerCase()];
+          }
+          return d === Number(dayOfWeek);
+        });
+      }
+      return false;
+    });
   };
 
   // Rules for currently selected date
@@ -165,28 +200,42 @@ export default function CalComBookingView({
       const sName = eventType?.name || rule.name || rule.rules?.sessionName || 'Sesi Standard';
       const quota = rule.rules?.maxQuotaPerSession || 5;
 
-      const [startH, startM] = rule.startTime.split(':').map(Number);
-      const [endH, endM] = rule.endTime.split(':').map(Number);
+      const rawSlots = (rule.rules?.slots && rule.rules.slots.length > 0)
+        ? rule.rules.slots.filter((s: any) => {
+            let d = 1;
+            if (s.dayOfWeek !== undefined && s.dayOfWeek !== null && !isNaN(Number(s.dayOfWeek))) {
+              d = Number(s.dayOfWeek);
+            } else if (typeof s.day === 'string' && DAY_CODES_MAP[s.day.toLowerCase()] !== undefined) {
+              d = DAY_CODES_MAP[s.day.toLowerCase()];
+            }
+            return d === Number(selectedDayOfWeek);
+          })
+        : [{ dayOfWeek: rule.dayOfWeek, startTime: rule.startTime, endTime: rule.endTime }];
 
-      let startTotal = startH * 60 + startM;
-      const endTotal = endH * 60 + endM;
+      rawSlots.forEach((slotInfo: any) => {
+        const [startH, startM] = slotInfo.startTime.split(':').map(Number);
+        const [endH, endM] = slotInfo.endTime.split(':').map(Number);
 
-      while (startTotal + duration <= endTotal) {
-        const startStr = `${String(Math.floor(startTotal / 60)).padStart(2, '0')}:${String(startTotal % 60).padStart(2, '0')}`;
-        const endTotalSlot = startTotal + duration;
-        const endStr = `${String(Math.floor(endTotalSlot / 60)).padStart(2, '0')}:${String(endTotalSlot % 60).padStart(2, '0')}`;
+        let startTotal = startH * 60 + startM;
+        const endTotal = endH * 60 + endM;
 
-        if (!slots.some((s) => s.slotStart === startStr)) {
-          slots.push({
-            slotStart: startStr,
-            slotEnd: endStr,
-            sessionName: sName,
-            maxQuota: quota,
-            fullSlotText: `${sName} (${startStr} - ${endStr} WIB)`,
-          });
+        while (startTotal + duration <= endTotal) {
+          const startStr = `${String(Math.floor(startTotal / 60)).padStart(2, '0')}:${String(startTotal % 60).padStart(2, '0')}`;
+          const endTotalSlot = startTotal + duration;
+          const endStr = `${String(Math.floor(endTotalSlot / 60)).padStart(2, '0')}:${String(endTotalSlot % 60).padStart(2, '0')}`;
+
+          if (!slots.some((s) => s.slotStart === startStr)) {
+            slots.push({
+              slotStart: startStr,
+              slotEnd: endStr,
+              sessionName: sName,
+              maxQuota: quota,
+              fullSlotText: `${sName} (${startStr} - ${endStr} WIB)`,
+            });
+          }
+          startTotal += duration;
         }
-        startTotal += duration;
-      }
+      });
     });
 
     return slots.sort((a, b) => a.slotStart.localeCompare(b.slotStart));
@@ -293,7 +342,7 @@ export default function CalComBookingView({
                 {myThesis?.supervisorName ? myThesis.supervisorName.substring(0, 2).toUpperCase() : 'DS'}
               </div>
               <p className="text-xs font-extrabold text-gray-700 dark:text-gray-300">
-                {myThesis?.supervisorName || 'Prof. Dr. Irwan, M.Si'}
+                {myThesis?.supervisorName || 'Belum Ditentukan'}
               </p>
             </div>
 
@@ -417,7 +466,7 @@ export default function CalComBookingView({
               <div>
                 <p className="text-xs text-gray-500 font-semibold">Dosen Pembimbing</p>
                 <h3 className="font-extrabold text-sm text-gray-900 leading-tight mt-0.5">
-                  {myThesis?.supervisorName || 'Prof. Dr. Irwan, M.Si'}
+                  {myThesis?.supervisorName || 'Belum Ditentukan'}
                 </h3>
               </div>
             </div>
@@ -475,7 +524,7 @@ export default function CalComBookingView({
                     {rule.rules && (
                       <div className="flex items-center justify-between text-[10px] font-medium text-emerald-800 border-t border-emerald-200/60 pt-1">
                         <span className="font-semibold">{rule.rules.sessionName || 'Sesi Standard'}</span>
-                        <span>Batas: {rule.rules.maxQuotaPerSession ?? 5} org/sesi • {rule.rules.sessionDurationMinutes ?? 30}m</span>
+                        <span>Batas: {eventType?.maxQuotaPerSession ?? rule.rules?.maxQuotaPerSession ?? 1} org/sesi • {eventType?.duration || rule.rules?.sessionDurationMinutes || 30}m</span>
                       </div>
                     )}
                   </div>
@@ -549,7 +598,7 @@ export default function CalComBookingView({
                       past
                         ? `Tanggal ${dayNum} sudah lewat`
                         : isAvailableDay
-                        ? `Hari ${dayNamesFull[dayOfWeek]}: ${dayRules[0].startTime} - ${dayRules[0].endTime} WIB`
+                        ? `Hari ${dayNamesFull[dayOfWeek]}: ${dayRules.map((r) => `${r.startTime} - ${r.endTime}`).join(', ')} WIB`
                         : `Dosen tidak ada jam bimbingan pada hari ${dayNamesFull[dayOfWeek]}`
                     }
                     className={`h-10 md:h-11 rounded-xl text-xs font-black flex flex-col items-center justify-center transition-all relative ${
@@ -588,7 +637,7 @@ export default function CalComBookingView({
                 </h3>
                 {!isSelectedDatePast && currentSelectedRules.length > 0 && (
                   <p className="text-[11px] text-emerald-800 font-extrabold mt-0.5 font-mono">
-                    Jam Bimbingan: {currentSelectedRules[0].startTime} - {currentSelectedRules[0].endTime} WIB
+                    Jam Bimbingan: {currentSelectedRules.map((r) => `${r.startTime} - ${r.endTime}`).join(', ')} WIB
                   </p>
                 )}
               </div>

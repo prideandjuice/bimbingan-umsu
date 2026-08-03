@@ -39,14 +39,16 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     return (
         <AuthLayout
             title="Masuk ke Sistem"
-            description="Silakan masukkan email dan kata sandi Anda untuk mengakses dashboard bimbingan skripsi."
+            description="Silakan masukkan NPM (Nomor Pokok Mahasiswa) dan kata sandi Anda untuk masuk ke portal bimbingan UMSU."
         >
             <Head title="Masuk ke Sistem" />
 
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email or Username</Label>
+                        <Label htmlFor="email" className="text-gray-700 dark:text-gray-300 font-medium text-xs">
+                            NPM (Nomor Pokok Mahasiswa) / Email *
+                        </Label>
                         <Input
                             id="email"
                             type="text"
@@ -56,7 +58,8 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             autoComplete="username"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
-                            placeholder="email@example.com or username"
+                            placeholder="Contoh: 2309010036"
+                            className="border-gray-200 dark:border-zinc-800 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 rounded-xl text-xs font-medium"
                         />
                         <InputError message={errors.email} />
                     </div>

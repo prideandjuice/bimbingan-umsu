@@ -17,7 +17,7 @@ interface SchedulingTabProps {
   handleSetAllAvailabilities?: (newRules: AvailabilityRule[]) => void;
   handleUpdateAvailability?: (id: string, updatedRule: Partial<AvailabilityRule>) => void;
   handleToggleDefaultAvailability?: (id: string) => void;
-  handleDeleteAvailability: (id: string) => void;
+  handleDeleteAvailability: (id: string | string[]) => void;
 }
 
 const DAY_ABBR = ['Ming', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
@@ -82,20 +82,40 @@ export default function SchedulingTab({
 
     map.forEach((item) => {
       const daysMap = new Map<number, { startTime: string; endTime: string }[]>();
+      const DAY_CODES_MAP: Record<string, number> = {
+        minggu: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6,
+      };
+
       item.rules.forEach((r) => {
-        if (!daysMap.has(r.dayOfWeek)) daysMap.set(r.dayOfWeek, []);
-        daysMap.get(r.dayOfWeek)!.push({ startTime: r.startTime, endTime: r.endTime });
+        const slotsList = (r.rules?.slots && r.rules.slots.length > 0)
+          ? r.rules.slots
+          : [{ dayOfWeek: r.dayOfWeek, startTime: r.startTime, endTime: r.endTime }];
+
+        slotsList.forEach((s: any) => {
+          let d = 1;
+          if (s.dayOfWeek !== undefined && s.dayOfWeek !== null && !isNaN(Number(s.dayOfWeek))) {
+            d = Number(s.dayOfWeek);
+          } else if (typeof s.day === 'string' && DAY_CODES_MAP[s.day.toLowerCase()] !== undefined) {
+            d = DAY_CODES_MAP[s.day.toLowerCase()];
+          }
+          if (!daysMap.has(d)) daysMap.set(d, []);
+          daysMap.get(d)!.push({ startTime: s.startTime, endTime: s.endTime });
+        });
       });
 
       const activeDays: number[] = [];
-      let timeRangeStr = '09:00 - 17:00 WIB';
+      const daySlotsStrings: string[] = [];
 
       [1, 2, 3, 4, 5, 6, 0].forEach((d) => {
         if (daysMap.has(d)) {
           activeDays.push(d);
           const slots = daysMap.get(d)!;
           if (slots.length > 0) {
-            timeRangeStr = `${slots[0].startTime} - ${slots[0].endTime} WIB`;
+            const sortedSlots = [...slots].sort((a, b) => a.startTime.localeCompare(b.startTime));
+            const slotStr = sortedSlots.map((s) => `${s.startTime} - ${s.endTime}`).join(', ');
+            if (!daySlotsStrings.includes(slotStr)) {
+              daySlotsStrings.push(slotStr);
+            }
           }
         }
       });
@@ -106,6 +126,8 @@ export default function SchedulingTab({
       } else {
         daysSummary = 'Belum ada hari diatur';
       }
+
+      const timeRangeStr = daySlotsStrings.length > 0 ? `${daySlotsStrings.join('; ')} WIB` : '09:00 - 17:00 WIB';
 
       result.push({
         name: item.name,
@@ -147,9 +169,13 @@ export default function SchedulingTab({
       );
       handleSetAllAvailabilities([...otherRules, ...finalNewRules]);
     } else {
-      myAvailabilities
+      const idsToDelete = myAvailabilities
         .filter((ar) => (ar.name?.trim() || ar.rules?.sessionName?.trim() || 'Bimbingan Judul Skripsi') === selectedScheduleName)
-        .forEach((ar) => handleDeleteAvailability(ar.id));
+        .map((ar) => ar.id);
+
+      if (idsToDelete.length > 0) {
+        handleDeleteAvailability(idsToDelete);
+      }
 
       if (isDefault) {
         myAvailabilities.forEach((ar) => {
@@ -186,7 +212,10 @@ export default function SchedulingTab({
       const matching = myAvailabilities.filter(
         (ar) => (ar.name?.trim() || ar.rules?.sessionName?.trim() || 'Bimbingan Judul Skripsi') === targetName
       );
-      matching.forEach((ar) => handleDeleteAvailability(ar.id));
+      const matchingIds = matching.map((ar) => ar.id);
+      if (matchingIds.length > 0) {
+        handleDeleteAvailability(matchingIds);
+      }
       toast.success(`Jadwal "${targetName}" berhasil dihapus.`);
       setOpenMenuName(null);
       setActiveView('list');

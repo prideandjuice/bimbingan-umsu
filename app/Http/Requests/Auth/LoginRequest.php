@@ -27,7 +27,8 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string'],
+            'email' => ['nullable', 'string'],
+            'npm' => ['nullable', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -41,10 +42,60 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $login = $this->input('email');
+        $login = trim($this->input('npm') ?? $this->input('email') ?? '');
+        $password = $this->input('password');
+        $remember = $this->boolean('remember');
+
+        // 1. Coba Authentikasi via SIMAKAD UMSU API jika bukan environment testing
+        if (! app()->environment('testing')) {
+            try {
+                $authService = app(\App\Services\AuthService::class);
+                $simakadResult = $authService->loginSimakad($login, $password);
+
+                if (!empty($simakadResult['success'])) {
+                    $data = $simakadResult['data'] ?? [];
+
+                    // Cari user lokal berdasarkan email / username / NPM
+                    $user = \App\Models\User::where('email', $login)
+                        ->orWhere('email', 'like', $login . '@%')
+                        ->orWhere('name', $login)
+                        ->first();
+
+                    if (!$user) {
+                        // Jika belum ada di lokal, otomatis buatkan akun mahasiswa baru
+                        $studentEmail = str_contains($login, '@') ? $login : $login . '@student.umsu.ac.id';
+                        $studentName = $data['nama'] ?? $data['name'] ?? $data['nama_mahasiswa'] ?? ('Mahasiswa ' . $login);
+
+                        $user = \App\Models\User::create([
+                            'name'     => $studentName,
+                            'email'    => $studentEmail,
+                            'password' => bcrypt($password),
+                        ]);
+
+                        if (method_exists($user, 'assignRole')) {
+                            $user->assignRole('student');
+                        }
+                    }
+
+                    Auth::login($user, $remember);
+                    RateLimiter::clear($this->throttleKey());
+                    return;
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('SIMAKAD API auth fallback to local: ' . $e->getMessage());
+            }
+        }
+
+        // 2. Fallback: Authentikasi Lokal Laravel (Untuk Dosen/Admin/Mahasiswa lokal)
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        if (! Auth::attempt([$field => $login, 'password' => $this->input('password')], $this->boolean('remember'))) {
+        if (! Auth::attempt([$field => $login, 'password' => $password], $remember)) {
+            // Coba lagi dengan field email jika username gagal
+            if ($field === 'username' && Auth::attempt(['email' => $login, 'password' => $password], $remember)) {
+                RateLimiter::clear($this->throttleKey());
+                return;
+            }
+
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

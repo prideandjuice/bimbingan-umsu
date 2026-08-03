@@ -115,6 +115,7 @@ export interface EventType {
     name: string;
     slug?: string;
     duration: number;
+    maxQuotaPerSession?: number;
     description?: string;
     locationType?: 'offline' | 'online';
     locationDetails?: string;
