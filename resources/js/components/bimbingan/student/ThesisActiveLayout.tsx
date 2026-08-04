@@ -12,12 +12,12 @@ import {
   ChevronUp,
   AlertTriangle,
   TrendingUp,
-  AlertCircle,
-  Star,
-  Plus,
+  Globe,
+  ExternalLink,
+  Link as LinkIcon,
+  ArrowLeft,
   Send,
   X,
-  Trash2,
 } from 'lucide-react';
 import type { AppUser, Thesis, Guidance, Booking, EventType, AvailabilityRule, Proposal } from '@/types';
 import RichTextDisplay from '../RichTextDisplay';
@@ -25,6 +25,31 @@ import CalComBookingView from './CalComBookingView';
 import { toast } from 'sonner';
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+const formatDisplayDateWithDay = (dateStr?: string): string => {
+  if (!dateStr) return '-';
+  try {
+    const cleanDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const parts = cleanDate.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+
+      const dateObj = new Date(year, month, day);
+      const dayNamesFull = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+      const dayName = dayNamesFull[dateObj.getDay()];
+      const monthName = monthNamesShort[month];
+
+      return `${dayName}, ${day} ${monthName} ${year}`;
+    }
+  } catch (e) {
+    // fallback
+  }
+  return dateStr;
+};
 
 interface ThesisActiveLayoutProps {
   currentUser: AppUser;
@@ -56,6 +81,8 @@ export default function ThesisActiveLayout({
   initialTab = 'info',
 }: ThesisActiveLayoutProps) {
   const [activeTab, setActiveTab] = useState<'info' | 'guidances' | 'bookings'>(initialTab);
+  const [selectedBookingEventType, setSelectedBookingEventType] = useState<EventType | null>(null);
+  const [selectedBookingDetail, setSelectedBookingDetail] = useState<Booking | null>(null);
 
   useEffect(() => {
     if (initialTab) {
@@ -83,11 +110,11 @@ export default function ThesisActiveLayout({
   };
 
   const toggleGuidanceDetail = (id: string) => {
-    setExpandedGuidanceId(prev => (prev === id ? null : id));
+    setExpandedGuidanceId((prev) => (prev === id ? null : id));
   };
 
   // Mencari proposal induk untuk mendapatkan rincian abstrak asal
-  const parentProposal = proposals.find(p => p.id === myThesis.proposalId);
+  const parentProposal = proposals.find((p) => p.id === myThesis.proposalId);
 
   return (
     <div className="lg:col-span-8 space-y-6">
@@ -133,18 +160,6 @@ export default function ThesisActiveLayout({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-              {myThesis.skFile && (
-                <a
-                  href={`/${myThesis.skFile}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs font-semibold bg-white text-emerald-900 hover:bg-emerald-50 px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
-                  title="Unduh SK Bimbingan Resmi"
-                >
-                  <FileText className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>SK: <strong>{myThesis.skFile.split('/').pop()}</strong></span>
-                </a>
-              )}
               <span className="text-xs font-medium bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-sm text-emerald-100 border border-white/10">
                 Progress: <strong className="text-white font-bold">{currentProgress}%</strong>
               </span>
@@ -153,37 +168,14 @@ export default function ThesisActiveLayout({
         </div>
       </div>
 
-      {/* Alert Warning jika SK Pembimbing belum diterbitkan oleh Admin */}
-      {!myThesis.skFile && (
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 p-5 rounded-2xl flex items-start gap-4 text-left shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5 animate-pulse text-amber-600" />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h4 className="font-bold text-sm text-amber-900 dark:text-amber-200">
-                Menunggu Terbitnya SK Bimbingan dari Admin
-              </h4>
-              <span className="text-3xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-md">
-                Bimbingan Belum Aktif
-              </span>
-            </div>
-            <p className="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
-              Dosen Pembimbing Anda (<strong>{myThesis.supervisorName || 'Dosen Pembimbing'}</strong>) telah ditunjuk oleh Kaprodi. Namun, <strong>sesi bimbingan dan janji temu konsultasi belum dapat dilakukan</strong> karena file Surat Keterangan (SK) Pembimbing resmi belum diterbitkan / diunggah oleh Admin. Mohon menunggu proses unggah SK oleh Admin.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* 2. Sub Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-100 dark:border-zinc-800 pb-1 text-left">
         <button
           onClick={() => setActiveTab('info')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'info'
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'info'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
-          }`}
+            }`}
         >
           <BookOpen className="w-4 h-4" />
           Detail Judul & Latar Belakang
@@ -191,11 +183,10 @@ export default function ThesisActiveLayout({
 
         <button
           onClick={() => setActiveTab('guidances')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'guidances'
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'guidances'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
-          }`}
+            }`}
         >
           <HistoryIcon className="w-4 h-4" />
           Log Bimbingan ({myGuidances.length})
@@ -203,11 +194,10 @@ export default function ThesisActiveLayout({
 
         <button
           onClick={() => setActiveTab('bookings')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'bookings'
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'bookings'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
-          }`}
+            }`}
         >
           <Calendar className="w-4 h-4" />
           Janji Temu ({myBookings.length})
@@ -293,11 +283,10 @@ export default function ThesisActiveLayout({
                 return (
                   <div
                     key={g.id || idx}
-                    className={`bg-white dark:bg-zinc-900 border transition-all rounded-2xl overflow-hidden shadow-2xs ${
-                      isExpanded
+                    className={`bg-white dark:bg-zinc-900 border transition-all rounded-2xl overflow-hidden shadow-2xs ${isExpanded
                         ? 'border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/10'
                         : 'border-gray-200/80 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-700'
-                    }`}
+                      }`}
                   >
                     {/* Header Baris Sesi Bimbingan (Clickable) */}
                     <div
@@ -319,11 +308,10 @@ export default function ThesisActiveLayout({
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 ${
-                          g.status === 'verified'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}>
+                        <span
+                          className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 ${g.status === 'verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            }`}
+                        >
                           {g.status === 'verified' ? '✓ Diverifikasi Dosen' : '⏳ Menunggu Verifikasi'}
                         </span>
 
@@ -352,9 +340,7 @@ export default function ThesisActiveLayout({
                           </div>
                           <div>
                             <span className="text-[10px] text-muted-foreground block font-light">Progress Ditetapkan:</span>
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                              {g.progress}%
-                            </span>
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">{g.progress}%</span>
                           </div>
                           <div>
                             <span className="text-[10px] text-muted-foreground block font-light">Dicatat Oleh:</span>
@@ -401,152 +387,394 @@ export default function ThesisActiveLayout({
 
       {/* TAB 3: Janji Temu Bimbingan */}
       {activeTab === 'bookings' && (
-        <div className="space-y-6 text-left">
-          {/* UMSU Interactive Booking Component */}
-          <CalComBookingView
-            myThesis={myThesis}
-            availabilityRules={mySupervisorAvailability}
-            eventType={mySupervisorEventTypes?.[0]}
-            myBookings={myBookings}
-            disabled={!myThesis.skFile}
-            onBookMeeting={(date, timeSlot, notes) => {
-              handleBookMeeting(mySupervisorEventTypes?.[0]?.id || 'default-session', date, timeSlot, notes);
-              toast.success(`Pengajuan janji temu bimbingan pada tanggal ${date} (${timeSlot}) berhasil dikirim!`);
-            }}
-          />
-
-          {/* Riwayat Janji Temu Mahasiswa */}
-          <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 space-y-3">
-            <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider text-muted-foreground">
-              Riwayat Pengajuan Janji Temu Saya ({visibleBookings.length})
-            </h4>
-
-            {visibleBookings.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">Belum ada pengajuan janji temu.</p>
-            ) : (
-              <div className="space-y-2.5">
-                {visibleBookings.map((b) => (
-                  <div
-                    key={b.id}
-                    className="bg-gray-50/70 dark:bg-zinc-800/30 border border-gray-100 dark:border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900 dark:text-white">{b.lecturerName}</span>
-                        <span className="font-mono text-muted-foreground">• {b.date} ({b.timeSlot})</span>
-                      </div>
-                      {b.notes && <p className="text-muted-foreground text-[11px] font-light">"{b.notes}"</p>}
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1 rounded-full ${
-                        b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                        b.status === 'rejected' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
-                        b.status === 'completed' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                        'bg-amber-100 text-amber-800 border border-amber-200'
-                      }`}>
-                        {b.status === 'confirmed' ? '✓ Disetujui Dosen' :
-                         b.status === 'rejected' ? '✕ Ditolak Dosen' :
-                         b.status === 'completed' ? '✔️ Selesai' :
-                         '⏳ Menunggu Konfirmasi Dosen'}
-                      </span>
-
-                      {handleCancelBooking && b.status === 'pending' && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteBookingItem(b.id)}
-                          title="Batalkan & Hapus Janji Temu Ini"
-                          className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-200 transition-all cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Modal Form Ajukan Janji Temu */}
-          {showBookingModal && selectedRule && (
-            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+        <div className="space-y-8 text-left">
+          {selectedBookingEventType === null ? (
+            <div className="space-y-8">
+              {/* SECTION 1: PILIH JENIS SESI BIMBINGAN DOSEN */}
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center">
-                      <Calendar className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-base text-gray-900 dark:text-white">
-                        Ajukan Janji Temu Bimbingan
-                      </h3>
-                      <p className="text-[11px] text-muted-foreground">
-                        {DAY_NAMES[selectedRule.dayOfWeek]} ({selectedRule.startTime} - {selectedRule.endTime} WIB)
-                      </p>
-                    </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-emerald-600" />
+                      Pilih Jenis Sesi Bimbingan Dosen
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Silakan pilih salah satu opsi jenis bimbingan di bawah ini untuk membuka kalender ketersediaan jam dan mengajukan janji temu baru.
+                    </p>
                   </div>
-                  <button
-                    onClick={() => setShowBookingModal(false)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
                 </div>
 
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!bookingDate) return;
-                    handleBookMeeting(
-                      'default-session',
-                      bookingDate,
-                      `${selectedRule.startTime} - ${selectedRule.endTime} WIB`,
-                      bookingNotes
-                    );
-                    setShowBookingModal(false);
-                    setBookingNotes('');
-                    toast.success('Pengajuan janji temu bimbingan berhasil dikirim ke Dosen Pembimbing!');
-                  }}
-                  className="space-y-4"
-                >
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                      Pilih Tanggal Pertemuan
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={bookingDate}
-                      onChange={(e) => setBookingDate(e.target.value)}
-                      className="w-full p-3 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
-                    />
-                  </div>
+                <div className="space-y-4">
+                  {(mySupervisorEventTypes && mySupervisorEventTypes.length > 0
+                    ? mySupervisorEventTypes
+                    : [
+                      {
+                        id: 'et-offline-default',
+                        name: 'Bimbingan Tatap Muka (Offline di Kampus)',
+                        slug: 'bimbingan-tatap-muka-offline-di-kampus',
+                        duration: 30,
+                        description:
+                          'Wajib janji temu (appointment) H-1. Jangan mendadak datang ke ruangan ya, supaya saya bisa mengalokasikan waktu yang cukup buat membedah draf kamu tanpa terburu-buru jadwal mengajar',
+                        locationType: 'offline',
+                      },
+                      {
+                        id: 'et-online-default',
+                        name: 'Bimbingan Online (Google Meet)',
+                        slug: 'bimbingan-online-google-meet',
+                        duration: 30,
+                        description:
+                          'Sesi konsultasi bimbingan via Google Meet. Link meeting akan diberikan oleh dosen pembimbing setelah janji temu disetujui.',
+                        locationType: 'online',
+                      },
+                    ]
+                  ).map((et: any) => (
+                    <div
+                      key={et.id}
+                      className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-2xs hover:shadow-md transition-all space-y-3.5 text-left"
+                    >
+                      <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <div>
+                          <h3
+                            onClick={() => setSelectedBookingEventType(et)}
+                            className="font-extrabold text-base text-gray-900 dark:text-white hover:text-emerald-600 transition-colors cursor-pointer"
+                          >
+                            {et.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedBookingEventType(et)}
+                              className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 hover:underline font-medium flex items-center gap-1 cursor-pointer transition-all"
+                              title="Klik untuk membuka kalender slot jam bimbingan sesi ini"
+                            >
+                              <Globe className="w-3 h-3" />
+                              <span>/bimbingan/{et.slug || 'tatap-muka'}</span>
+                              <ExternalLink className="w-3 h-3 text-emerald-500" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 px-3 py-1 rounded-full shrink-0">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>{et.duration || 30} Min</span>
+                          </div>
+                        </div>
+                      </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                      Catatan / Topik Konsultasi (Opsional)
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={bookingNotes}
-                      onChange={(e) => setBookingNotes(e.target.value)}
-                      placeholder="Misal: Konsultasi perbaikan Bab 2 dan instrumen kuesioner..."
-                      className="w-full p-3 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed pt-1">
+                        {et.description ||
+                          'Wajib janji temu (appointment) H-1. Jangan mendadak datang ke ruangan ya, supaya saya bisa mengalokasikan waktu yang cukup buat membedah draf kamu tanpa terburu-buru jadwal mengajar.'}
+                      </p>
 
-                  <button
-                    type="submit"
-                    className="w-full py-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10"
-                  >
-                    <Send className="w-4 h-4" />
-                    <span>Kirim Pengajuan Janji Temu</span>
-                  </button>
-                </form>
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800 flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBookingEventType(et)}
+                          className="bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-2xs group"
+                        >
+                          <LinkIcon className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />
+                          <span>Pilih Sesi Ini & Buka Kalender Jam</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* SECTION 2: RIWAYAT & STATUS JANJI TEMU BIMBINGAN SAYA */}
+              <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-zinc-800">
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
+                  <div>
+                    <h3 className="text-base font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-emerald-600" />
+                      Riwayat Pengajuan Janji Temu Saya
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Daftar janji temu bimbingan yang telah Anda ajukan dari link dosen maupun dari kalender.
+                    </p>
+                  </div>
+                  <span className="px-3.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 rounded-full text-xs font-extrabold font-mono">
+                    {myBookings?.length || 0} Booking
+                  </span>
+                </div>
+
+                {myBookings && myBookings.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {myBookings.map((b) => {
+                      const linkedEventType = mySupervisorEventTypes?.find((et) => String(et.id) === String(b.eventTypeId));
+                      const sessionName = linkedEventType?.name || 'Bimbingan Tatap Muka (Offline di Kampus)';
+                      const duration = linkedEventType?.duration || 30;
+                      const slugText = linkedEventType?.slug || 'bimbingan-tatap-muka-offline-di-kampus';
+
+                      let statusBadge = (
+                        <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 flex items-center gap-1.5 shrink-0">
+                          <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
+                          Menunggu Persetujuan
+                        </span>
+                      );
+
+                      if (b.status === 'approved') {
+                        statusBadge = (
+                          <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-1.5 shrink-0">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Disetujui Dosen
+                          </span>
+                        );
+                      } else if (b.status === 'rejected') {
+                        statusBadge = (
+                          <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border border-red-200/80 dark:border-red-800/60 flex items-center gap-1.5 shrink-0">
+                            <X className="w-3 h-3 text-red-600" />
+                            Ditolak
+                          </span>
+                        );
+                      } else if (b.status === 'completed') {
+                        statusBadge = (
+                          <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 flex items-center gap-1.5 shrink-0">
+                            <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                            Selesai
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={b.id}
+                          onClick={() => setSelectedBookingDetail(b)}
+                          className="bg-white dark:bg-zinc-900 border border-gray-200/90 dark:border-zinc-800 rounded-3xl p-5 shadow-2xs hover:shadow-md transition-all space-y-3.5 text-left cursor-pointer hover:border-emerald-300 group"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h4 className="font-extrabold text-sm text-gray-900 dark:text-white group-hover:text-emerald-600 transition-colors">
+                                {sessionName}
+                              </h4>
+                              <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                <Globe className="w-3 h-3" />
+                                <span>/lecturer/{slugText}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 px-2.5 py-1 rounded-full shrink-0">
+                              <Clock className="w-3 h-3" />
+                              <span>{duration} Min</span>
+                            </div>
+                          </div>
+
+                          <div className="bg-gray-50/80 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800 rounded-2xl p-3 space-y-1.5 text-xs font-medium">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Waktu Sesi:</span>
+                              <span className="font-extrabold text-gray-900 dark:text-white font-mono">
+                                {formatDisplayDateWithDay(b.date)} | {b.timeSlot || '08:00 WIB'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Dosen Pembimbing:</span>
+                              <span className="font-bold text-emerald-800 dark:text-emerald-300">
+                                {myThesis?.supervisorName || 'Dosen Pembimbing'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+                            {statusBadge}
+                            <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 group-hover:underline inline-flex items-center gap-1">
+                              <span>Detail Booking</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 dark:bg-zinc-900/50 border border-dashed border-gray-200 dark:border-zinc-800 rounded-3xl p-6 text-center space-y-2">
+                    <Calendar className="w-8 h-8 text-emerald-500 mx-auto" />
+                    <p className="font-bold text-xs text-gray-900 dark:text-white">Belum Ada Janji Temu Berjalan</p>
+                    <p className="text-xs text-muted-foreground">Silakan pilih jenis sesi bimbingan di atas untuk mengajukan janji temu dengan Dosen.</p>
+                  </div>
+                )}
               </div>
             </div>
+          ) : (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => setSelectedBookingEventType(null)}
+                className="inline-flex items-center gap-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 px-4 py-2 rounded-xl transition-all cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali ke Pilihan Jenis Bimbingan</span>
+              </button>
+
+              <CalComBookingView
+                myThesis={myThesis}
+                availabilityRules={mySupervisorAvailability}
+                eventType={selectedBookingEventType}
+                myBookings={myBookings}
+                onBookMeeting={(date, timeSlot, notes) => {
+                  handleBookMeeting(selectedBookingEventType.id || 'default-session', date, timeSlot, notes);
+                  toast.success(
+                    `Pengajuan janji temu bimbingan (${selectedBookingEventType.name}) pada tanggal ${date} (${timeSlot}) berhasil dikirim!`
+                  );
+                }}
+              />
+            </div>
           )}
+        </div>
+      )}
+
+      {/* MODAL DETAIL BOOKING MAHASISWA */}
+      {selectedBookingDetail && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200 text-left">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-gray-900 dark:text-white">
+                    Detail Janji Temu Bimbingan
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Informasi lengkap pengajuan bimbingan Anda.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedBookingDetail(null)}
+                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 transition-all cursor-pointer font-bold"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div className="bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-900/50 rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between font-bold text-gray-900 dark:text-white">
+                  <span className="text-muted-foreground">Status Janji Temu:</span>
+                  <span className="capitalize font-extrabold text-emerald-800 dark:text-emerald-300">
+                    {selectedBookingDetail.status === 'pending' ? '⏳ Menunggu Persetujuan Dosen' : selectedBookingDetail.status === 'approved' ? '✓ Disetujui Dosen' : selectedBookingDetail.status === 'rejected' ? '✕ Ditolak Dosen' : 'Selesai'}
+                  </span>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <span className="text-muted-foreground">Dosen Pembimbing:</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{myThesis?.supervisorName || 'Dosen Pembimbing'}</span>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <span className="text-muted-foreground">Waktu Sesi:</span>
+                  <span className="font-extrabold text-emerald-700 dark:text-emerald-400 font-mono">{formatDisplayDateWithDay(selectedBookingDetail.date)} | {selectedBookingDetail.timeSlot}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                  Topik & Catatan Pengajuan:
+                </label>
+                <div className="bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-800 rounded-xl p-3 font-medium text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-line">
+                  {selectedBookingDetail.notes || 'Konsultasi bimbingan skripsi'}
+                </div>
+              </div>
+
+              {selectedBookingDetail.rejectionReason && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-red-500 uppercase tracking-wider">
+                    Alasan Penolakan dari Dosen:
+                  </label>
+                  <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl p-3 text-red-900 dark:text-red-300 font-medium">
+                    {selectedBookingDetail.rejectionReason}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setSelectedBookingDetail(null)}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer"
+              >
+                Tutup Detail
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Form Ajukan Janji Temu */}
+      {showBookingModal && selectedRule && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-gray-900 dark:text-white">
+                    Ajukan Janji Temu Bimbingan
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    {DAY_NAMES[selectedRule.dayOfWeek]} ({selectedRule.startTime} - {selectedRule.endTime} WIB)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBookingModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!bookingDate) return;
+                handleBookMeeting(
+                  'default-session',
+                  bookingDate,
+                  `${selectedRule.startTime} - ${selectedRule.endTime} WIB`,
+                  bookingNotes
+                );
+                setShowBookingModal(false);
+                setBookingNotes('');
+                toast.success('Pengajuan janji temu bimbingan berhasil dikirim ke Dosen Pembimbing!');
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  Pilih Tanggal Pertemuan
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={bookingDate}
+                  onChange={(e) => setBookingDate(e.target.value)}
+                  className="w-full p-3 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  Catatan / Topik Konsultasi (Opsional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={bookingNotes}
+                  onChange={(e) => setBookingNotes(e.target.value)}
+                  placeholder="Misal: Konsultasi perbaikan Bab 2 dan instrumen kuesioner..."
+                  className="w-full p-3 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10"
+              >
+                <Send className="w-4 h-4" />
+                <span>Kirim Pengajuan Janji Temu</span>
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

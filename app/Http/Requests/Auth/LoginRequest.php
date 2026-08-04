@@ -53,33 +53,17 @@ class LoginRequest extends FormRequest
                 $simakadResult = $authService->loginSimakad($login, $password);
 
                 if (!empty($simakadResult['success'])) {
-                    $data = $simakadResult['data'] ?? [];
-
                     // Cari user lokal berdasarkan email / username / NPM
                     $user = \App\Models\User::where('email', $login)
                         ->orWhere('email', 'like', $login . '@%')
                         ->orWhere('name', $login)
                         ->first();
 
-                    if (!$user) {
-                        // Jika belum ada di lokal, otomatis buatkan akun mahasiswa baru
-                        $studentEmail = str_contains($login, '@') ? $login : $login . '@student.umsu.ac.id';
-                        $studentName = $data['nama'] ?? $data['name'] ?? $data['nama_mahasiswa'] ?? ('Mahasiswa ' . $login);
-
-                        $user = \App\Models\User::create([
-                            'name'     => $studentName,
-                            'email'    => $studentEmail,
-                            'password' => bcrypt($password),
-                        ]);
-
-                        if (method_exists($user, 'assignRole')) {
-                            $user->assignRole('student');
-                        }
+                    if ($user) {
+                        Auth::login($user, $remember);
+                        RateLimiter::clear($this->throttleKey());
+                        return;
                     }
-
-                    Auth::login($user, $remember);
-                    RateLimiter::clear($this->throttleKey());
-                    return;
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('SIMAKAD API auth fallback to local: ' . $e->getMessage());
