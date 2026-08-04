@@ -23,10 +23,14 @@ interface LoginProps {
 }
 
 export default function Login({ status, canResetPassword }: LoginProps) {
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const redirectParam = urlParams ? (urlParams.get('redirect') || '') : '';
+
     const { data, setData, post, processing, errors, reset } = useForm<LoginForm>({
         email: '',
         password: '',
         remember: false,
+        redirect: redirectParam,
     });
 
     const submit: FormEventHandler = (e) => {

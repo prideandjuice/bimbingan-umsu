@@ -39,13 +39,16 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
   const { url } = usePage();
 
   // Active tab received from Controller prop or URL fallback
-  const activeTab: 'overview' | 'pengajuan-judul' | 'status-judul' | 'log-bimbingan' | 'booking-jadwal' =
-    (propActiveTab && propActiveTab !== 'overview' ? propActiveTab as any : null) ||
-    (url.includes('/mahasiswa/pengajuan-judul') ? 'pengajuan-judul'
+  const rawTab = propActiveTab || (
+    url.includes('/mahasiswa/pengajuan-judul') ? 'pengajuan-judul'
       : url.includes('/mahasiswa/status-judul') ? 'status-judul'
       : url.includes('/mahasiswa/log-bimbingan') ? 'log-bimbingan'
-      : url.includes('/mahasiswa/booking-jadwal') ? 'booking-jadwal'
-      : 'overview');
+      : url.includes('/mahasiswa/booking-jadwal') || url.includes('/mahasiswa/bookings') ? 'booking-jadwal'
+      : 'overview'
+  );
+
+  const activeTab: 'overview' | 'pengajuan-judul' | 'status-judul' | 'log-bimbingan' | 'booking-jadwal' =
+    rawTab === 'bookings' ? 'booking-jadwal' : (rawTab as any);
 
   // DB States
   const [proposals, setProposals] = useState(DB.getProposals());
@@ -568,49 +571,29 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
         {/* ROUTE 5: BOOKING JADWAL */}
         {activeTab === 'booking-jadwal' && (
           <div className="w-full">
-            {myThesis ? (
-              <ThesisActiveLayout
-                currentUser={currentUser}
-                myThesis={myThesis}
-                proposals={proposals}
-                myGuidances={myGuidances}
-                myBookings={myBookings}
-                mySupervisorEventTypes={mySupervisorEventTypes}
-                mySupervisorAvailability={mySupervisorAvailability}
-                currentProgress={currentProgress}
-                handleSubmitGuidance={onAddGuidanceLog}
-                handleBookMeeting={onBookMeeting}
-                handleCancelBooking={onCancelBooking}
-                initialTab="bookings"
-              />
-            ) : (
-              <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-8 text-center space-y-4">
-                <Calendar className="w-10 h-10 text-muted-foreground mx-auto" />
-                <div>
-                  <h3 className="font-bold text-base text-gray-900 dark:text-white">Fitur Booking Jadwal Belum Aktif</h3>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-                    Layanan janji temu konsultasi bimbingan dapat digunakan setelah Dosen Pembimbing Anda resmi ditetapkan.
-                  </p>
-                </div>
-                {!myProposal ? (
-                  <Link
-                    href="/mahasiswa/pengajuan-judul"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/10 transition-all"
-                  >
-                    <FilePlus className="w-4 h-4" />
-                    <span>Ajukan Judul Skripsi</span>
-                  </Link>
-                ) : (
-                  <Link
-                    href="/mahasiswa/status-judul"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/10 transition-all"
-                  >
-                    <Clock className="w-4 h-4" />
-                    <span>Cek Status Persetujuan</span>
-                  </Link>
-                )}
-              </div>
-            )}
+            <ThesisActiveLayout
+              currentUser={currentUser}
+              myThesis={myThesis || {
+                id: 'thesis-auto',
+                studentId: currentUser.id,
+                studentName: currentUser.name,
+                studentNpm: currentUser.npm || '',
+                title: 'Skripsi / Bimbingan Akademik',
+                supervisorId: 'super-1',
+                supervisorName: myBookings[0]?.lecturerName || 'Dosen Pembimbing UMSU',
+                status: 'ACTIVE',
+              }}
+              proposals={proposals}
+              myGuidances={myGuidances}
+              myBookings={myBookings}
+              mySupervisorEventTypes={mySupervisorEventTypes}
+              mySupervisorAvailability={mySupervisorAvailability}
+              currentProgress={currentProgress}
+              handleSubmitGuidance={onAddGuidanceLog}
+              handleBookMeeting={onBookMeeting}
+              handleCancelBooking={onCancelBooking}
+              initialTab="bookings"
+            />
           </div>
         )}
       </div>
