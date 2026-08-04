@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { usePage } from '@inertiajs/react';
+import { toast } from 'sonner';
 import {
   Clock,
   Video,
@@ -13,11 +15,13 @@ import {
   AlertCircle,
   MapPin,
   CheckCircle2,
+  Lock,
 } from 'lucide-react';
-import type { Thesis, AvailabilityRule, EventType, Booking } from '@/types';
+import type { Thesis, AvailabilityRule, EventType, Booking, AppUser } from '@/types';
 
 interface CalComBookingViewProps {
-  myThesis: Thesis;
+  myThesis?: Thesis;
+  lecturerName?: string;
   availabilityRules: AvailabilityRule[];
   eventType?: EventType;
   myBookings?: Booking[];
@@ -27,12 +31,30 @@ interface CalComBookingViewProps {
 
 export default function CalComBookingView({
   myThesis,
-  availabilityRules,
+  lecturerName,
+  availabilityRules = [],
   eventType,
   myBookings = [],
   onBookMeeting,
   disabled = false,
 }: CalComBookingViewProps) {
+  const { props } = usePage<{ auth?: { user?: AppUser } }>();
+  const currentUser = props?.auth?.user;
+
+  const isLecturerUser = Boolean(
+    currentUser?.roles?.includes('lecturer') ||
+    (currentUser as any)?.role === 'lecturer' ||
+    (currentUser as any)?.roles?.some((r: any) => (typeof r === 'string' ? r : r.name) === 'lecturer')
+  );
+
+  const displaySupervisorName = lecturerName || myThesis?.supervisorName || (isLecturerUser ? currentUser?.name : 'Dosen Pembimbing UMSU');
+  const supervisorInitials = displaySupervisorName
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase() || 'DS';
+
   // Real-time Date Calculation
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -53,31 +75,79 @@ export default function CalComBookingView({
     );
   }
 
-  const defaultRules = availabilityRules?.filter((r) => Boolean(r.isDefault)) || [];
-  let defaultGroupRules: AvailabilityRule[] = [];
-  if (defaultRules.length > 0) {
-    const defaultName = defaultRules[0]?.name || defaultRules[0]?.rules?.sessionName;
-    defaultGroupRules = availabilityRules.filter(
-      (r) =>
-        Boolean(r.isDefault) ||
-        (defaultName && r.name && r.name.trim().toLowerCase() === defaultName.trim().toLowerCase()) ||
-        (defaultName && r.rules?.sessionName && r.rules.sessionName.trim().toLowerCase() === defaultName.trim().toLowerCase())
-    );
-  }
-
   const activeRules = linkedRules.length > 0
     ? linkedRules
-    : defaultGroupRules.length > 0
-    ? defaultGroupRules
     : availabilityRules || [];
+
+  const DAY_CODES_MAP: Record<string, number> = {
+    minggu: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6,
+  };
+
+  interface ExtractedDayRule {
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    sessionName: string;
+    duration: number;
+  }
+
+  // Extract all day slots (including nested slots inside rules.slots)
+  const extractedDayRules = useMemo(() => {
+    const list: ExtractedDayRule[] = [];
+
+    const rulesToProcess = activeRules.length > 0 ? activeRules : (availabilityRules || []);
+
+    rulesToProcess.forEach((rule) => {
+      const sName = rule.rules?.sessionName || rule.name || 'Sesi Standard';
+      const dur = eventType?.duration || rule.rules?.sessionDurationMinutes || 30;
+
+      const rawSlots = (rule.rules?.slots && Array.isArray(rule.rules.slots) && rule.rules.slots.length > 0)
+        ? rule.rules.slots
+        : [{ dayOfWeek: rule.dayOfWeek, startTime: rule.startTime, endTime: rule.endTime }];
+
+      rawSlots.forEach((slotInfo: any) => {
+        let d = 1;
+        if (slotInfo.dayOfWeek !== undefined && slotInfo.dayOfWeek !== null && !isNaN(Number(slotInfo.dayOfWeek))) {
+          d = Number(slotInfo.dayOfWeek);
+        } else if (typeof slotInfo.day === 'string' && DAY_CODES_MAP[slotInfo.day.toLowerCase()] !== undefined) {
+          d = DAY_CODES_MAP[slotInfo.day.toLowerCase()];
+        } else if (rule.dayOfWeek !== undefined && rule.dayOfWeek !== null) {
+          d = Number(rule.dayOfWeek);
+        }
+
+        const startT = slotInfo.startTime || rule.startTime || '08:00';
+        const endT = slotInfo.endTime || rule.endTime || '16:00';
+
+        const existing = list.find(
+          (item) => item.dayOfWeek === d && item.startTime === startT && item.endTime === endT
+        );
+
+        if (!existing) {
+          list.push({
+            dayOfWeek: d,
+            startTime: startT,
+            endTime: endT,
+            sessionName: sName,
+            duration: dur,
+          });
+        }
+      });
+    });
+
+    return list.sort((a, b) => {
+      const orderA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
+      const orderB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
+      return orderA - orderB;
+    });
+  }, [activeRules, availabilityRules, eventType]);
 
   // Helper: Find first available day starting from today
   const getInitialAvailableDate = () => {
     for (let offset = 0; offset < 60; offset++) {
       const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
       const dayOfWeek = d.getDay();
-      const rules = activeRules.filter((r) => Number(r.dayOfWeek) === Number(dayOfWeek));
-      if (rules.length > 0) {
+      const hasMatch = extractedDayRules.some((r) => r.dayOfWeek === dayOfWeek);
+      if (hasMatch) {
         return {
           monthDate: new Date(d.getFullYear(), d.getMonth(), 1),
           day: d.getDate(),
@@ -96,10 +166,11 @@ export default function CalComBookingView({
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [bookingNotes, setBookingNotes] = useState('');
   const [showConfirmStep, setShowConfirmStep] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
-  const [studentNameInput, setStudentNameInput] = useState(myThesis?.studentName || 'Mahasiswa Demo');
+  const [studentNameInput, setStudentNameInput] = useState(currentUser?.name || myThesis?.studentName || 'Mahasiswa');
   const [studentEmailInput, setStudentEmailInput] = useState(
-    myThesis?.studentNpm ? `npm-${myThesis.studentNpm}@umsu.ac.id` : 'mahasiswa@umsu.ac.id'
+    (currentUser as any)?.npm ? `${(currentUser as any).npm}` : currentUser?.email || 'mahasiswa@umsu.ac.id'
   );
 
   const monthNames = [
@@ -139,27 +210,9 @@ export default function CalComBookingView({
     );
   };
 
-  const DAY_CODES_MAP: Record<string, number> = {
-    minggu: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6,
-  };
-
   // Helper: Get rules for a specific day of week
   const getRulesForDayOfWeek = (dayOfWeek: number) => {
-    return activeRules.filter((r) => {
-      if (Number(r.dayOfWeek) === Number(dayOfWeek)) return true;
-      if (r.rules?.slots && Array.isArray(r.rules.slots)) {
-        return r.rules.slots.some((s: any) => {
-          let d = 1;
-          if (s.dayOfWeek !== undefined && s.dayOfWeek !== null && !isNaN(Number(s.dayOfWeek))) {
-            d = Number(s.dayOfWeek);
-          } else if (typeof s.day === 'string' && DAY_CODES_MAP[s.day.toLowerCase()] !== undefined) {
-            d = DAY_CODES_MAP[s.day.toLowerCase()];
-          }
-          return d === Number(dayOfWeek);
-        });
-      }
-      return false;
-    });
+    return extractedDayRules.filter((r) => Number(r.dayOfWeek) === Number(dayOfWeek));
   };
 
   // Rules for currently selected date
@@ -171,7 +224,7 @@ export default function CalComBookingView({
   // Helper: check if a time slot string "HH:MM" has passed today
   const isPastTimeSlot = (dateObj: Date, slotStr: string): boolean => {
     if (isPastDate(dateObj)) return true;
-    if (!isTodayDate(dateObj)) return false; // Future date slots are valid
+    if (!isTodayDate(dateObj)) return false;
 
     const [slotH, slotM] = slotStr.split(':').map(Number);
     const currentH = today.getHours();
@@ -186,56 +239,44 @@ export default function CalComBookingView({
     slotStart: string;
     slotEnd: string;
     sessionName: string;
-    maxQuota: number;
     fullSlotText: string;
   }
 
   // Generate time slots strictly matching lecturer's availability window & session duration rule
-  const generateDynamicSlots = (rules: AvailabilityRule[]): SlotItem[] => {
+  const generateDynamicSlots = (rules: ExtractedDayRule[]): SlotItem[] => {
     if (rules.length === 0) return [];
     const slots: SlotItem[] = [];
 
     rules.forEach((rule) => {
-      const duration = eventType?.duration || rule.rules?.sessionDurationMinutes || 30;
-      const sName = eventType?.name || rule.name || rule.rules?.sessionName || 'Sesi Standard';
-      const quota = rule.rules?.maxQuotaPerSession || 5;
+      const duration = eventType?.duration || rule.duration || 30;
+      const sName = eventType?.name || rule.sessionName || 'Sesi Standard';
 
-      const rawSlots = (rule.rules?.slots && rule.rules.slots.length > 0)
-        ? rule.rules.slots.filter((s: any) => {
-            let d = 1;
-            if (s.dayOfWeek !== undefined && s.dayOfWeek !== null && !isNaN(Number(s.dayOfWeek))) {
-              d = Number(s.dayOfWeek);
-            } else if (typeof s.day === 'string' && DAY_CODES_MAP[s.day.toLowerCase()] !== undefined) {
-              d = DAY_CODES_MAP[s.day.toLowerCase()];
-            }
-            return d === Number(selectedDayOfWeek);
-          })
-        : [{ dayOfWeek: rule.dayOfWeek, startTime: rule.startTime, endTime: rule.endTime }];
+      const [startH, startM] = rule.startTime.split(':').map(Number);
+      const [endH, endM] = rule.endTime.split(':').map(Number);
 
-      rawSlots.forEach((slotInfo: any) => {
-        const [startH, startM] = slotInfo.startTime.split(':').map(Number);
-        const [endH, endM] = slotInfo.endTime.split(':').map(Number);
+      let startTotal = startH * 60 + startM;
+      const endTotal = endH * 60 + endM;
 
-        let startTotal = startH * 60 + startM;
-        const endTotal = endH * 60 + endM;
+      while (startTotal + duration <= endTotal) {
+        const h1 = String(Math.floor(startTotal / 60)).padStart(2, '0');
+        const m1 = String(startTotal % 60).padStart(2, '0');
+        const endNext = startTotal + duration;
+        const h2 = String(Math.floor(endNext / 60)).padStart(2, '0');
+        const m2 = String(endNext % 60).padStart(2, '0');
 
-        while (startTotal + duration <= endTotal) {
-          const startStr = `${String(Math.floor(startTotal / 60)).padStart(2, '0')}:${String(startTotal % 60).padStart(2, '0')}`;
-          const endTotalSlot = startTotal + duration;
-          const endStr = `${String(Math.floor(endTotalSlot / 60)).padStart(2, '0')}:${String(endTotalSlot % 60).padStart(2, '0')}`;
+        const sStart = `${h1}:${m1}`;
+        const sEnd = `${h2}:${m2}`;
+        const fullText = `${sStart} - ${sEnd} WIB`;
 
-          if (!slots.some((s) => s.slotStart === startStr)) {
-            slots.push({
-              slotStart: startStr,
-              slotEnd: endStr,
-              sessionName: sName,
-              maxQuota: quota,
-              fullSlotText: `${sName} (${startStr} - ${endStr} WIB)`,
-            });
-          }
-          startTotal += duration;
-        }
-      });
+        slots.push({
+          slotStart: sStart,
+          slotEnd: sEnd,
+          sessionName: sName,
+          fullSlotText: fullText,
+        });
+
+        startTotal += duration;
+      }
     });
 
     return slots.sort((a, b) => a.slotStart.localeCompare(b.slotStart));
@@ -258,7 +299,6 @@ export default function CalComBookingView({
         if (bDate !== formattedDateStr) return false;
         if (!b.timeSlot) return true;
 
-        // Parse start time from booking timeSlot string (e.g. "08:00 - 08:15 WIB")
         const match = b.timeSlot.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
         if (match) {
           const bookingStart = match[1];
@@ -271,6 +311,17 @@ export default function CalComBookingView({
   };
 
   const handleSelectSlot = (slot: SlotItem) => {
+    if (isLecturerUser) {
+      toast.info('Pilihan slot jam bimbingan khusus untuk Mahasiswa. Dosen dapat melihat pratinjau ketersediaan.');
+      return;
+    }
+
+    if (!currentUser) {
+      setSelectedTimeSlot(slot.fullSlotText);
+      setShowAuthModal(true);
+      return;
+    }
+
     if (disabled || isSelectedDatePast || isPastTimeSlot(selectedDateObj, slot.slotStart) || isSlotBookedByStudent(slot)) return;
     setSelectedTimeSlot(slot.fullSlotText);
     setShowConfirmStep(true);
@@ -290,8 +341,35 @@ export default function CalComBookingView({
     setBookingNotes('');
   };
 
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const redirectLoginUrl = `${currentPath}?authenticated=1`;
+
   return (
     <div className="bg-white border border-gray-200/90 rounded-3xl p-6 md:p-8 text-gray-900 shadow-sm space-y-6 text-left relative overflow-hidden font-sans">
+      {/* Warning Banner for Unauthenticated Students */}
+      {!currentUser && (
+        <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 font-medium shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 font-bold text-sm">
+              🔑
+            </div>
+            <div>
+              <p className="font-bold text-amber-950 text-xs">Perhatian: Anda Belum Login Akun Mahasiswa</p>
+              <p className="text-[11px] text-amber-800 font-normal">
+                Silakan masuk ke akun Mahasiswa Anda terlebih dahulu untuk memilih slot dan mengajukan janji temu bimbingan.
+              </p>
+            </div>
+          </div>
+          <a
+            href={`/login?redirect=${encodeURIComponent(redirectLoginUrl)}`}
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shrink-0 shadow-xs flex items-center gap-1.5"
+          >
+            <span>Masuk / Login Dulu</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+      )}
+
       {/* Top Header Bar Controls */}
       <div className="flex items-center justify-between border-b border-gray-100 pb-5">
         <div className="flex items-center gap-2">
@@ -339,10 +417,10 @@ export default function CalComBookingView({
           <div className="lg:col-span-5 space-y-6 border-b lg:border-b-0 lg:border-r border-gray-100 dark:border-zinc-800 pb-6 lg:pb-0 lg:pr-8 text-left">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-emerald-700 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
-                {myThesis?.supervisorName ? myThesis.supervisorName.substring(0, 2).toUpperCase() : 'DS'}
+                {supervisorInitials}
               </div>
               <p className="text-xs font-extrabold text-gray-700 dark:text-gray-300">
-                {myThesis?.supervisorName || 'Belum Ditentukan'}
+                {displaySupervisorName}
               </p>
             </div>
 
@@ -407,7 +485,7 @@ export default function CalComBookingView({
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-900 dark:text-white">
-                Email address *
+                Email address / NPM *
               </label>
               <input
                 type="text"
@@ -449,24 +527,24 @@ export default function CalComBookingView({
                 className="px-6 py-2.5 rounded-xl text-xs font-black bg-emerald-700 hover:bg-emerald-800 text-white shadow-md shadow-emerald-700/20 transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>Confirm</span>
+                <span>Confirm Booking</span>
               </button>
             </div>
           </div>
         </form>
       ) : (
-        /* Main 3-Column Layout */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
+        /* MAIN 3-COLUMN CALENDAR & SLOT SELECTION VIEW */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* ─── COLUMN 1: Profile & Lecturer Availability Info (4 cols) ──── */}
           <div className="lg:col-span-4 space-y-5 border-b lg:border-b-0 lg:border-r border-gray-100 pb-6 lg:pb-0 lg:pr-6">
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-emerald-700 text-white font-extrabold text-base flex items-center justify-center shrink-0 shadow-sm">
-                {myThesis?.supervisorName ? myThesis.supervisorName.substring(0, 2).toUpperCase() : 'DS'}
+                {supervisorInitials}
               </div>
               <div>
                 <p className="text-xs text-gray-500 font-semibold">Dosen Pembimbing</p>
-                <h3 className="font-extrabold text-sm text-gray-900 leading-tight mt-0.5">
-                  {myThesis?.supervisorName || 'Belum Ditentukan'}
+                <h3 className="font-extrabold text-sm text-gray-900 leading-tight mt-0.5 capitalize">
+                  {displaySupervisorName}
                 </h3>
               </div>
             </div>
@@ -513,113 +591,101 @@ export default function CalComBookingView({
                 Jadwal Ketersediaan Dosen:
               </p>
               <div className="space-y-2 text-xs">
-                {activeRules.map((rule, idx) => (
-                  <div key={idx} className="space-y-1 text-gray-800 bg-emerald-50/90 px-3 py-2 rounded-xl border border-emerald-200 shadow-2xs overflow-hidden">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-extrabold text-gray-900 shrink-0 whitespace-nowrap text-xs">{dayNamesFull[rule.dayOfWeek]}</span>
-                      <span className="font-mono font-extrabold text-emerald-950 text-[10.5px] sm:text-[11px] shrink-0 whitespace-nowrap">
-                        {rule.startTime} - {rule.endTime} WIB
-                      </span>
-                    </div>
-                    {rule.rules && (
-                      <div className="flex items-center justify-between text-[10px] font-medium text-emerald-800 border-t border-emerald-200/60 pt-1">
-                        <span className="font-semibold">{rule.rules.sessionName || 'Sesi Standard'}</span>
-                        <span>Batas: {eventType?.maxQuotaPerSession ?? rule.rules?.maxQuotaPerSession ?? 1} org/sesi • {eventType?.duration || rule.rules?.sessionDurationMinutes || 30}m</span>
+                {extractedDayRules.length > 0 ? (
+                  extractedDayRules.map((rule, idx) => (
+                    <div key={idx} className="space-y-1 text-gray-800 bg-emerald-50/90 px-3 py-2 rounded-xl border border-emerald-200 shadow-2xs overflow-hidden">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-extrabold text-gray-900 shrink-0 whitespace-nowrap text-xs">{dayNamesFull[rule.dayOfWeek]}</span>
+                        <span className="font-mono font-extrabold text-emerald-950 text-[10.5px] sm:text-[11px] shrink-0 whitespace-nowrap">
+                          {rule.startTime} - {rule.endTime} WIB
+                        </span>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <div className="flex items-center justify-between text-[11px] text-emerald-700">
+                        <span className="truncate max-w-[140px]">{rule.sessionName}</span>
+                        <span>{rule.duration} Min</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[11px] text-muted-foreground italic">Jadwal ketersediaan umum terpasang.</p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* ─── COLUMN 2: Interactive Month Calendar (4 cols) ───────────── */}
-          <div className="lg:col-span-4 space-y-4 px-0 md:px-2 border-b lg:border-b-0 lg:border-r border-gray-100 pb-6 lg:pb-0 lg:pr-6">
-            {/* Month Header Navigation */}
-            <div className="flex items-center justify-between">
-              <h3 className="font-extrabold text-base text-gray-900">
-                {monthNames[month]} <span className="text-gray-500 font-normal">{year}</span>
+          {/* ─── COLUMN 2: Calendar Month Picker (4 cols) ──── */}
+          <div className="lg:col-span-4 space-y-4 border-b lg:border-b-0 lg:border-r border-gray-100 pb-6 lg:pb-0 lg:pr-6">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="font-black text-sm text-gray-900">
+                {monthNames[month]} <span className="text-gray-400 font-medium">{year}</span>
               </h3>
 
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={prevMonth}
-                  className="p-1.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer font-bold"
+                  disabled={month === today.getMonth() && year === today.getFullYear()}
+                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="Bulan Sebelumnya"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
                   onClick={nextMonth}
-                  className="p-1.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer font-bold"
+                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-all"
+                  title="Bulan Berikutnya"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Days of Week Header */}
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-gray-600 tracking-wider uppercase font-mono py-1">
-              {daysOfWeek.map((day) => (
-                <div key={day}>{day}</div>
+            {/* Header Nama Hari */}
+            <div className="grid grid-cols-7 text-center gap-1 text-[10px] font-extrabold text-gray-600">
+              {daysOfWeek.map((d, i) => (
+                <div key={i}>{d}</div>
               ))}
             </div>
 
-            {/* Calendar Grid Matrix */}
-            <div className="grid grid-cols-7 gap-2 text-center">
-              {/* Blank offset days */}
+            {/* Grid Tanggal */}
+            <div className="grid grid-cols-7 gap-1.5 text-xs font-bold">
               {Array.from({ length: firstDayOfMonth }).map((_, idx) => (
-                <div key={`empty-${idx}`} className="h-10 md:h-11" />
+                <div key={`empty-${idx}`} className="h-9 rounded-full" />
               ))}
 
-              {/* Days of the month */}
               {Array.from({ length: daysInMonth }).map((_, idx) => {
                 const dayNum = idx + 1;
+                const dateObj = new Date(year, month, dayNum);
+                const dayOfWeekNum = dateObj.getDay();
+                const past = isPastDate(dateObj);
                 const isSelected = selectedDay === dayNum;
-                const dayDateObj = new Date(year, month, dayNum);
-                const dayOfWeek = dayDateObj.getDay();
-                const dayRules = getRulesForDayOfWeek(dayOfWeek);
-                const past = isPastDate(dayDateObj);
-                const isCurrentToday = isTodayDate(dayDateObj);
-                const isAvailableDay = dayRules.length > 0 && !past;
+                const isLecturerOpen = extractedDayRules.some((r) => r.dayOfWeek === dayOfWeekNum);
+
+                let bgClass = 'bg-gray-50 text-gray-700 hover:bg-emerald-50 border border-gray-200/60';
+                if (past) {
+                  bgClass = 'bg-gray-50/40 text-gray-300 cursor-not-allowed border-transparent';
+                } else if (isSelected) {
+                  bgClass = 'bg-emerald-700 text-white font-extrabold shadow-md shadow-emerald-700/30 scale-105 border-emerald-700';
+                } else if (isLecturerOpen) {
+                  bgClass = 'bg-emerald-50 text-emerald-950 border border-emerald-300 font-extrabold hover:bg-emerald-100 cursor-pointer';
+                }
 
                 return (
                   <button
-                    key={`day-${dayNum}`}
+                    key={dayNum}
                     type="button"
-                    disabled={past || !isAvailableDay}
+                    disabled={past}
                     onClick={() => {
-                      if (past || !isAvailableDay) return;
                       setSelectedDay(dayNum);
+                      setSelectedTimeSlot(null);
                       setShowConfirmStep(false);
                     }}
-                    title={
-                      past
-                        ? `Tanggal ${dayNum} sudah lewat`
-                        : isAvailableDay
-                        ? `Hari ${dayNamesFull[dayOfWeek]}: ${dayRules.map((r) => `${r.startTime} - ${r.endTime}`).join(', ')} WIB`
-                        : `Dosen tidak ada jam bimbingan pada hari ${dayNamesFull[dayOfWeek]}`
-                    }
-                    className={`h-10 md:h-11 rounded-xl text-xs font-black flex flex-col items-center justify-center transition-all relative ${
-                      isSelected
-                        ? 'bg-emerald-700 text-white font-black shadow-md shadow-emerald-700/30 scale-105 ring-2 ring-emerald-700/40 cursor-pointer'
-                        : past
-                        ? 'bg-gray-100/80 border border-gray-200 text-gray-500 font-extrabold cursor-not-allowed opacity-80'
-                        : isAvailableDay
-                        ? 'bg-emerald-50 hover:bg-emerald-600 border border-emerald-400 hover:border-emerald-700 text-emerald-950 hover:text-white cursor-pointer transition-all shadow-2xs font-black'
-                        : 'bg-gray-50 border border-gray-200/90 text-gray-800 font-extrabold cursor-pointer hover:bg-gray-100 hover:text-gray-900'
-                    }`}
+                    className={`h-9 rounded-xl flex flex-col items-center justify-center transition-all relative ${bgClass}`}
                   >
                     <span>{dayNum}</span>
-                    {isAvailableDay && !isSelected && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 absolute bottom-1" />
-                    )}
-                    {isCurrentToday && !isSelected && !isAvailableDay && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-gray-600 absolute bottom-1" />
-                    )}
-                    {isSelected && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-white absolute bottom-1" />
+                    {isLecturerOpen && !past && !isSelected && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-0.5" />
                     )}
                   </button>
                 );
@@ -627,32 +693,21 @@ export default function CalComBookingView({
             </div>
           </div>
 
-          {/* ─── COLUMN 3: Dynamic Time Slots Panel (4 cols) ─────────────── */}
+          {/* ─── COLUMN 3: Time Slot Picker (4 cols) ──── */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-black text-sm text-gray-900 flex items-center gap-2">
-                  <span className="text-emerald-700">●</span>
-                  <span>{dayNamesFull[selectedDayOfWeek]}, {selectedDay} {monthNames[month].substring(0, 3)}</span>
-                </h3>
-                {!isSelectedDatePast && currentSelectedRules.length > 0 && (
-                  <p className="text-[11px] text-emerald-800 font-extrabold mt-0.5 font-mono">
-                    Jam Bimbingan: {currentSelectedRules.map((r) => `${r.startTime} - ${r.endTime}`).join(', ')} WIB
-                  </p>
-                )}
-              </div>
+            <div className="border-b border-gray-100 pb-2">
+              <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+                • {formattedSelectedDateText}
+              </h4>
+              <p className="text-[11px] text-emerald-900 mt-0.5 font-bold font-mono">
+                Jam Bimbingan: {currentSelectedRules.length > 0 ? `${currentSelectedRules[0].startTime} - ${currentSelectedRules[currentSelectedRules.length - 1].endTime} WIB` : 'Tidak Buka Sesi'}
+              </p>
             </div>
 
-            {/* Alert jika SK Admin Belum Ada */}
-            {disabled && (
-              <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-xs text-amber-900 space-y-1">
-                <p className="font-extrabold flex items-center gap-1.5 text-amber-800">
-                  <Clock className="w-4 h-4" />
-                  Menunggu SK Admin
-                </p>
-                <p className="text-[11px] leading-relaxed font-medium">
-                  Slot waktu bimbingan belum dapat diklik sebelum File SK diterbitkan oleh Admin.
-                </p>
+            {/* Notice for Today's Date */}
+            {isTodayDate(selectedDateObj) && (
+              <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 text-[11px] text-emerald-900 leading-snug font-medium">
+                💡 <strong>Catatan:</strong> Sesi pagi yang telah berlalu ditandai <i>"Sudah Lewat"</i>. Gulir ke bawah untuk memilih jam sesi mendatang atau pilih tanggal lain di kalender.
               </div>
             )}
 
@@ -676,7 +731,10 @@ export default function CalComBookingView({
                   let btnBg = 'bg-emerald-50/90 hover:bg-emerald-700 border border-emerald-300 hover:border-emerald-700 text-emerald-950 hover:text-white cursor-pointer hover:scale-[1.01] shadow-2xs';
                   let btnText = 'Pilih Slot Sesi →';
 
-                  if (disabled || slotPassed) {
+                  if (isLecturerUser) {
+                    btnBg = 'bg-gray-100/90 border border-gray-300 text-gray-500 font-bold cursor-not-allowed';
+                    btnText = 'Khusus Akses Mahasiswa';
+                  } else if (disabled || slotPassed) {
                     btnBg = 'bg-gray-100 border border-gray-300 text-gray-700 cursor-not-allowed font-extrabold';
                     btnText = slotPassed ? 'Sudah Lewat' : 'Belum Dibuka';
                   } else if (isBooked) {
@@ -688,7 +746,7 @@ export default function CalComBookingView({
                     <button
                       key={slot.slotStart}
                       type="button"
-                      disabled={disabled || slotPassed || isBooked}
+                      disabled={disabled || slotPassed || isBooked || isLecturerUser}
                       onClick={() => handleSelectSlot(slot)}
                       className={`w-full text-xs py-3 px-4 rounded-xl flex items-center justify-between transition-all group ${btnBg}`}
                     >
@@ -696,7 +754,7 @@ export default function CalComBookingView({
                         {isBooked ? (
                           <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
                         ) : (
-                          <span className={`w-2.5 h-2.5 rounded-full ${slotPassed ? 'bg-gray-500' : 'bg-emerald-600 group-hover:bg-white group-hover:scale-125'} transition-all`} />
+                          <span className={`w-2.5 h-2.5 rounded-full ${slotPassed || isLecturerUser ? 'bg-gray-500' : 'bg-emerald-600 group-hover:bg-white group-hover:scale-125'} transition-all`} />
                         )}
                         <div className="text-left font-mono">
                           <span className="font-extrabold font-sans text-xs block">{slot.sessionName}</span>
@@ -705,7 +763,7 @@ export default function CalComBookingView({
                       </div>
 
                       <span className={`text-[11px] font-sans font-bold transition-colors ${
-                        disabled || slotPassed ? 'text-gray-600 font-extrabold' : isBooked ? 'text-emerald-800 font-extrabold' : 'text-emerald-800 group-hover:text-white'
+                        isLecturerUser || disabled || slotPassed ? 'text-gray-500 font-bold' : isBooked ? 'text-emerald-800 font-extrabold' : 'text-emerald-800 group-hover:text-white'
                       }`}>
                         {btnText}
                       </span>
@@ -724,6 +782,47 @@ export default function CalComBookingView({
                 </p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* AUTH REQUIRED MODAL FOR UNAUTHENTICATED USERS */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl text-center space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-xs">
+              <Lock className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                Login / Daftar Akun Mahasiswa
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Untuk mem-booking bimbingan pada jam <strong className="text-emerald-700 dark:text-emerald-300">{selectedTimeSlot}</strong>, silakan masuk ke akun Mahasiswa Anda terlebih dahulu.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5 pt-2">
+              <a
+                href={`/login?redirect=${encodeURIComponent(redirectLoginUrl)}`}
+                className="w-full py-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all text-center"
+              >
+                🔑 Login Akun Mahasiswa
+              </a>
+              <a
+                href={`/register?redirect=${encodeURIComponent(redirectLoginUrl)}`}
+                className="w-full py-3 rounded-xl text-xs font-bold bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-800 dark:text-gray-200 transition-all text-center"
+              >
+                📝 Daftar Akun Baru
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowAuthModal(false)}
+                className="text-[11px] font-semibold text-muted-foreground hover:underline pt-1 cursor-pointer"
+              >
+                Kembali Lihat Jadwal
+              </button>
+            </div>
           </div>
         </div>
       )}

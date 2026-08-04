@@ -312,26 +312,6 @@ export default function EventTypesTab({
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
-                <Users className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Batas Kuota Mhs / Sesi *</span>
-              </label>
-              <select
-                value={etMaxQuota}
-                onChange={(e) => setEtMaxQuota(Number(e.target.value))}
-                className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-semibold"
-              >
-                <option value={1}>1 Orang / Sesi</option>
-                <option value={2}>2 Orang / Sesi</option>
-                <option value={3}>3 Orang / Sesi</option>
-                <option value={4}>4 Orang / Sesi</option>
-                <option value={5}>5 Orang / Sesi</option>
-                <option value={10}>10 Orang / Sesi</option>
-                <option value={15}>15 Orang / Sesi</option>
-                <option value={20}>20 Orang / Sesi</option>
-              </select>
-            </div>
           </div>
 
           {/* AUTOMATIC DEFAULT SCHEDULE BADGE */}
@@ -569,27 +549,6 @@ export default function EventTypesTab({
                     <option value={60}>60 Menit (1 Jam) / Sesi</option>
                     <option value={90}>90 Menit (1.5 Jam) / Sesi</option>
                     <option value={120}>120 Menit (2 Jam) / Sesi</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Batas Kuota Mhs / Sesi *</span>
-                  </label>
-                  <select
-                    value={editEtMaxQuota}
-                    onChange={(e) => setEditEtMaxQuota(Number(e.target.value))}
-                    className="w-full p-2.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200 font-bold"
-                  >
-                    <option value={1}>1 Orang / Sesi</option>
-                    <option value={2}>2 Orang / Sesi</option>
-                    <option value={3}>3 Orang / Sesi</option>
-                    <option value={4}>4 Orang / Sesi</option>
-                    <option value={5}>5 Orang / Sesi</option>
-                    <option value={10}>10 Orang / Sesi</option>
-                    <option value={15}>15 Orang / Sesi</option>
-                    <option value={20}>20 Orang / Sesi</option>
                   </select>
                 </div>
               </div>

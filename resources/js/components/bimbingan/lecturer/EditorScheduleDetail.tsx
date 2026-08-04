@@ -359,27 +359,7 @@ export default function ScheduleDetailEditor({
 
         {/* Top Right Controls */}
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
-          {/* Max Quota Per Session Selector */}
-          <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-emerald-200/80 dark:border-zinc-700 px-3 py-1 rounded-xl shadow-2xs">
-            <Users className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span className="text-xs font-semibold text-emerald-900 dark:text-zinc-300">
-              Batas Kuota:
-            </span>
-            <select
-              value={maxQuotaPerSession}
-              onChange={(e) => setMaxQuotaPerSession(Number(e.target.value))}
-              className="bg-transparent text-xs font-bold text-emerald-900 dark:text-white focus:outline-none cursor-pointer"
-            >
-              <option value={1}>1 Org / Sesi</option>
-              <option value={2}>2 Org / Sesi</option>
-              <option value={3}>3 Org / Sesi</option>
-              <option value={4}>4 Org / Sesi</option>
-              <option value={5}>5 Org / Sesi</option>
-              <option value={10}>10 Org / Sesi</option>
-              <option value={15}>15 Org / Sesi</option>
-              <option value={20}>20 Org / Sesi</option>
-            </select>
-          </div>
+
 
           {/* Set as default toggle */}
           <div className="flex items-center gap-2">

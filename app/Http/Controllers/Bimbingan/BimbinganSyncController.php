@@ -392,7 +392,7 @@ class BimbinganSyncController extends Controller
             $incomingBookings = $request->input('bookings', []);
             $incomingIds = collect($incomingBookings)->pluck('id')->toArray();
 
-            if ($user && $user->hasRole('student')) {
+            if ($user && $user->hasRole('student') && $request->boolean('is_full_sync')) {
                 Appointment::where('student_id', $user->id)
                     ->whereNotIn('id', $incomingIds)
                     ->delete();
