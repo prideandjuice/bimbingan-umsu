@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   Send,
   X,
+  Paperclip,
 } from 'lucide-react';
 import type { AppUser, Thesis, Guidance, Booking, EventType, AvailabilityRule, Proposal } from '@/types';
 import RichTextDisplay from '../RichTextDisplay';
@@ -61,7 +62,7 @@ interface ThesisActiveLayoutProps {
   mySupervisorAvailability: AvailabilityRule[];
   currentProgress: number;
   handleSubmitGuidance: (date: string, notes: string, revisions: string, progress: number) => void;
-  handleBookMeeting: (eventTypeId: string, date: string, slot: string, notes: string) => void;
+  handleBookMeeting: (eventTypeId: string, date: string, slot: string, notes: string, draftFileName?: string | null) => void;
   handleCancelBooking?: (bookingId: string) => void;
   initialTab?: 'info' | 'guidances' | 'bookings';
 }
@@ -571,6 +572,17 @@ export default function ThesisActiveLayout({
                                 {myThesis?.supervisorName || 'Dosen Pembimbing'}
                               </span>
                             </div>
+                            {b.draftFileName && (
+                              <div className="flex items-center justify-between pt-1.5 border-t border-gray-200/60 dark:border-zinc-800/60 text-[11px]">
+                                <span className="text-muted-foreground flex items-center gap-1 font-semibold">
+                                  <Paperclip className="w-3 h-3 text-emerald-600" />
+                                  <span>Berkas Draft:</span>
+                                </span>
+                                <span className="font-extrabold text-emerald-700 dark:text-emerald-400 truncate max-w-[170px]">
+                                  {b.draftFileName}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
@@ -609,8 +621,8 @@ export default function ThesisActiveLayout({
                 availabilityRules={mySupervisorAvailability}
                 eventType={selectedBookingEventType}
                 myBookings={myBookings}
-                onBookMeeting={(date, timeSlot, notes) => {
-                  handleBookMeeting(selectedBookingEventType.id || 'default-session', date, timeSlot, notes);
+                onBookMeeting={(date, timeSlot, notes, draftFile) => {
+                  handleBookMeeting(selectedBookingEventType.id || 'default-session', date, timeSlot, notes, draftFile?.name);
                   toast.success(
                     `Pengajuan janji temu bimbingan (${selectedBookingEventType.name}) pada tanggal ${date} (${timeSlot}) berhasil dikirim!`
                   );
@@ -673,6 +685,35 @@ export default function ThesisActiveLayout({
                   {selectedBookingDetail.notes || 'Konsultasi bimbingan skripsi'}
                 </div>
               </div>
+
+              {selectedBookingDetail.draftFileName && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                    Berkas Draft Skripsi Diunggah:
+                  </label>
+                  <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 rounded-xl p-3 flex items-center justify-between gap-2 text-emerald-900 dark:text-emerald-200 font-extrabold text-xs">
+                    <div className="flex items-center gap-2 truncate">
+                      <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="truncate">{selectedBookingDetail.draftFileName}</span>
+                    </div>
+                    <a
+                      href={
+                        selectedBookingDetail.draftFilePath
+                          ? (selectedBookingDetail.draftFilePath.startsWith('/')
+                              ? selectedBookingDetail.draftFilePath
+                              : `/${selectedBookingDetail.draftFilePath}`)
+                          : `/storage/drafts/${selectedBookingDetail.draftFileName}`
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shrink-0 shadow-2xs cursor-pointer"
+                    >
+                      <span>Buka PDF</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {selectedBookingDetail.rejectionReason && (
                 <div className="space-y-1">

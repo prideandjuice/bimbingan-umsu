@@ -16,6 +16,9 @@ import {
   MapPin,
   CheckCircle2,
   Lock,
+  UploadCloud,
+  FileText,
+  Paperclip,
 } from 'lucide-react';
 import type { Thesis, AvailabilityRule, EventType, Booking, AppUser } from '@/types';
 
@@ -25,7 +28,7 @@ interface CalComBookingViewProps {
   availabilityRules: AvailabilityRule[];
   eventType?: EventType;
   myBookings?: Booking[];
-  onBookMeeting: (date: string, timeSlot: string, notes: string) => void;
+  onBookMeeting: (date: string, timeSlot: string, notes: string, draftFile?: File | null) => void;
   disabled?: boolean;
 }
 
@@ -42,12 +45,12 @@ export default function CalComBookingView({
   const currentUser = props?.auth?.user;
 
   const isLecturerUser = Boolean(
-    currentUser?.roles?.includes('lecturer') ||
+    (currentUser as any)?.roles?.includes('lecturer') ||
     (currentUser as any)?.role === 'lecturer' ||
     (currentUser as any)?.roles?.some((r: any) => (typeof r === 'string' ? r : r.name) === 'lecturer')
   );
 
-  const displaySupervisorName = lecturerName || myThesis?.supervisorName || (isLecturerUser ? currentUser?.name : 'Dosen Pembimbing UMSU');
+  const displaySupervisorName = lecturerName || myThesis?.supervisorName || (isLecturerUser ? currentUser?.name : '') || 'Dosen Pembimbing UMSU';
   const supervisorInitials = displaySupervisorName
     .split(' ')
     .slice(0, 2)
@@ -165,6 +168,7 @@ export default function CalComBookingView({
   const [selectedDay, setSelectedDay] = useState<number>(() => initialDateInfo.day);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [bookingNotes, setBookingNotes] = useState('');
+  const [draftFile, setDraftFile] = useState<File | null>(null);
   const [showConfirmStep, setShowConfirmStep] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -335,10 +339,11 @@ export default function CalComBookingView({
     const paddedDay = String(selectedDay).padStart(2, '0');
     const fullDate = `${year}-${paddedMonth}-${paddedDay}`;
 
-    onBookMeeting(fullDate, selectedTimeSlot, bookingNotes);
+    onBookMeeting(fullDate, selectedTimeSlot, bookingNotes, draftFile);
     setShowConfirmStep(false);
     setSelectedTimeSlot(null);
     setBookingNotes('');
+    setDraftFile(null);
   };
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -502,12 +507,70 @@ export default function CalComBookingView({
                 Additional notes
               </label>
               <textarea
-                rows={4}
+                rows={3}
                 placeholder="Please share anything that will help prepare for our meeting (topik bahasan / perbaikan bab skripsi)..."
                 value={bookingNotes}
                 onChange={(e) => setBookingNotes(e.target.value)}
                 className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl p-3 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 outline-none font-medium resize-none transition-all"
               />
+            </div>
+
+            {/* UPLOAD FILE DRAFT BAB SKRIPSI */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Upload Draft Skripsi (Bab 1 - 3 / PDF)</span>
+                <span className="text-[10px] font-normal text-muted-foreground">(Maks 10MB)</span>
+              </label>
+
+              {draftFile ? (
+                <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-xl text-xs">
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div className="truncate">
+                      <p className="font-bold text-gray-900 dark:text-white text-xs truncate">
+                        {draftFile.name}
+                      </p>
+                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
+                        {(draftFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDraftFile(null)}
+                    className="p-1 text-gray-400 hover:text-rose-600 transition-colors rounded-lg cursor-pointer"
+                    title="Hapus file"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-zinc-700 hover:border-emerald-500 dark:hover:border-emerald-500 bg-gray-50/50 dark:bg-zinc-800/40 rounded-xl cursor-pointer transition-all text-center group">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        if (file.size > 10 * 1024 * 1024) {
+                          toast.error('Ukuran file maksimal 10MB');
+                          return;
+                        }
+                        setDraftFile(file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <UploadCloud className="w-6 h-6 text-gray-400 group-hover:text-emerald-600 transition-colors mb-1.5" />
+                  <p className="text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-400">
+                    Klik atau seret berkas PDF Bab 1 - 3 ke sini
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Format: PDF, DOC, DOCX (Maksimal 10MB)
+                  </p>
+                </label>
+              )}
             </div>
 
             <p className="text-[11px] text-muted-foreground pt-1">

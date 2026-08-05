@@ -122,9 +122,42 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
     refreshLocalData();
   };
 
-  const onBookMeeting = (eventTypeId: string, date: string, slot: string, notes: string) => {
+  const onBookMeeting = async (eventTypeId: string, date: string, slot: string, notes: string, draftFileInput?: File | string | null) => {
     if (!myThesis) return;
     const supervisorName = myThesis.supervisorName || 'Dosen Pembimbing';
+
+    let uploadedFileName: string | null = null;
+    let uploadedFilePath: string | null = null;
+
+    if (draftFileInput instanceof File) {
+      uploadedFileName = draftFileInput.name;
+      try {
+        const formData = new FormData();
+        formData.append('file', draftFileInput);
+
+        const uploadRes = await fetch('/bimbingan/upload-draft', {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+          },
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const data = await uploadRes.json();
+          if (data.filePath) {
+            uploadedFileName = data.fileName || draftFileInput.name;
+            uploadedFilePath = data.filePath;
+          }
+        }
+      } catch (err) {
+        console.error('Draft file upload error:', err);
+      }
+    } else if (typeof draftFileInput === 'string') {
+      uploadedFileName = draftFileInput;
+    }
+
     const newBooking: Booking = {
       id: `booking-${Date.now()}`,
       thesisId: myThesis.id,
@@ -139,10 +172,22 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
       timeSlot: slot,
       status: 'pending',
       notes,
+      draftFileName: uploadedFileName,
+      draftFilePath: uploadedFilePath,
       createdAt: new Date().toISOString(),
     };
+
     DB.saveBookings([...bookings, newBooking]);
     refreshLocalData();
+
+    fetch('/bimbingan/sync/bookings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({ bookings: [newBooking] }),
+    }).catch(() => {});
   };
 
   const onCancelBooking = (bookingId: string) => {
