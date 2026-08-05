@@ -156,5 +156,7 @@ export interface Booking {
     timeSlot: string;
     status: 'pending' | 'confirmed' | 'rejected' | 'completed';
     notes?: string;
+    draftFileName?: string | null;
+    draftFilePath?: string | null;
     createdAt: string;
 }

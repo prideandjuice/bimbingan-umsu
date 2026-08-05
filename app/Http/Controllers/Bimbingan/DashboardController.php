@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\Bimbingan;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\TitleSubmission;
+use App\Models\Appointment;
+use App\Models\Availability;
+use App\Models\EventType;
+use App\Models\GuidanceSession;
 use App\Models\ProposalTitle;
 use App\Models\Thesis;
-use App\Models\GuidanceSession;
-use App\Models\EventType;
-use App\Models\Availability;
-use App\Models\Appointment;
+use App\Models\TitleSubmission;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -22,17 +22,17 @@ class DashboardController extends Controller
         $activeTab = $tab ?: $request->route('tab') ?: 'overview';
 
         $users = User::with('roles')->get()->map(function ($u) {
-            //User::all(): Mengambil semua record dari tabel users di database.
-            //->map(function ($u): Memproses/mengubah setiap objek user satu per satu (dimana $u adalah satu individu user) di dalam memory sebelum dikembalikan ke variabel $users.
+            // User::all(): Mengambil semua record dari tabel users di database.
+            // ->map(function ($u): Memproses/mengubah setiap objek user satu per satu (dimana $u adalah satu individu user) di dalam memory sebelum dikembalikan ke variabel $users.
             $role = $u->roles->first()?->name;
-            //$u->roles: Mengakses relasi Eloquent roles milik user tersebut (biasanya menggunakan paket seperti Spatie Permission)
-            //->first(): Mengambil role pertama yang dimiliki oleh user.
-            if (!$role || $role === 'guest') {
+            // $u->roles: Mengakses relasi Eloquent roles milik user tersebut (biasanya menggunakan paket seperti Spatie Permission)
+            // ->first(): Mengambil role pertama yang dimiliki oleh user.
+            if (! $role || $role === 'guest') {
                 $role = 'student';
-                //Jika user tidak memiliki role (nilainya null atau kosong).
-                //atau jika role-nya adalah 'guest', maka akan diubah menjadi 'student'.
-                //Ini digunakan sebagai fallback untuk memastikan setiap user memiliki role yang valid untuk aplikasi.
-                //Secara implisit, ini menetapkan 'student' sebagai role default bagi pengguna baru jika tidak ada role lain yang ditugaskan. 
+                // Jika user tidak memiliki role (nilainya null atau kosong).
+                // atau jika role-nya adalah 'guest', maka akan diubah menjadi 'student'.
+                // Ini digunakan sebagai fallback untuk memastikan setiap user memiliki role yang valid untuk aplikasi.
+                // Secara implisit, ini menetapkan 'student' sebagai role default bagi pengguna baru jika tidak ada role lain yang ditugaskan.
             }
 
             return [
@@ -89,7 +89,7 @@ class DashboardController extends Controller
                 'studentName' => $t->student->name ?? 'Unknown',
                 'studentNpm' => $t->student->npm ?? '',
                 'department' => $t->student->department ?? '',
-                'supervisorId' => $supervisorId ? (string)$supervisorId : null,
+                'supervisorId' => $supervisorId ? (string) $supervisorId : null,
                 'supervisorName' => $supervisorName,
                 'status' => $t->status,
                 'createdAt' => $t->created_at->toISOString(),
@@ -104,7 +104,7 @@ class DashboardController extends Controller
                 'date' => $g->date,
                 'notes' => $g->notes,
                 'revisions' => $g->revisions,
-                'progress' => (int)$g->progress,
+                'progress' => (int) $g->progress,
                 'createdBy' => $g->created_by,
                 'creatorName' => $g->creator_name,
                 'status' => $g->status,
@@ -115,12 +115,12 @@ class DashboardController extends Controller
         $eventTypes = EventType::all()->map(function ($et) {
             return [
                 'id' => $et->id,
-                'availabilityId' => $et->availability_id ? (string)$et->availability_id : null,
-                'lecturerId' => (string)$et->lecturer_id,
+                'availabilityId' => $et->availability_id ? (string) $et->availability_id : null,
+                'lecturerId' => (string) $et->lecturer_id,
                 'name' => $et->name,
                 'slug' => $et->slug,
-                'duration' => (int)$et->duration,
-                'maxQuotaPerSession' => $et->max_quota_per_session ? (int)$et->max_quota_per_session : null,
+                'duration' => (int) $et->duration,
+                'maxQuotaPerSession' => $et->max_quota_per_session ? (int) $et->max_quota_per_session : null,
                 'description' => $et->description,
                 'locationType' => $et->location_type ?? 'offline',
                 'locationDetails' => $et->location_details ?: (($et->location_type === 'online') ? 'Google Meet UMSU' : 'Ruang Dosen Gedung A / Ruang Prodi UMSU'),
@@ -131,13 +131,13 @@ class DashboardController extends Controller
             return [
                 'id' => $a->id,
                 'availabilityId' => $a->availability_id,
-                'lecturerId' => (string)$a->lecturer_id,
+                'lecturerId' => (string) $a->lecturer_id,
                 'name' => $a->name,
                 'slug' => $a->slug,
-                'dayOfWeek' => (int)$a->day_of_week,
+                'dayOfWeek' => (int) $a->day_of_week,
                 'startTime' => $a->start_time,
                 'endTime' => $a->end_time,
-                'isDefault' => (bool)$a->is_default,
+                'isDefault' => (bool) $a->is_default,
                 'rules' => $a->rules,
             ];
         });
@@ -149,10 +149,10 @@ class DashboardController extends Controller
             return [
                 'id' => $ap->id,
                 'thesisId' => $ap->thesis_id,
-                'studentId' => (string)$ap->student_id,
+                'studentId' => (string) $ap->student_id,
                 'studentName' => $ap->student->name ?? 'Unknown',
                 'studentNpm' => $ap->student->npm ?? '',
-                'lecturerId' => (string)$ap->lecturer_id,
+                'lecturerId' => (string) $ap->lecturer_id,
                 'lecturerName' => $lecturer ? $lecturer->name : 'Unknown',
                 'eventTypeId' => $ap->event_type_id,
                 'eventTypeName' => $eventType ? $eventType->name : 'Default Bimbingan',
@@ -160,6 +160,8 @@ class DashboardController extends Controller
                 'timeSlot' => $ap->time_slot,
                 'status' => $ap->status,
                 'notes' => $ap->notes,
+                'draftFileName' => $ap->metadata['draftFileName'] ?? null,
+                'draftFilePath' => $ap->metadata['draftFilePath'] ?? null,
                 'createdAt' => $ap->created_at->toISOString(),
             ];
         });
@@ -177,6 +179,30 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function uploadDraft(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,doc,docx|max:10240',
+        ]);
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $filename = 'draft_'.time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+
+            // Store file in public disk (storage/app/public/drafts)
+            $path = $file->storeAs('drafts', $filename, 'public');
+            $filePath = 'storage/'.$path;
+
+            return response()->json([
+                'status' => 'success',
+                'fileName' => $file->getClientOriginalName(),
+                'filePath' => $filePath,
+            ]);
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'File not uploaded'], 400);
+    }
+
     public function uploadSK(Request $request)
     {
         $request->validate([
@@ -188,17 +214,17 @@ class DashboardController extends Controller
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $filename = 'sk_' . $thesis->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'sk_'.$thesis->id.'_'.time().'.'.$file->getClientOriginalExtension();
 
             // Store file in public disk (storage/app/public/sk)
             $path = $file->storeAs('sk', $filename, 'public');
 
             // Update metadata and status
             $metadata = $thesis->metadata;
-            if (!is_array($metadata)) {
+            if (! is_array($metadata)) {
                 $metadata = [];
             }
-            $skPath = 'storage/' . $path;
+            $skPath = 'storage/'.$path;
             $metadata['sk_file'] = $skPath;
 
             $thesis->update([
@@ -228,8 +254,8 @@ class DashboardController extends Controller
         $lecturer = null;
         if ($lecturerUsername && $lecturerUsername !== 'bimbingan') {
             $cleanLecturerStr = str_replace('-', '%', $lecturerUsername);
-            $lecturer = User::where('name', 'like', '%' . $cleanLecturerStr . '%')
-                ->orWhere('email', 'like', $lecturerUsername . '%')
+            $lecturer = User::where('name', 'like', '%'.$cleanLecturerStr.'%')
+                ->orWhere('email', 'like', $lecturerUsername.'%')
                 ->first();
         }
 
@@ -239,13 +265,13 @@ class DashboardController extends Controller
         }
         $eventType = $eventTypeQuery->first() ?? EventType::with('lecturer')->where('slug', $slug)->first();
 
-        if (!$eventType) {
+        if (! $eventType) {
             $eventType = EventType::with('lecturer')->where('id', $slug)->first()
                 ?? EventType::with('lecturer')->first();
         }
 
-        if (!$lecturer) {
-            $lecturer = $eventType ? $eventType->lecturer : User::whereHas('roles', fn($q) => $q->where('name', 'lecturer'))->first();
+        if (! $lecturer) {
+            $lecturer = $eventType ? $eventType->lecturer : User::whereHas('roles', fn ($q) => $q->where('name', 'lecturer'))->first();
         }
 
         $availabilities = [];
@@ -258,8 +284,8 @@ class DashboardController extends Controller
 
                 $linked = (clone $query)->where(function ($q) use ($eventType, $targetName) {
                     $q->where('id', $eventType->availability_id)
-                      ->orWhere('availability_id', $eventType->availability_id)
-                      ->orWhere('name', $eventType->availability_id);
+                        ->orWhere('availability_id', $eventType->availability_id)
+                        ->orWhere('name', $eventType->availability_id);
                     if ($targetName) {
                         $q->orWhere('name', $targetName);
                     }
@@ -268,6 +294,7 @@ class DashboardController extends Controller
                 if ($linked->count() > 0) {
                     $availabilities = $linked->map(function ($a) {
                         $firstSlot = $a->rules['slots'][0] ?? ['dayOfWeek' => 1, 'startTime' => '08:00', 'endTime' => '16:00'];
+
                         return [
                             'id' => (string) $a->id,
                             'availabilityId' => (string) $a->id,
@@ -286,6 +313,7 @@ class DashboardController extends Controller
             if (empty($availabilities) || count($availabilities) === 0) {
                 $availabilities = $query->get()->map(function ($a) {
                     $firstSlot = $a->rules['slots'][0] ?? ['dayOfWeek' => 1, 'startTime' => '08:00', 'endTime' => '16:00'];
+
                     return [
                         'id' => (string) $a->id,
                         'availabilityId' => (string) $a->id,

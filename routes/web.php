@@ -1,15 +1,15 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use App\Http\Controllers\Bimbingan\DashboardController;
 use App\Http\Controllers\Bimbingan\BimbinganSyncController;
-use App\Http\Controllers\Management\Configuration\MenuController;
-use App\Http\Controllers\Management\Configuration\RoleController;
-use App\Http\Controllers\Management\Configuration\PermissionController;
+use App\Http\Controllers\Bimbingan\DashboardController;
 use App\Http\Controllers\Management\Configuration\AccessRoleController;
 use App\Http\Controllers\Management\Configuration\AccessUserController;
+use App\Http\Controllers\Management\Configuration\MenuController;
+use App\Http\Controllers\Management\Configuration\PermissionController;
+use App\Http\Controllers\Management\Configuration\RoleController;
 use App\Http\Controllers\Management\Configuration\UserController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -21,6 +21,7 @@ Route::get('/demo', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('bimbingan/upload-draft', [DashboardController::class, 'uploadDraft'])->name('bimbingan.upload-draft');
 
     // Route Khusus Mahasiswa
     Route::middleware(['role:student'])->group(function () {
