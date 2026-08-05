@@ -44,7 +44,7 @@ export default function BookingSlugPage({
   const isAuthenticatedParam = urlParams ? (urlParams.get('authenticated') === '1' || urlParams.get('from_login') === '1') : false;
 
   const isLecturerUser = Boolean(
-    rawCurrentUser?.roles?.includes('lecturer') ||
+    (rawCurrentUser as any)?.roles?.includes('lecturer') ||
     (rawCurrentUser as any)?.role === 'lecturer' ||
     (rawCurrentUser as any)?.roles?.some((r: any) => (typeof r === 'string' ? r : r.name) === 'lecturer')
   );
@@ -79,20 +79,14 @@ export default function BookingSlugPage({
             </div>
 
             <div className="flex items-center gap-2">
-              {currentUser && !isLecturerUser ? (
-                <div className="flex items-center gap-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Logged in: {currentUser.name}</span>
-                  </div>
-                  <Link
-                    href="/mahasiswa/bookings"
-                    className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs transition-all"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    <span>Ke Dashboard Saya</span>
-                  </Link>
-                </div>
+              {rawCurrentUser ? (
+                <Link
+                  href={isLecturerUser ? '/dashboard?tab=eventTypes' : '/dashboard'}
+                  className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>{isLecturerUser ? 'Ke Dashboard Dosen' : 'Ke Dashboard Saya'}</span>
+                </Link>
               ) : (
                 <div className="flex items-center gap-2">
                   <Link
@@ -157,7 +151,36 @@ export default function BookingSlugPage({
                 eventType={eventType || undefined}
                 myBookings={[]}
                 lecturerName={lecturerName}
-                onBookMeeting={async (date, timeSlot, notes) => {
+                onBookMeeting={async (date, timeSlot, notes, draftFile) => {
+                  let uploadedFileName = draftFile?.name || null;
+                  let uploadedFilePath: string | null = null;
+
+                  if (draftFile) {
+                    try {
+                      const formData = new FormData();
+                      formData.append('file', draftFile);
+
+                      const uploadRes = await fetch('/bimbingan/upload-draft', {
+                        method: 'POST',
+                        headers: {
+                          'X-Requested-With': 'XMLHttpRequest',
+                          'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                        },
+                        body: formData,
+                      });
+
+                      if (uploadRes.ok) {
+                        const data = await uploadRes.json();
+                        if (data.filePath) {
+                          uploadedFileName = data.fileName || draftFile.name;
+                          uploadedFilePath = data.filePath;
+                        }
+                      }
+                    } catch (err) {
+                      console.error('File upload error:', err);
+                    }
+                  }
+
                   const bookingPayload = {
                     id: `booking-${Date.now()}`,
                     studentId: rawCurrentUser?.id,
@@ -167,6 +190,8 @@ export default function BookingSlugPage({
                     timeSlot: timeSlot,
                     status: 'pending',
                     notes: notes || 'Konsultasi bimbingan skripsi',
+                    draftFileName: uploadedFileName,
+                    draftFilePath: uploadedFilePath,
                   };
 
                   try {

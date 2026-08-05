@@ -3,17 +3,19 @@
 namespace App\Http\Controllers\Bimbingan;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\TitleSubmission;
+use App\Models\Appointment;
+use App\Models\Availability;
+use App\Models\EventType;
+use App\Models\GuidanceSession;
 use App\Models\ProposalTitle;
 use App\Models\Thesis;
-use App\Models\GuidanceSession;
-use App\Models\EventType;
-use App\Models\Availability;
-use App\Models\Appointment;
+use App\Models\TitleSubmission;
+use App\Models\User;
+use App\Observers\AvailabilityObserver;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class BimbinganSyncController extends Controller
@@ -23,13 +25,15 @@ class BimbinganSyncController extends Controller
         try {
             foreach ($request->input('proposals', []) as $prop) {
                 $studentId = $prop['studentId'] ?? auth()->id();
-                if (!User::where('id', $studentId)->exists()) {
+                if (! User::where('id', $studentId)->exists()) {
                     $studentId = auth()->id() ?? User::first()?->id;
                 }
-                if (!$studentId) continue;
+                if (! $studentId) {
+                    continue;
+                }
 
-                $existing = is_numeric($prop['id']) 
-                    ? TitleSubmission::find($prop['id']) 
+                $existing = is_numeric($prop['id'])
+                    ? TitleSubmission::find($prop['id'])
                     : TitleSubmission::where('student_id', $studentId)->latest()->first();
 
                 if ($existing) {
@@ -46,9 +50,11 @@ class BimbinganSyncController extends Controller
                     ]);
                 }
             }
+
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            Log::error('syncProposals error: ' . $e->getMessage());
+            Log::error('syncProposals error: '.$e->getMessage());
+
             return response()->json(['status' => 'success', 'warning' => $e->getMessage()]);
         }
     }
@@ -58,15 +64,17 @@ class BimbinganSyncController extends Controller
         try {
             foreach ($request->input('proposalTitles', []) as $title) {
                 $proposalIdRaw = $title['proposalId'] ?? null;
-                if (!$proposalIdRaw) continue;
+                if (! $proposalIdRaw) {
+                    continue;
+                }
 
                 $submission = is_numeric($proposalIdRaw) ? TitleSubmission::find($proposalIdRaw) : null;
-                if (!$submission) {
+                if (! $submission) {
                     $studentId = auth()->id() ?? User::first()?->id;
                     $submission = TitleSubmission::where('student_id', $studentId)->latest()->first();
                 }
 
-                if (!$submission) {
+                if (! $submission) {
                     $studentId = auth()->id() ?? User::first()?->id;
                     $submission = TitleSubmission::create([
                         'student_id' => $studentId,
@@ -89,9 +97,11 @@ class BimbinganSyncController extends Controller
                     ]
                 );
             }
+
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            Log::error('syncProposalTitles error: ' . $e->getMessage());
+            Log::error('syncProposalTitles error: '.$e->getMessage());
+
             return response()->json(['status' => 'success', 'warning' => $e->getMessage()]);
         }
     }
@@ -101,13 +111,15 @@ class BimbinganSyncController extends Controller
         try {
             foreach ($request->input('theses', []) as $thesis) {
                 $studentId = $thesis['studentId'] ?? auth()->id();
-                if (!User::where('id', $studentId)->exists()) {
+                if (! User::where('id', $studentId)->exists()) {
                     $studentId = auth()->id() ?? User::first()?->id;
                 }
-                if (!$studentId) continue;
+                if (! $studentId) {
+                    continue;
+                }
 
                 $proposalId = $thesis['proposalId'] ?? null;
-                if ($proposalId && !TitleSubmission::where('id', $proposalId)->exists()) {
+                if ($proposalId && ! TitleSubmission::where('id', $proposalId)->exists()) {
                     $proposalId = null;
                 }
 
@@ -115,22 +127,22 @@ class BimbinganSyncController extends Controller
                 $existing = Thesis::find($thesis['id']);
                 $metadata = $existing ? $existing->metadata : null;
 
-                if (!$metadata) {
+                if (! $metadata) {
                     $metadata = [
                         'supervisors' => [
                             'current' => [
-                                'supervisor_1' => $supervisorId ? (int)$supervisorId : null,
+                                'supervisor_1' => $supervisorId ? (int) $supervisorId : null,
                                 'supervisor_2' => null,
                             ],
                             'history' => [
                                 [
                                     'effective_at' => date('Y-m-d'),
-                                    'supervisor_1' => $supervisorId ? (int)$supervisorId : null,
+                                    'supervisor_1' => $supervisorId ? (int) $supervisorId : null,
                                     'supervisor_2' => null,
                                     'reason' => 'Penetapan awal',
                                     'changed_by' => auth()->id(),
-                                ]
-                            ]
+                                ],
+                            ],
                         ],
                         'chapters' => [
                             'bab1' => 'draft',
@@ -138,15 +150,15 @@ class BimbinganSyncController extends Controller
                             'bab3' => 'draft',
                             'bab4' => 'draft',
                             'bab5' => 'draft',
-                        ]
+                        ],
                     ];
                 } else {
                     $currentSupervisor = $metadata['supervisors']['current']['supervisor_1'] ?? null;
                     if ($currentSupervisor != $supervisorId) {
-                        $metadata['supervisors']['current']['supervisor_1'] = $supervisorId ? (int)$supervisorId : null;
+                        $metadata['supervisors']['current']['supervisor_1'] = $supervisorId ? (int) $supervisorId : null;
                         $metadata['supervisors']['history'][] = [
                             'effective_at' => date('Y-m-d'),
-                            'supervisor_1' => $supervisorId ? (int)$supervisorId : null,
+                            'supervisor_1' => $supervisorId ? (int) $supervisorId : null,
                             'supervisor_2' => null,
                             'reason' => 'Perubahan pembimbing',
                             'changed_by' => auth()->id(),
@@ -174,9 +186,11 @@ class BimbinganSyncController extends Controller
                     ]
                 );
             }
+
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            Log::error('syncTheses error: ' . $e->getMessage());
+            Log::error('syncTheses error: '.$e->getMessage());
+
             return response()->json(['status' => 'success', 'warning' => $e->getMessage()]);
         }
     }
@@ -186,7 +200,7 @@ class BimbinganSyncController extends Controller
         try {
             foreach ($request->input('guidances', []) as $guidance) {
                 $thesisId = $guidance['thesisId'] ?? null;
-                if (!$thesisId || !Thesis::where('id', $thesisId)->exists()) {
+                if (! $thesisId || ! Thesis::where('id', $thesisId)->exists()) {
                     continue;
                 }
 
@@ -205,9 +219,11 @@ class BimbinganSyncController extends Controller
                     ]
                 );
             }
+
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            Log::error('syncGuidances error: ' . $e->getMessage());
+            Log::error('syncGuidances error: '.$e->getMessage());
+
             return response()->json(['status' => 'success', 'warning' => $e->getMessage()]);
         }
     }
@@ -230,15 +246,15 @@ class BimbinganSyncController extends Controller
 
             foreach ($incoming as $et) {
                 $targetLecturerId = $et['lecturerId'] ?? null;
-                if (!$targetLecturerId || !User::where('id', $targetLecturerId)->exists()) {
+                if (! $targetLecturerId || ! User::where('id', $targetLecturerId)->exists()) {
                     $targetLecturerId = $lecturerId;
                 }
 
                 $availId = $et['availabilityId'] ?? null;
-                if ($availId && !Availability::where('id', $availId)->exists()) {
+                if ($availId && ! Availability::where('id', $availId)->exists()) {
                     $availId = null;
                 }
-                if (!$availId) {
+                if (! $availId) {
                     $defaultAvail = Availability::where('lecturer_id', $targetLecturerId)->where('is_default', true)->first()
                         ?? Availability::where('lecturer_id', $targetLecturerId)->first();
                     $availId = $defaultAvail?->id;
@@ -250,7 +266,7 @@ class BimbinganSyncController extends Controller
                         'availability_id' => $availId,
                         'lecturer_id' => $targetLecturerId,
                         'name' => $et['name'],
-                        'slug' => $et['slug'] ?? \Illuminate\Support\Str::slug($et['name']),
+                        'slug' => $et['slug'] ?? Str::slug($et['name']),
                         'duration' => $et['duration'] ?? 30,
                         'max_quota_per_session' => $et['maxQuotaPerSession'] ?? 1,
                         'description' => $et['description'] ?? null,
@@ -259,9 +275,11 @@ class BimbinganSyncController extends Controller
                     ]
                 );
             }
+
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            Log::error('syncEventTypes error: ' . $e->getMessage());
+            Log::error('syncEventTypes error: '.$e->getMessage());
+
             return response()->json(['status' => 'success', 'warning' => $e->getMessage()]);
         }
     }
@@ -276,7 +294,7 @@ class BimbinganSyncController extends Controller
             $lecturerId = auth()->id() ?? $defaultLecturer?->id;
 
             if ($lecturerId) {
-                Availability::observe(\App\Observers\AvailabilityObserver::class);
+                Availability::observe(AvailabilityObserver::class);
 
                 $incomingRules = $request->input('availabilityRules', []);
 
@@ -284,12 +302,12 @@ class BimbinganSyncController extends Controller
                 $grouped = [];
                 foreach ($incomingRules as $rule) {
                     $name = trim($rule['name'] ?? $rule['rules']['sessionName'] ?? 'Bimbingan Judul Skripsi');
-                    if (!isset($grouped[$name])) {
+                    if (! isset($grouped[$name])) {
                         $grouped[$name] = [
                             'id' => $rule['id'],
                             'name' => $name,
                             'lecturerId' => $rule['lecturerId'] ?? $lecturerId,
-                            'isDefault' => !empty($rule['isDefault']),
+                            'isDefault' => ! empty($rule['isDefault']),
                             'sessionDurationMinutes' => $rule['rules']['sessionDurationMinutes'] ?? 30,
                             'maxQuotaPerSession' => $rule['rules']['maxQuotaPerSession'] ?? 1,
                             'maxQuotaTotal' => $rule['rules']['maxQuotaTotal'] ?? 20,
@@ -307,7 +325,7 @@ class BimbinganSyncController extends Controller
                         ];
                     }
 
-                    if (!empty($rule['isDefault'])) {
+                    if (! empty($rule['isDefault'])) {
                         $grouped[$name]['isDefault'] = true;
                     }
                 }
@@ -336,7 +354,7 @@ class BimbinganSyncController extends Controller
 
                 foreach ($grouped as $group) {
                     $targetLecturerId = $group['lecturerId'];
-                    if (!User::where('id', $targetLecturerId)->exists()) {
+                    if (! User::where('id', $targetLecturerId)->exists()) {
                         $targetLecturerId = $lecturerId;
                     }
 
@@ -361,7 +379,7 @@ class BimbinganSyncController extends Controller
                         ];
                     }
 
-                    $targetId = !empty($group['id']) ? $group['id'] : 'ar-' . (string) \Illuminate\Support\Str::uuid();
+                    $targetId = ! empty($group['id']) ? $group['id'] : 'ar-'.(string) Str::uuid();
                     $availability = Availability::find($targetId) ?? new Availability(['id' => $targetId]);
                     $availability->fill([
                         'lecturer_id' => $targetLecturerId,
@@ -378,9 +396,11 @@ class BimbinganSyncController extends Controller
                     $availability->save();
                 }
             }
+
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            Log::error('syncAvailabilityRules error: ' . $e->getMessage());
+            Log::error('syncAvailabilityRules error: '.$e->getMessage());
+
             return response()->json(['status' => 'success', 'warning' => $e->getMessage()]);
         }
     }
@@ -400,28 +420,47 @@ class BimbinganSyncController extends Controller
 
             foreach ($incomingBookings as $booking) {
                 $studentId = $booking['studentId'] ?? null;
-                if (!$studentId || !User::where('id', $studentId)->exists()) {
+                if (! $studentId || ! User::where('id', $studentId)->exists()) {
                     $studentId = auth()->id() ?? User::first()?->id;
                 }
-                if (!$studentId) continue;
+                if (! $studentId) {
+                    continue;
+                }
 
                 $thesisId = $booking['thesisId'] ?? null;
-                if (!$thesisId || !Thesis::where('id', $thesisId)->exists()) {
+                if (! $thesisId || ! Thesis::where('id', $thesisId)->exists()) {
                     $thesisId = Thesis::where('student_id', $studentId)->first()?->id ?? Thesis::first()?->id;
                 }
-                if (!$thesisId) continue;
+                if (! $thesisId) {
+                    continue;
+                }
 
                 $lecturerId = $booking['lecturerId'] ?? null;
-                if (!$lecturerId || !User::where('id', $lecturerId)->exists()) {
+                if (! $lecturerId || ! User::where('id', $lecturerId)->exists()) {
                     $lecturerId = User::whereHas('roles', function ($q) {
                         $q->where('name', 'lecturer');
                     })->first()?->id ?? User::where('id', '!=', $studentId)->first()?->id;
                 }
-                if (!$lecturerId) continue;
+                if (! $lecturerId) {
+                    continue;
+                }
 
                 $eventTypeId = $booking['eventTypeId'] ?? null;
-                if ($eventTypeId && !EventType::where('id', $eventTypeId)->exists()) {
-                    $eventTypeId = null;
+                $eventType = null;
+                if ($eventTypeId) {
+                    $eventType = EventType::find($eventTypeId) ?? EventType::where('slug', $eventTypeId)->first();
+                }
+
+                $meetingType = $booking['meetingType'] ?? $eventType?->location_type ?? 'offline';
+                $meetingLocation = $booking['meetingLocation'] ?? ($eventType?->location_type === 'offline' ? $eventType?->location_details : 'Ruang Dosen');
+                $meetingUrl = $booking['meetingUrl'] ?? ($eventType?->location_type === 'online' ? $eventType?->location_details : null);
+
+                $metadata = [];
+                if (! empty($booking['draftFileName'])) {
+                    $metadata['draftFileName'] = $booking['draftFileName'];
+                }
+                if (! empty($booking['draftFilePath'])) {
+                    $metadata['draftFilePath'] = $booking['draftFilePath'];
                 }
 
                 Appointment::updateOrCreate(
@@ -430,18 +469,25 @@ class BimbinganSyncController extends Controller
                         'thesis_id' => $thesisId,
                         'student_id' => $studentId,
                         'lecturer_id' => $lecturerId,
-                        'event_type_id' => $eventTypeId,
+                        'event_type_id' => $eventType?->id,
+                        'appointment_date' => ! empty($booking['date']) ? Carbon::parse($booking['date']) : null,
+                        'meeting_type' => $meetingType,
+                        'meeting_location' => $meetingLocation,
+                        'meeting_url' => $meetingUrl,
                         'date' => $booking['date'],
                         'time_slot' => $booking['timeSlot'],
                         'status' => $booking['status'],
                         'notes' => $booking['notes'] ?? null,
+                        'metadata' => ! empty($metadata) ? $metadata : null,
                         'created_at' => $booking['createdAt'] ?? now(),
                     ]
                 );
             }
+
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            Log::error('syncBookings error: ' . $e->getMessage());
+            Log::error('syncBookings error: '.$e->getMessage());
+
             return response()->json(['status' => 'success', 'warning' => $e->getMessage()]);
         }
     }
@@ -456,18 +502,20 @@ class BimbinganSyncController extends Controller
                         'npm' => $user['npm'] ?? $u->npm,
                         'nidn' => $user['nidn'] ?? $u->nidn,
                         'department' => $user['department'] ?? $u->department,
-                        'is_verified' => isset($user['isVerified']) ? (bool)$user['isVerified'] : $u->is_verified,
+                        'is_verified' => isset($user['isVerified']) ? (bool) $user['isVerified'] : $u->is_verified,
                     ]);
 
-                    if (isset($user['role']) && !$u->hasRole($user['role'])) {
+                    if (isset($user['role']) && ! $u->hasRole($user['role'])) {
                         Role::firstOrCreate(['name' => $user['role'], 'guard_name' => 'web']);
                         $u->syncRoles([$user['role']]);
                     }
                 }
             }
+
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            Log::error('syncUsers error: ' . $e->getMessage());
+            Log::error('syncUsers error: '.$e->getMessage());
+
             return response()->json(['status' => 'success', 'warning' => $e->getMessage()]);
         }
     }
