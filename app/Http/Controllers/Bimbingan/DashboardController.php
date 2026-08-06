@@ -246,6 +246,13 @@ class DashboardController extends Controller
         return response()->json(['status' => 'error', 'message' => 'File not uploaded'], 400);
     }
 
+    public function bookingDetailPage(Request $request, $id)
+    {
+        return Inertia::render('bimbingan/BookingDetailPage', [
+            'bookingId' => $id,
+        ]);
+    }
+
     public function bookingSlugPage(Request $request, $param1, $param2 = null)
     {
         $lecturerUsername = $param2 !== null ? $param1 : null;

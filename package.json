@@ -50,6 +50,8 @@
         "laravel-vite-plugin": "^1.0",
         "lucide-react": "^1.24.0",
         "motion": "^12.42.2",
+        "pdf-lib": "^1.17.1",
+        "pdfjs-dist": "^6.2.108",
         "quill": "^2.0.3",
         "radix-ui": "^1.6.2",
         "react": "^19.0.0",
