@@ -1,4 +1,3 @@
-// components/bimbingan/lecturer/BookingsTab.tsx
 import { useState } from 'react';
 import {
   Calendar as CalendarIcon,
@@ -16,8 +15,12 @@ import {
   ExternalLink,
   Paperclip,
   Eye,
+  PenTool,
 } from 'lucide-react';
-import type { Booking } from '@/types';
+import type { Booking, PdfAnnotation } from '@/types';
+import { DB } from '@/db';
+import PdfAnnotatorModal from '../PdfAnnotatorModal';
+
 
 interface BookingsTabProps {
   myBookings: Booking[];
@@ -36,8 +39,10 @@ export default function BookingsTab({
   // Modal State for Confirm / Reject Action
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [selectedDetailBooking, setSelectedDetailBooking] = useState<Booking | null>(null);
+  const [annotatorBooking, setAnnotatorBooking] = useState<Booking | null>(null);
   const [actionType, setActionType] = useState<'confirm' | 'reject' | null>(null);
   const [noteInput, setNoteInput] = useState('');
+
 
   // Counts
   const pendingCount = myBookings.filter((b) => b.status === 'pending').length;
@@ -267,7 +272,7 @@ export default function BookingsTab({
                     </div>
                   )}
 
-                  {/* Draft File Uploaded by Student */}
+                  {/* Draft File Uploaded by Student (Tampil HANYA jika ada file diunggah) */}
                   {b.draftFileName && (
                     <div
                       onClick={(e) => e.stopPropagation()}
@@ -275,19 +280,35 @@ export default function BookingsTab({
                     >
                       <div className="flex items-center gap-2 text-emerald-950 dark:text-emerald-200 font-bold truncate">
                         <Paperclip className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="truncate">Draft Bab: {b.draftFileName}</span>
+                        <span className="truncate">Draft Skripsi: {b.draftFileName}</span>
                       </div>
-                      <a
-                        href={b.draftFilePath ? (b.draftFilePath.startsWith('/') ? b.draftFilePath : `/${b.draftFilePath}`) : `/storage/drafts/${b.draftFileName}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-xs cursor-pointer"
-                      >
-                        <span>Buka PDF</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      {b.status === 'pending' ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAnnotatorBooking(b);
+                          }}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-xs cursor-pointer"
+                        >
+                          <span>Buka PDF</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAnnotatorBooking(b);
+                          }}
+                          className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-xs cursor-pointer"
+                        >
+                          <PenTool className="w-3.5 h-3.5" />
+                          <span>Beri Catatan / Revisi PDF</span>
+                        </button>
+                      )}
                     </div>
                   )}
+
+
 
                   {/* Action Buttons */}
                   <div className="flex items-center justify-between pt-2 border-t border-gray-200/50 dark:border-zinc-800 flex-wrap gap-2">
@@ -425,21 +446,23 @@ export default function BookingsTab({
                         </p>
                       </div>
                     </div>
-                    <a
-                      href={
-                        selectedDetailBooking.draftFilePath
-                          ? (selectedDetailBooking.draftFilePath.startsWith('/')
-                              ? selectedDetailBooking.draftFilePath
-                              : `/${selectedDetailBooking.draftFilePath}`)
-                          : `/storage/drafts/${selectedDetailBooking.draftFileName}`
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer"
-                    >
-                      <span>Buka PDF</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    {selectedDetailBooking.status === 'pending' ? (
+                      <button
+                        onClick={() => setAnnotatorBooking(selectedDetailBooking)}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer"
+                      >
+                        <span>Buka PDF</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setAnnotatorBooking(selectedDetailBooking)}
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-md cursor-pointer"
+                      >
+                        <PenTool className="w-3.5 h-3.5" />
+                        <span>Beri Catatan / Revisi PDF</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -447,6 +470,8 @@ export default function BookingsTab({
                   Mahasiswa tidak melampirkan berkas PDF pada pengajuan ini.
                 </div>
               )}
+
+
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800">
@@ -562,6 +587,36 @@ export default function BookingsTab({
             </form>
           </div>
         </div>
+      )}
+
+      {/* PDF Annotator Modal */}
+      {annotatorBooking && (
+        <PdfAnnotatorModal
+          isOpen={Boolean(annotatorBooking)}
+          onClose={() => setAnnotatorBooking(null)}
+          pdfUrl={
+            annotatorBooking.draftFilePath
+              ? (annotatorBooking.draftFilePath.startsWith('/')
+                  ? annotatorBooking.draftFilePath
+                  : `/${annotatorBooking.draftFilePath}`)
+              : `/storage/drafts/${annotatorBooking.draftFileName || 'draft.pdf'}`
+          }
+          fileName={annotatorBooking.draftFileName || 'Draft Skripsi'}
+          studentName={annotatorBooking.studentName}
+          mode={annotatorBooking.status === 'pending' ? 'view' : 'edit'}
+          initialAnnotations={annotatorBooking.annotations || []}
+          onSaveAnnotations={(updatedAnnotations: any) => {
+            const allBookings = DB.getBookings();
+            const updatedBookings = allBookings.map((b) =>
+              b.id === annotatorBooking.id ? { ...b, annotations: updatedAnnotations } : b
+            );
+            DB.saveBookings(updatedBookings);
+            setAnnotatorBooking((prev) => prev ? { ...prev, annotations: updatedAnnotations } : null);
+            if (selectedDetailBooking?.id === annotatorBooking.id) {
+              setSelectedDetailBooking((prev) => prev ? { ...prev, annotations: updatedAnnotations } : null);
+            }
+          }}
+        />
       )}
     </div>
   );

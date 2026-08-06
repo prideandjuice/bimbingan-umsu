@@ -142,6 +142,18 @@ export interface AvailabilityRule {
     rules?: AvailabilityRuleConfig;
 }
 
+export interface PdfAnnotation {
+    id: string;
+    page: number;
+    x: number;
+    y: number;
+    type: 'highlight' | 'sticky_note' | 'text';
+    content: string;
+    color?: string;
+    authorName?: string;
+    createdAt?: string;
+}
+
 export interface Booking {
     id: string;
     thesisId: string;
@@ -158,5 +170,7 @@ export interface Booking {
     notes?: string;
     draftFileName?: string | null;
     draftFilePath?: string | null;
+    annotations?: any;
     createdAt: string;
 }
+

@@ -9,8 +9,9 @@ import axios from 'axios';
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
-const DB_VERSION = '13';
+const DB_VERSION = '15';
 const VERSION_KEY = 'db_version';
+
 
 const KEYS = {
     users: 'db_users',
@@ -175,7 +176,45 @@ const SEED_AVAILABILITY_RULES: AvailabilityRule[] = [
     },
 ];
 
-const SEED_BOOKINGS: Booking[] = [];
+const SEED_BOOKINGS: Booking[] = [
+    {
+        id: 'booking-seed-1',
+        thesisId: 'thesis-1',
+        studentId: 'user-student-1',
+        studentName: 'Mahasiswa Demo',
+        studentNpm: '2210000001',
+        lecturerId: 'user-lecturer-1',
+        lecturerName: 'Prof. Dr. Irwan, M.Si',
+        eventTypeId: 'et-1',
+        eventTypeName: 'Konsultasi Bimbingan Proposal',
+        date: '2026-08-10',
+        timeSlot: '09:00 - 09:30 WIB',
+        status: 'confirmed',
+        notes: 'Mohon review Bab 1 & Bab 2 pak, sudah saya sesuaikan dengan pedoman.',
+        draftFileName: 'Draft_Skripsi_Bab_1_2_Demo.pdf',
+        draftFilePath: 'storage/drafts/draft_1785913976_6a72e27852272.pdf',
+        createdAt: new Date().toISOString(),
+    },
+    {
+        id: 'booking-seed-2',
+        thesisId: 'thesis-2',
+        studentId: 'user-student-1',
+        studentName: 'Budi Santoso',
+        studentNpm: '2210000002',
+        lecturerId: 'user-lecturer-1',
+        lecturerName: 'Prof. Dr. Irwan, M.Si',
+        eventTypeId: 'et-2',
+        eventTypeName: 'Review Bab IV & V (Hasil & Pembahasan)',
+        date: '2026-08-12',
+        timeSlot: '13:00 - 13:45 WIB',
+        status: 'pending',
+        notes: 'Pengajuan jadwal bimbingan hasil pembahasan data.',
+        draftFileName: 'Draft_Bab_4_Hasil.pdf',
+        draftFilePath: 'storage/drafts/pdf_65404.pdf',
+        createdAt: new Date().toISOString(),
+    },
+];
+
 
 function seedIfEmpty(): void {
     if (!localStorage.getItem(KEYS.users)) {
@@ -260,7 +299,10 @@ export const DB = {
     },
 
     // Bookings
-    getBookings: (): Booking[] => get<Booking[]>(KEYS.bookings, SEED_BOOKINGS),
+    getBookings: (): Booking[] => {
+        const list = get<Booking[]>(KEYS.bookings, SEED_BOOKINGS);
+        return list.filter((b) => !b.id.includes('1785809987024') && !b.id.includes('1785819221985'));
+    },
     saveBookings: (bookings: Booking[]): void => {
         set(KEYS.bookings, bookings);
         axios.post('/bimbingan/sync/bookings', { bookings }).catch(err => console.error(err));

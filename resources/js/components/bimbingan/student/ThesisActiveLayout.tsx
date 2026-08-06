@@ -19,11 +19,14 @@ import {
   Send,
   X,
   Paperclip,
+  PenTool,
 } from 'lucide-react';
 import type { AppUser, Thesis, Guidance, Booking, EventType, AvailabilityRule, Proposal } from '@/types';
 import RichTextDisplay from '../RichTextDisplay';
 import CalComBookingView from './CalComBookingView';
+import PdfAnnotatorModal from '../PdfAnnotatorModal';
 import { toast } from 'sonner';
+
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -84,6 +87,8 @@ export default function ThesisActiveLayout({
   const [activeTab, setActiveTab] = useState<'info' | 'guidances' | 'bookings'>(initialTab);
   const [selectedBookingEventType, setSelectedBookingEventType] = useState<EventType | null>(null);
   const [selectedBookingDetail, setSelectedBookingDetail] = useState<Booking | null>(null);
+  const [annotatorBooking, setAnnotatorBooking] = useState<Booking | null>(null);
+
 
   useEffect(() => {
     if (initialTab) {
@@ -174,8 +179,8 @@ export default function ThesisActiveLayout({
         <button
           onClick={() => setActiveTab('info')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'info'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
+            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
             }`}
         >
           <BookOpen className="w-4 h-4" />
@@ -185,8 +190,8 @@ export default function ThesisActiveLayout({
         <button
           onClick={() => setActiveTab('guidances')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'guidances'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
+            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
             }`}
         >
           <HistoryIcon className="w-4 h-4" />
@@ -196,8 +201,8 @@ export default function ThesisActiveLayout({
         <button
           onClick={() => setActiveTab('bookings')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'bookings'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
+            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
             }`}
         >
           <Calendar className="w-4 h-4" />
@@ -285,8 +290,8 @@ export default function ThesisActiveLayout({
                   <div
                     key={g.id || idx}
                     className={`bg-white dark:bg-zinc-900 border transition-all rounded-2xl overflow-hidden shadow-2xs ${isExpanded
-                        ? 'border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/10'
-                        : 'border-gray-200/80 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-700'
+                      ? 'border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/10'
+                      : 'border-gray-200/80 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-700'
                       }`}
                   >
                     {/* Header Baris Sesi Bimbingan (Clickable) */}
@@ -442,16 +447,17 @@ export default function ThesisActiveLayout({
                             {et.name}
                           </h3>
                           <div className="flex items-center gap-2 mt-1">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedBookingEventType(et)}
+                            <a
+                              href={`/bimbingan/${et.slug || 'tatap-muka'}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 hover:underline font-medium flex items-center gap-1 cursor-pointer transition-all"
-                              title="Klik untuk membuka kalender slot jam bimbingan sesi ini"
+                              title="Klik untuk membuka halaman booking jenis sesi ini di tab baru"
                             >
                               <Globe className="w-3 h-3" />
                               <span>/bimbingan/{et.slug || 'tatap-muka'}</span>
                               <ExternalLink className="w-3 h-3 text-emerald-500" />
-                            </button>
+                            </a>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -548,10 +554,18 @@ export default function ThesisActiveLayout({
                               <h4 className="font-extrabold text-sm text-gray-900 dark:text-white group-hover:text-emerald-600 transition-colors">
                                 {sessionName}
                               </h4>
-                              <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                              <a
+                                href={`/bimbingan/detail/${b.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 hover:underline transition-all mt-0.5"
+                                title="Klik untuk membuka halaman detail janji temu ini di tab baru"
+                              >
                                 <Globe className="w-3 h-3" />
-                                <span>/lecturer/{slugText}</span>
-                              </div>
+                                <span>/bimbingan/detail/{b.id}</span>
+                                <ExternalLink className="w-3 h-3 text-emerald-500" />
+                              </a>
                             </div>
                             <div className="flex items-center gap-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 px-2.5 py-1 rounded-full shrink-0">
                               <Clock className="w-3 h-3" />
@@ -696,23 +710,26 @@ export default function ThesisActiveLayout({
                       <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span className="truncate">{selectedBookingDetail.draftFileName}</span>
                     </div>
-                    <a
-                      href={
-                        selectedBookingDetail.draftFilePath
-                          ? (selectedBookingDetail.draftFilePath.startsWith('/')
-                              ? selectedBookingDetail.draftFilePath
-                              : `/${selectedBookingDetail.draftFilePath}`)
-                          : `/storage/drafts/${selectedBookingDetail.draftFileName}`
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shrink-0 shadow-2xs cursor-pointer"
-                    >
-                      <span>Buka PDF</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                    {selectedBookingDetail.annotations && selectedBookingDetail.annotations.length > 0 ? (
+                      <button
+                        onClick={() => setAnnotatorBooking(selectedBookingDetail)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-[11px] font-bold transition-all shrink-0 shadow-xs cursor-pointer"
+                      >
+                        <PenTool className="w-3.5 h-3.5" />
+                        <span>Lihat Catatan Revisi Dosen ({selectedBookingDetail.annotations.length})</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setAnnotatorBooking(selectedBookingDetail)}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shrink-0 shadow-2xs cursor-pointer"
+                      >
+                        <span>Buka PDF</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 </div>
+
               )}
 
               {selectedBookingDetail.rejectionReason && (
@@ -817,6 +834,25 @@ export default function ThesisActiveLayout({
             </form>
           </div>
         </div>
+      )}
+
+      {/* PDF Annotator Modal (View Mode for Student) */}
+      {annotatorBooking && (
+        <PdfAnnotatorModal
+          isOpen={Boolean(annotatorBooking)}
+          onClose={() => setAnnotatorBooking(null)}
+          pdfUrl={
+            annotatorBooking.draftFilePath
+              ? (annotatorBooking.draftFilePath.startsWith('/')
+                ? annotatorBooking.draftFilePath
+                : `/${annotatorBooking.draftFilePath}`)
+              : `/storage/drafts/${annotatorBooking.draftFileName || 'draft.pdf'}`
+          }
+          fileName={annotatorBooking.draftFileName || 'Draft Skripsi'}
+          studentName={annotatorBooking.studentName}
+          mode="view"
+          initialAnnotations={annotatorBooking.annotations || []}
+        />
       )}
     </div>
   );
