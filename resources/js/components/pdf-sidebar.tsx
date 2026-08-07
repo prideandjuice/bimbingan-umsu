@@ -1,15 +1,8 @@
 import React from 'react';
-import { FileMetadata, Tool, DbDocument } from '@/types/pdf';
+import { FileMetadata, Tool } from '@/types/pdf';
 
 interface PdfSidebarProps {
-    documentsList?: DbDocument[];
     metadata: FileMetadata;
-    onSelectDoc?: (filename: string, size: number) => void;
-    isDragActive?: boolean;
-    fileInputRef?: React.RefObject<HTMLInputElement | null>;
-    handleFileChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleDrag?: (e: React.DragEvent) => void;
-    handleDrop?: (e: React.DragEvent) => void;
     pdfDoc: any;
     activeTool: Tool;
     setActiveTool: (tool: Tool) => void;
@@ -30,14 +23,7 @@ interface PdfSidebarProps {
 }
 
 export default function PdfSidebar({
-    documentsList = [],
     metadata,
-    onSelectDoc,
-    isDragActive = false,
-    fileInputRef,
-    handleFileChange,
-    handleDrag,
-    handleDrop,
     pdfDoc,
     activeTool,
     setActiveTool,
@@ -61,94 +47,7 @@ export default function PdfSidebar({
             className="scrollbar-hide flex w-80 shrink-0 flex-col gap-6 overflow-y-auto border-r border-gray-200/50 bg-white p-6 dark:border-white/10 dark:bg-[#161615]"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-            {/* File Upload Section (Optional) */}
-            {fileInputRef && handleFileChange && (
-                <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold tracking-wider text-[#706f6c] uppercase dark:text-[#A1A09A]">
-                        Unggah Dokumen
-                    </span>
 
-                    <div
-                        onDragEnter={handleDrag}
-                        onDragOver={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-all duration-300 ${isDragActive
-                            ? 'border-[#f53003] bg-[#f53003]/5'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 dark:border-white/10 dark:hover:border-white/20 dark:hover:bg-white/2'
-                            }`}
-                    >
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".pdf"
-                            onChange={handleFileChange}
-                            className="hidden"
-                        />
-                        <div className="rounded-full bg-red-50 p-2.5 transition-transform group-hover:scale-110 dark:bg-red-500/10">
-                            <svg
-                                className="h-6 w-6 text-[#f53003] dark:text-[#FF4433]"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                />
-                            </svg>
-                        </div>
-                        <span className="mt-3 text-xs font-medium">
-                            Seret PDF ke sini atau klik
-                        </span>
-                    </div>
-                </div>
-            )}
-
-            {/* Daftar Dokumen Terunggah (if available) */}
-            {documentsList.length > 0 && onSelectDoc && (
-                <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold tracking-wider text-[#706f6c] uppercase dark:text-[#A1A09A]">
-                        Dokumen di Server ({documentsList.length})
-                    </span>
-
-                    <div className="flex flex-col gap-1.5 max-h-56 overflow-y-auto pr-1">
-                        {documentsList.map((doc) => {
-                            const isActive = metadata.name === doc.filename;
-                            return (
-                                <button
-                                    key={doc.id}
-                                    onClick={() => onSelectDoc(doc.filename, doc.size)}
-                                    className={`flex flex-col items-start gap-1 rounded-lg border p-2.5 text-left transition-all ${isActive
-                                        ? 'border-[#f53003] bg-[#f53003]/5 text-[#f53003] dark:border-[#FF4433] dark:bg-[#FF4433]/5 dark:text-[#FF4433] ring-1 ring-[#f53003] dark:ring-[#FF4433]'
-                                        : 'border-gray-100 hover:border-gray-200 bg-white hover:bg-gray-50 dark:border-white/5 dark:bg-[#1e1e1d] dark:hover:bg-white/5'
-                                        }`}
-                                >
-                                    <div className="flex w-full items-center justify-between gap-1">
-                                        <span className="truncate text-xs font-semibold max-w-[180px] dark:text-gray-200">
-                                            {doc.original_name}
-                                        </span>
-                                        {isActive && (
-                                            <span className="shrink-0 rounded-full bg-[#f53003] px-1.5 py-0.5 text-[8px] font-bold uppercase text-white dark:bg-[#FF4433]">
-                                                Aktif
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex w-full items-center justify-between text-[10px] text-gray-400 dark:text-gray-500">
-                                        <span>{formatBytes(doc.size)}</span>
-                                        <span className="italic truncate max-w-[100px]">
-                                            {doc.filename}
-                                        </span>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
 
             {/* Alat & Anotasi */}
             <div className="flex flex-col gap-4 rounded-xl border border-gray-200/50 p-4 dark:border-white/10 dark:bg-white/2">

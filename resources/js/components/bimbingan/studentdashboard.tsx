@@ -164,8 +164,8 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
       uploadedFileName = draftFileInput;
       uploadedFilePath = '/storage/drafts/pdf_65404.pdf';
     } else {
-      uploadedFileName = 'Draft_Skripsi_Mahasiswa.pdf';
-      uploadedFilePath = '/storage/drafts/pdf_65404.pdf';
+      uploadedFileName = null;
+      uploadedFilePath = null;
     }
 
     const newBooking: Booking = {
