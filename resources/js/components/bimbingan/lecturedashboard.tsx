@@ -55,7 +55,7 @@ export default function LecturerDashboard({ currentUser, onRefresh, activeTab: p
 
       {/* 2. Right Main Content Area */}
       <div className="lg:col-span-9 space-y-6">
-        {activeTab === 'students' && (
+        {(activeTab === 'students' || activeTab === 'logBimbingan') && (
           <StudentsTab
             currentUser={currentUser}
             myStudents={myStudents}
@@ -64,6 +64,7 @@ export default function LecturerDashboard({ currentUser, onRefresh, activeTab: p
             setSelectedThesisId={setSelectedThesisId}
             handleVerifyGuidance={handleVerifyGuidance}
             handleLecturerSubmitGuidance={handleLecturerSubmitGuidance}
+            isLogBimbinganTab={activeTab === 'logBimbingan'}
           />
         )}
 
