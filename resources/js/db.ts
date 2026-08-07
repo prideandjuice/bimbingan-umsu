@@ -9,7 +9,7 @@ import axios from 'axios';
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
-const DB_VERSION = '15';
+const DB_VERSION = '16';
 const VERSION_KEY = 'db_version';
 
 
@@ -192,7 +192,7 @@ const SEED_BOOKINGS: Booking[] = [
         status: 'confirmed',
         notes: 'Mohon review Bab 1 & Bab 2 pak, sudah saya sesuaikan dengan pedoman.',
         draftFileName: 'Draft_Skripsi_Bab_1_2_Demo.pdf',
-        draftFilePath: 'storage/drafts/draft_1785913976_6a72e27852272.pdf',
+        draftFilePath: '/storage/drafts/draft_1785913976_6a72e27852272.pdf',
         createdAt: new Date().toISOString(),
     },
     {
@@ -210,7 +210,7 @@ const SEED_BOOKINGS: Booking[] = [
         status: 'pending',
         notes: 'Pengajuan jadwal bimbingan hasil pembahasan data.',
         draftFileName: 'Draft_Bab_4_Hasil.pdf',
-        draftFilePath: 'storage/drafts/pdf_65404.pdf',
+        draftFilePath: '/storage/drafts/pdf_65404.pdf',
         createdAt: new Date().toISOString(),
     },
 ];
@@ -301,7 +301,7 @@ export const DB = {
     // Bookings
     getBookings: (): Booking[] => {
         const list = get<Booking[]>(KEYS.bookings, SEED_BOOKINGS);
-        return list.filter((b) => !b.id.includes('1785809987024') && !b.id.includes('1785819221985'));
+        return list.filter((b) => b && b.id && !String(b.id).includes('1785809987024') && !String(b.id).includes('1785819221985'));
     },
     saveBookings: (bookings: Booking[]): void => {
         set(KEYS.bookings, bookings);

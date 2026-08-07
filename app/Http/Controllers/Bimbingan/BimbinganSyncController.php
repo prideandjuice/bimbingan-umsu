@@ -14,19 +14,32 @@ use App\Models\User;
 use App\Observers\AvailabilityObserver;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class BimbinganSyncController extends Controller
 {
+    private function currentUserId(): ?int
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if ($user) {
+            return $user->id;
+        }
+        /** @var User|null $firstUser */
+        $firstUser = User::first();
+        return $firstUser?->id;
+    }
+
     public function syncProposals(Request $request)
     {
         try {
             foreach ($request->input('proposals', []) as $prop) {
-                $studentId = $prop['studentId'] ?? auth()->id();
+                $studentId = $prop['studentId'] ?? $this->currentUserId();
                 if (! User::where('id', $studentId)->exists()) {
-                    $studentId = auth()->id() ?? User::first()?->id;
+                    $studentId = $this->currentUserId();
                 }
                 if (! $studentId) {
                     continue;
@@ -70,12 +83,12 @@ class BimbinganSyncController extends Controller
 
                 $submission = is_numeric($proposalIdRaw) ? TitleSubmission::find($proposalIdRaw) : null;
                 if (! $submission) {
-                    $studentId = auth()->id() ?? User::first()?->id;
+                    $studentId = $this->currentUserId();
                     $submission = TitleSubmission::where('student_id', $studentId)->latest()->first();
                 }
 
                 if (! $submission) {
-                    $studentId = auth()->id() ?? User::first()?->id;
+                    $studentId = $this->currentUserId();
                     $submission = TitleSubmission::create([
                         'student_id' => $studentId,
                         'abstract' => $title['abstract'] ?? '',
@@ -110,9 +123,9 @@ class BimbinganSyncController extends Controller
     {
         try {
             foreach ($request->input('theses', []) as $thesis) {
-                $studentId = $thesis['studentId'] ?? auth()->id();
+                $studentId = $thesis['studentId'] ?? $this->currentUserId();
                 if (! User::where('id', $studentId)->exists()) {
-                    $studentId = auth()->id() ?? User::first()?->id;
+                    $studentId = $this->currentUserId();
                 }
                 if (! $studentId) {
                     continue;
@@ -140,7 +153,7 @@ class BimbinganSyncController extends Controller
                                     'supervisor_1' => $supervisorId ? (int) $supervisorId : null,
                                     'supervisor_2' => null,
                                     'reason' => 'Penetapan awal',
-                                    'changed_by' => auth()->id(),
+                                    'changed_by' => $this->currentUserId(),
                                 ],
                             ],
                         ],
@@ -161,7 +174,7 @@ class BimbinganSyncController extends Controller
                             'supervisor_1' => $supervisorId ? (int) $supervisorId : null,
                             'supervisor_2' => null,
                             'reason' => 'Perubahan pembimbing',
-                            'changed_by' => auth()->id(),
+                            'changed_by' => $this->currentUserId(),
                         ];
                     }
                 }
@@ -235,7 +248,7 @@ class BimbinganSyncController extends Controller
                 $q->where('name', 'lecturer');
             })->first() ?? User::where('email', 'irwan@umsu.ac.id')->first() ?? User::first();
 
-            $lecturerId = auth()->id() ?? $defaultLecturer?->id;
+            $lecturerId = $this->currentUserId() ?? $defaultLecturer?->id;
 
             $incoming = $request->input('eventTypes', []);
             $incomingIds = collect($incoming)->pluck('id')->toArray();
@@ -291,7 +304,7 @@ class BimbinganSyncController extends Controller
                 $q->where('name', 'lecturer');
             })->first() ?? User::where('email', 'irwan@umsu.ac.id')->first() ?? User::first();
 
-            $lecturerId = auth()->id() ?? $defaultLecturer?->id;
+            $lecturerId = $this->currentUserId() ?? $defaultLecturer?->id;
 
             if ($lecturerId) {
                 Availability::observe(AvailabilityObserver::class);
@@ -408,7 +421,8 @@ class BimbinganSyncController extends Controller
     public function syncBookings(Request $request)
     {
         try {
-            $user = auth()->user();
+            /** @var User|null $user */
+            $user = Auth::user();
             $incomingBookings = $request->input('bookings', []);
             $incomingIds = collect($incomingBookings)->pluck('id')->toArray();
 
@@ -421,7 +435,7 @@ class BimbinganSyncController extends Controller
             foreach ($incomingBookings as $booking) {
                 $studentId = $booking['studentId'] ?? null;
                 if (! $studentId || ! User::where('id', $studentId)->exists()) {
-                    $studentId = auth()->id() ?? User::first()?->id;
+                    $studentId = $this->currentUserId();
                 }
                 if (! $studentId) {
                     continue;
@@ -445,22 +459,32 @@ class BimbinganSyncController extends Controller
                     continue;
                 }
 
-                $eventTypeId = $booking['eventTypeId'] ?? null;
-                $eventType = null;
-                if ($eventTypeId) {
-                    $eventType = EventType::find($eventTypeId) ?? EventType::where('slug', $eventTypeId)->first();
-                }
+                $eventType = EventType::find($booking['eventTypeId'] ?? null);
+                $meetingType = $eventType?->location_type ?? 'offline';
+                $meetingLocation = $eventType?->location_details ?? 'Ruang Dosen Gedung A UMSU';
+                $meetingUrl = $meetingType === 'online' ? ($eventType?->location_details ?? 'https://meet.google.com/ums-bimb-skripsi') : null;
 
-                $meetingType = $booking['meetingType'] ?? $eventType?->location_type ?? 'offline';
-                $meetingLocation = $booking['meetingLocation'] ?? ($eventType?->location_type === 'offline' ? $eventType?->location_details : 'Ruang Dosen');
-                $meetingUrl = $booking['meetingUrl'] ?? ($eventType?->location_type === 'online' ? $eventType?->location_details : null);
+                $existingApp = Appointment::find($booking['id']);
+                $metadata = is_array($existingApp?->metadata) ? $existingApp->metadata : [];
 
-                $metadata = [];
                 if (! empty($booking['draftFileName'])) {
                     $metadata['draftFileName'] = $booking['draftFileName'];
                 }
                 if (! empty($booking['draftFilePath'])) {
                     $metadata['draftFilePath'] = $booking['draftFilePath'];
+                }
+                if (! empty($booking['annotations'])) {
+                    $metadata['annotations'] = $booking['annotations'];
+                    try {
+                        /** @var User|null $authUser */
+                        $authUser = Auth::user();
+                        $cleanNumericId = (int) preg_replace('/\D/', '', (string) ($booking['id'] ?? 0));
+                        if ($cleanNumericId > 0) {
+                            broadcast(new \App\Events\PdfAnnotationUpdated($cleanNumericId, $booking['annotations'], $authUser?->name ?? 'Dosen'));
+                        }
+                    } catch (\Throwable $tb) {
+                        Log::warning('Annotation broadcast skipped: '.$tb->getMessage());
+                    }
                 }
 
                 Appointment::updateOrCreate(
@@ -490,6 +514,28 @@ class BimbinganSyncController extends Controller
 
             return response()->json(['status' => 'success', 'warning' => $e->getMessage()]);
         }
+    }
+
+    public function broadcastAnnotation(Request $request)
+    {
+        $bookingId = $request->input('bookingId');
+        $annotations = $request->input('annotations', []);
+
+        if ($bookingId && ! empty($annotations)) {
+            try {
+                /** @var User|null $authUser */
+                $authUser = Auth::user();
+                $cleanNumericId = (int) preg_replace('/\D/', '', (string) $bookingId);
+                if ($cleanNumericId > 0) {
+                    broadcast(new \App\Events\PdfAnnotationUpdated($cleanNumericId, $annotations, $authUser?->name ?? 'Dosen'));
+                }
+                return response()->json(['status' => 'success', 'message' => 'Annotation broadcasted successfully']);
+            } catch (\Throwable $e) {
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            }
+        }
+
+        return response()->json(['status' => 'invalid_data'], 400);
     }
 
     public function syncUsers(Request $request)
