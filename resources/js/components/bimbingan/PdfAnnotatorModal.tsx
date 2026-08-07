@@ -111,6 +111,7 @@ export default function PdfAnnotatorModal({
     const [pageAnnotations, setPageAnnotations] = useState<Record<number, PageAnnotations>>({});
 
     const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
+    const clientIdRef = useRef<string>(`client-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     // Parse initial annotations when modal opens
     useEffect(() => {
@@ -185,29 +186,6 @@ export default function PdfAnnotatorModal({
         }
     }, [isOpen, initialAnnotations]);
 
-    // Real-Time WebSockets Listener (Laravel Reverb)
-    useEffect(() => {
-        if (!isOpen || !bookingId || !echo) return;
-
-        try {
-            const cleanId = String(bookingId).replace(/^booking-/, '');
-            const channel = echo.private(`booking.${cleanId}`);
-            channel.listen('.PdfAnnotationUpdated', (e: any) => {
-                if (e && e.annotations) {
-                    setPageAnnotations(e.annotations);
-                    toast.success('Coretan / catatan PDF diperbarui secara real-time!');
-                }
-            });
-
-            return () => {
-                try {
-                    echo?.leave(`booking.${cleanId}`);
-                } catch (e) {}
-            };
-        } catch (err) {
-            console.warn('Echo listener subscription error:', err);
-        }
-    }, [isOpen, bookingId]);
 
     const formatBytes = (bytes: number): string => {
         if (bytes === 0) return '0 Bytes';
@@ -334,7 +312,7 @@ export default function PdfAnnotatorModal({
                             await loadPdfFromBuffer(buffer, fileName || 'Dokumen Draft Skripsi.pdf', buffer.byteLength);
                             return;
                         }
-                    } catch (fErr) {}
+                    } catch (fErr) { }
                     loadSamplePdf();
                 }
             }
@@ -371,6 +349,7 @@ export default function PdfAnnotatorModal({
                 body: JSON.stringify({
                     bookingId,
                     annotations: currentAnnos,
+                    clientId: clientIdRef.current,
                 }),
             }).catch((err) => console.warn('Broadcast endpoint call error:', err));
         }
@@ -521,11 +500,6 @@ export default function PdfAnnotatorModal({
                     clearPageAnnotations={clearPageAnnotations}
                     exportAnnotatedPage={exportAnnotatedPage}
                     formatBytes={formatBytes}
-                    fileInputRef={fileInputRef}
-                    handleFileChange={handleFileChange}
-                    handleDrag={handleDrag}
-                    handleDrop={handleDrop}
-                    isDragActive={isDragActive}
                 />
 
                 {/* Main View Area */}
