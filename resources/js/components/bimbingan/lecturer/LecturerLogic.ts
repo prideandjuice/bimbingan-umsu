@@ -25,7 +25,7 @@ export function useLecturerLogic({ currentUser, onRefresh, propActiveTab }: Lect
   const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
 
   // Determine active tab based on Controller prop or URL path fallback
-  let activeTab: 'students' | 'eventTypes' | 'scheduling' | 'bookings' = 'students';
+  let activeTab: 'students' | 'logBimbingan' | 'eventTypes' | 'scheduling' | 'bookings' = 'students';
   if (propActiveTab && propActiveTab !== 'overview' && propActiveTab !== 'students') {
     if (propActiveTab === 'bookings' || propActiveTab === 'persetujuan-jadwal' || propActiveTab === 'permohonan-jadwal') {
       activeTab = 'bookings';
@@ -33,6 +33,8 @@ export function useLecturerLogic({ currentUser, onRefresh, propActiveTab }: Lect
       activeTab = 'eventTypes';
     } else if (propActiveTab === 'scheduling' || propActiveTab === 'ketersediaan-waktu' || propActiveTab === 'atur-jadwal') {
       activeTab = 'scheduling';
+    } else if (propActiveTab === 'logBimbingan' || propActiveTab === 'log-bimbingan') {
+      activeTab = 'logBimbingan';
     }
   } else if (url.includes('/dosen/persetujuan-jadwal') || url.includes('/dosen/permohonan-jadwal')) {
     activeTab = 'bookings';
@@ -40,6 +42,8 @@ export function useLecturerLogic({ currentUser, onRefresh, propActiveTab }: Lect
     activeTab = 'eventTypes';
   } else if (url.includes('/dosen/ketersediaan-waktu') || url.includes('/dosen/atur-jadwal')) {
     activeTab = 'scheduling';
+  } else if (url.includes('/dosen/log-bimbingan')) {
+    activeTab = 'logBimbingan';
   } else if (url.includes('/dosen/mahasiswa-bimbingan') || url.includes('/dosen/progres-mahasiswa') || url.includes('/dosen/verifikasi-log')) {
     activeTab = 'students';
   }

@@ -1,11 +1,11 @@
 // components/bimbingan/lecturer/LecturerSidebar.tsx
 import { Link } from '@inertiajs/react';
-import { UserCheck, Users, Calendar, Clock, Briefcase, Layers } from 'lucide-react';
+import { UserCheck, Users, Calendar, Clock, Briefcase, Layers, BookOpen } from 'lucide-react';
 import type { AppUser, Booking, Guidance, Thesis } from '@/types';
 
 interface LecturerSidebarProps {
   currentUser: AppUser;
-  activeTab: 'students' | 'eventTypes' | 'scheduling' | 'bookings';
+  activeTab: 'students' | 'logBimbingan' | 'eventTypes' | 'scheduling' | 'bookings';
   myStudents: Thesis[];
   myBookings: Booking[];
   setSelectedThesisId: (id: string | null) => void;
@@ -61,10 +61,24 @@ export default function LecturerSidebar({
         >
           <Users className="w-4.5 h-4.5" />
           <span>Mahasiswa Bimbingan</span>
+        </Link>
+
+        {/* Option 2: Log Bimbingan */}
+        <Link
+          href="/dosen/log-bimbingan"
+          onClick={() => setSelectedThesisId(null)}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'logBimbingan'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <BookOpen className="w-4.5 h-4.5" />
+          <span>Log Bimbingan</span>
           {pendingFeedbackCount > 0 && (
             <span
               className={`ml-auto font-bold text-[10px] px-2 py-0.5 rounded-full shadow-xs ${
-                activeTab === 'students' ? 'bg-amber-500 text-white animate-pulse' : 'bg-amber-500 text-white'
+                activeTab === 'logBimbingan' ? 'bg-amber-500 text-white animate-pulse' : 'bg-amber-500 text-white'
               }`}
             >
               {pendingFeedbackCount}
@@ -72,7 +86,7 @@ export default function LecturerSidebar({
           )}
         </Link>
 
-        {/* Option 2: Jenis Bimbingan */}
+        {/* Option 3: Jenis Bimbingan */}
         <Link
           href="/dosen/jenis-bimbingan"
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -85,7 +99,7 @@ export default function LecturerSidebar({
           <span>Jenis Bimbingan</span>
         </Link>
 
-        {/* Option 3: Ketersediaan Waktu */}
+        {/* Option 4: Ketersediaan Waktu */}
         <Link
           href="/dosen/ketersediaan-waktu"
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -98,7 +112,7 @@ export default function LecturerSidebar({
           <span>Ketersediaan Waktu</span>
         </Link>
 
-        {/* Option 3: Persetujuan Jadwal */}
+        {/* Option 5: Persetujuan Jadwal */}
         <Link
           href="/dosen/persetujuan-jadwal"
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${

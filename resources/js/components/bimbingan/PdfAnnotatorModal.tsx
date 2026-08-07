@@ -464,16 +464,25 @@ export default function PdfAnnotatorModal({
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
+                    {mode === 'edit' && (
+                        <button
+                            onClick={() => {
+                                handleSaveManual();
+                                onClose();
+                            }}
+                            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-md transition-all hover:bg-emerald-500 active:scale-95 cursor-pointer border border-emerald-500/30"
+                            title="Simpan Hasil Anotasi"
+                        >
+                            <Save className="h-4 w-4" />
+                            <span>Simpan Anotasi</span>
+                        </button>
+                    )}
                     <button
-                        onClick={() => {
-                            handleSaveManual();
-                            onClose();
-                        }}
-                        className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-md transition-all hover:bg-emerald-500 active:scale-95 cursor-pointer border border-emerald-500/30"
-                        title="Simpan Hasil Anotasi"
+                        onClick={onClose}
+                        className="flex items-center justify-center rounded-lg bg-emerald-700/80 hover:bg-emerald-700 p-2 text-white transition-all cursor-pointer border border-emerald-600/50"
+                        title="Tutup Modal"
                     >
-                        <Save className="h-4 w-4" />
-                        <span>Simpan Anotasi</span>
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
             </header>
@@ -500,6 +509,7 @@ export default function PdfAnnotatorModal({
                     clearPageAnnotations={clearPageAnnotations}
                     exportAnnotatedPage={exportAnnotatedPage}
                     formatBytes={formatBytes}
+                    mode={mode}
                 />
 
                 {/* Main View Area */}

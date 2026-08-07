@@ -20,6 +20,7 @@ interface PdfSidebarProps {
     clearPageAnnotations: () => void;
     exportAnnotatedPage: () => void;
     formatBytes: (bytes: number) => string;
+    mode?: 'edit' | 'view';
 }
 
 export default function PdfSidebar({
@@ -41,6 +42,7 @@ export default function PdfSidebar({
     clearPageAnnotations,
     exportAnnotatedPage,
     formatBytes,
+    mode = 'edit',
 }: PdfSidebarProps) {
     return (
         <aside
@@ -50,7 +52,8 @@ export default function PdfSidebar({
 
 
             {/* Alat & Anotasi */}
-            <div className="flex flex-col gap-4 rounded-xl border border-gray-200/50 p-4 dark:border-white/10 dark:bg-white/2">
+            {mode === 'edit' && (
+                <div className="flex flex-col gap-4 rounded-xl border border-gray-200/50 p-4 dark:border-white/10 dark:bg-white/2">
                     <span className="text-xs font-semibold tracking-wider text-[#706f6c] uppercase dark:text-[#A1A09A]">
                         Alat Anotasi
                     </span>
@@ -377,6 +380,7 @@ export default function PdfSidebar({
                         </button>
                     </div>
                 </div>
+            )}
 
             {/* Metadata Dokumen */}
             <div className="rounded-xl border border-gray-200/50 p-4 dark:border-white/10 dark:bg-white/2">
