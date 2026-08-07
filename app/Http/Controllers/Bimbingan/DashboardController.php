@@ -162,6 +162,7 @@ class DashboardController extends Controller
                 'notes' => $ap->notes,
                 'draftFileName' => $ap->metadata['draftFileName'] ?? null,
                 'draftFilePath' => $ap->metadata['draftFilePath'] ?? null,
+                'annotations' => $ap->metadata['annotations'] ?? null,
                 'createdAt' => $ap->created_at->toISOString(),
             ];
         });
@@ -187,11 +188,11 @@ class DashboardController extends Controller
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $filename = 'draft_'.time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+            $filename = 'draft_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
 
             // Store file in public disk (storage/app/public/drafts)
             $path = $file->storeAs('drafts', $filename, 'public');
-            $filePath = 'storage/'.$path;
+            $filePath = '/storage/' . $path;
 
             return response()->json([
                 'status' => 'success',
@@ -214,7 +215,7 @@ class DashboardController extends Controller
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $filename = 'sk_'.$thesis->id.'_'.time().'.'.$file->getClientOriginalExtension();
+            $filename = 'sk_' . $thesis->id . '_' . time() . '.' . $file->getClientOriginalExtension();
 
             // Store file in public disk (storage/app/public/sk)
             $path = $file->storeAs('sk', $filename, 'public');
@@ -224,7 +225,7 @@ class DashboardController extends Controller
             if (! is_array($metadata)) {
                 $metadata = [];
             }
-            $skPath = 'storage/'.$path;
+            $skPath = 'storage/' . $path;
             $metadata['sk_file'] = $skPath;
 
             $thesis->update([
@@ -261,8 +262,8 @@ class DashboardController extends Controller
         $lecturer = null;
         if ($lecturerUsername && $lecturerUsername !== 'bimbingan') {
             $cleanLecturerStr = str_replace('-', '%', $lecturerUsername);
-            $lecturer = User::where('name', 'like', '%'.$cleanLecturerStr.'%')
-                ->orWhere('email', 'like', $lecturerUsername.'%')
+            $lecturer = User::where('name', 'like', '%' . $cleanLecturerStr . '%')
+                ->orWhere('email', 'like', $lecturerUsername . '%')
                 ->first();
         }
 
@@ -278,7 +279,7 @@ class DashboardController extends Controller
         }
 
         if (! $lecturer) {
-            $lecturer = $eventType ? $eventType->lecturer : User::whereHas('roles', fn ($q) => $q->where('name', 'lecturer'))->first();
+            $lecturer = $eventType ? $eventType->lecturer : User::whereHas('roles', fn($q) => $q->where('name', 'lecturer'))->first();
         }
 
         $availabilities = [];

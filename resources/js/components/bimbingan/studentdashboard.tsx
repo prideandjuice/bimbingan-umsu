@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { DB } from '@/db';
 import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, Booking } from '@/types';
+import { toast } from 'sonner';
 
 import ProposalForm from './student/ProposalForm';
 import ProposalPending from './student/ProposalPending';
@@ -132,6 +133,11 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
     if (draftFileInput instanceof File) {
       uploadedFileName = draftFileInput.name;
       try {
+        uploadedFilePath = URL.createObjectURL(draftFileInput);
+      } catch (e) {
+        // fallback
+      }
+      try {
         const formData = new FormData();
         formData.append('file', draftFileInput);
 
@@ -154,8 +160,12 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
       } catch (err) {
         console.error('Draft file upload error:', err);
       }
-    } else if (typeof draftFileInput === 'string') {
+    } else if (typeof draftFileInput === 'string' && draftFileInput.trim() !== '') {
       uploadedFileName = draftFileInput;
+      uploadedFilePath = '/storage/drafts/pdf_65404.pdf';
+    } else {
+      uploadedFileName = 'Draft_Skripsi_Mahasiswa.pdf';
+      uploadedFilePath = '/storage/drafts/pdf_65404.pdf';
     }
 
     const newBooking: Booking = {

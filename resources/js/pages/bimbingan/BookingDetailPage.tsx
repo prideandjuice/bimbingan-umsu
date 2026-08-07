@@ -18,6 +18,7 @@ import {
   XCircle,
   Clock3,
   Trash2,
+  PenTool,
 } from 'lucide-react';
 import type { Booking, AppUser } from '@/types';
 import { DB } from '@/db';
@@ -258,13 +259,23 @@ export default function BookingDetailPage({ bookingId }: BookingDetailPageProps)
                 </div>
 
                 <div className="shrink-0">
-                  <button
-                    onClick={() => setIsPdfModalOpen(true)}
-                    className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Buka & Lihat Anotasi PDF</span>
-                  </button>
+                  {rawCurrentUser?.role === 'dosen' || rawCurrentUser?.role === 'lecturer' ? (
+                    <button
+                      onClick={() => setIsPdfModalOpen(true)}
+                      className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-600 shadow-md transition-all cursor-pointer"
+                    >
+                      <PenTool className="w-4 h-4" />
+                      <span>Beri Catatan / Revisi PDF</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setIsPdfModalOpen(true)}
+                      className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Buka & Lihat Anotasi PDF</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -285,8 +296,19 @@ export default function BookingDetailPage({ bookingId }: BookingDetailPageProps)
             }
             fileName={booking?.draftFileName || 'Draft Skripsi'}
             studentName={displayStudent}
-            mode="view"
+            mode={rawCurrentUser?.role === 'dosen' || rawCurrentUser?.role === 'lecturer' ? 'edit' : 'view'}
+            bookingId={booking?.id}
             initialAnnotations={booking?.annotations || []}
+            onSaveAnnotations={(updatedAnnotations: any) => {
+              if (!booking) return;
+              const allBookings = DB.getBookings();
+              const updatedBookings = allBookings.map((b) =>
+                b.id === booking.id ? { ...b, annotations: updatedAnnotations } : b
+              );
+              DB.saveBookings(updatedBookings);
+              setBooking({ ...booking, annotations: updatedAnnotations });
+              window.dispatchEvent(new Event('storage'));
+            }}
           />
         )}
       </div>

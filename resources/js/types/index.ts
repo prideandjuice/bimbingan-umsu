@@ -45,7 +45,7 @@ export interface User {
 
 // ─── Domain Types ────────────────────────────────────────────────────────────
 
-export type UserRole = 'superadmin' | 'admin' | 'prodi' | 'student' | 'lecturer' | 'guest';
+export type UserRole = 'superadmin' | 'admin' | 'prodi' | 'student' | 'mahasiswa' | 'lecturer' | 'dosen' | 'guest';
 
 export interface AppUser {
     id: string;
@@ -82,16 +82,16 @@ export interface ProposalTitle {
 
 export interface Thesis {
     id: string;
-    proposalId: string;
+    proposalId?: string;
     title: string;
     studentId: string;
     studentName: string;
     studentNpm: string;
-    department: string;
+    department?: string;
     supervisorId: string | null;
     supervisorName: string | null;
-    status: 'pending_supervisor' | 'pending_sk' | 'in_progress' | 'completed';
-    createdAt: string;
+    status: 'pending_supervisor' | 'pending_sk' | 'in_progress' | 'completed' | 'ACTIVE';
+    createdAt?: string;
     skFile?: string;
 }
 
@@ -166,8 +166,9 @@ export interface Booking {
     eventTypeName: string;
     date: string;
     timeSlot: string;
-    status: 'pending' | 'confirmed' | 'rejected' | 'completed';
+    status: 'pending' | 'confirmed' | 'approved' | 'rejected' | 'completed';
     notes?: string;
+    rejectionReason?: string;
     draftFileName?: string | null;
     draftFilePath?: string | null;
     annotations?: any;

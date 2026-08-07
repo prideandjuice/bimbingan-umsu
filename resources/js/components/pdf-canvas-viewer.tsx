@@ -142,21 +142,22 @@ export default function PdfCanvasViewer({
         const crosses = pageAnnos.crosses || [];
 
         drawings.forEach((path) => {
-            if (path.points.length === 0) {
-                return;
-            }
+            if (!path) return;
+            const points = path.points || [];
+            if (points.length === 0) return;
 
             context.beginPath();
-            context.strokeStyle = path.color;
-            context.lineWidth = path.width;
+            context.strokeStyle = path.color || '#f53003';
+            context.lineWidth = path.strokeWidth || path.width || 3;
             context.lineCap = 'round';
             context.lineJoin = 'round';
 
-            const firstPointRot = convertToRotated(path.points[0].x, path.points[0].y, rot);
+            const firstPointRot = convertToRotated(points[0].x || 0, points[0].y || 0, rot);
             context.moveTo(firstPointRot.x * cssWidth, firstPointRot.y * cssHeight);
 
-            for (let i = 1; i < path.points.length; i++) {
-                const ptRot = convertToRotated(path.points[i].x, path.points[i].y, rot);
+            for (let i = 1; i < points.length; i++) {
+                if (!points[i]) continue;
+                const ptRot = convertToRotated(points[i].x || 0, points[i].y || 0, rot);
                 context.lineTo(ptRot.x * cssWidth, ptRot.y * cssHeight);
             }
 
@@ -164,18 +165,20 @@ export default function PdfCanvasViewer({
         });
 
         texts.forEach((text) => {
-            context.fillStyle = text.color;
-            context.font = `bold ${text.fontSize}px sans-serif`;
+            if (!text || !text.text) return;
+            context.fillStyle = text.color || '#000000';
+            context.font = `bold ${text.fontSize || 16}px sans-serif`;
             context.textBaseline = 'top';
-            const ptRot = convertToRotated(text.x, text.y, rot);
+            const ptRot = convertToRotated(text.x || 0, text.y || 0, rot);
             context.fillText(text.text, ptRot.x * cssWidth, ptRot.y * cssHeight);
         });
 
         rectangles.forEach((rect) => {
+            if (!rect) return;
             context.beginPath();
-            context.strokeStyle = rect.color;
-            context.lineWidth = rect.strokeWidth;
-            const rotRect = getRotatedRect(rect.x, rect.y, rect.width, rect.height, rot);
+            context.strokeStyle = rect.color || '#fef08a';
+            context.lineWidth = rect.strokeWidth || 3;
+            const rotRect = getRotatedRect(rect.x || 0, rect.y || 0, rect.width || 0.1, rect.height || 0.05, rot);
             context.strokeRect(
                 rotRect.x * cssWidth,
                 rotRect.y * cssHeight,
@@ -185,10 +188,11 @@ export default function PdfCanvasViewer({
         });
 
         circles.forEach((circle) => {
+            if (!circle) return;
             context.beginPath();
-            context.strokeStyle = circle.color;
-            context.lineWidth = circle.strokeWidth;
-            const rotCircle = getRotatedRect(circle.x, circle.y, circle.width, circle.height, rot);
+            context.strokeStyle = circle.color || '#f53003';
+            context.lineWidth = circle.strokeWidth || 3;
+            const rotCircle = getRotatedRect(circle.x || 0, circle.y || 0, circle.width || 0.1, circle.height || 0.1, rot);
             const rx = (rotCircle.width * cssWidth) / 2;
             const ry = (rotCircle.height * cssHeight) / 2;
             const cx = rotCircle.x * cssWidth + rx;
@@ -198,7 +202,8 @@ export default function PdfCanvasViewer({
         });
 
         pins.forEach((pin) => {
-            const ptRot = convertToRotated(pin.x, pin.y, rot);
+            if (!pin) return;
+            const ptRot = convertToRotated(pin.x || 0, pin.y || 0, rot);
             const px = ptRot.x * cssWidth;
             const py = ptRot.y * cssHeight;
 
@@ -216,7 +221,7 @@ export default function PdfCanvasViewer({
             context.arc(0, -18, 8, Math.PI, 0, false);
             context.bezierCurveTo(8, -14, 6, -10, 0, 0);
             context.closePath();
-            context.fillStyle = pin.color;
+            context.fillStyle = pin.color || '#f53003';
             context.fill();
             context.lineWidth = 1.5;
             context.strokeStyle = '#ffffff';
@@ -251,14 +256,15 @@ export default function PdfCanvasViewer({
         });
 
         checkmarks.forEach((chk) => {
-            const ptRot = convertToRotated(chk.x, chk.y, rot);
+            if (!chk) return;
+            const ptRot = convertToRotated(chk.x || 0, chk.y || 0, rot);
             const cx = ptRot.x * cssWidth;
             const cy = ptRot.y * cssHeight;
             const size = chk.size || 24;
 
             context.save();
             context.beginPath();
-            context.strokeStyle = chk.color;
+            context.strokeStyle = chk.color || '#22c55e';
             context.lineWidth = 3.5;
             context.lineCap = 'round';
             context.lineJoin = 'round';
