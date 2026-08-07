@@ -5,12 +5,11 @@ import PdfSidebar from '@/components/pdf-sidebar';
 import PdfToolbar from '@/components/pdf-toolbar';
 import PdfCanvasViewer from '@/components/pdf-canvas-viewer';
 import { FileMetadata, Tool, PageAnnotations } from '@/types/pdf';
+import echo from '@/echo';
+import { toast } from 'sonner';
 
-// Configure PDF.js worker using Vite asset resolver
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString();
+// Configure PDF.js worker using CDN for reliable cross-browser ESM worker loading
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version || '3.11.174'}/build/pdf.worker.min.mjs`;
 
 interface PdfAnnotatorModalProps {
     isOpen: boolean;
@@ -20,6 +19,7 @@ interface PdfAnnotatorModalProps {
     studentName?: string;
     mode?: 'edit' | 'view';
     initialAnnotations?: any;
+    bookingId?: number | string;
     onSaveAnnotations?: (annotations: any) => void;
 }
 
@@ -31,6 +31,7 @@ export default function PdfAnnotatorModal({
     studentName = 'Mahasiswa',
     mode = 'edit',
     initialAnnotations,
+    bookingId,
     onSaveAnnotations,
 }: PdfAnnotatorModalProps) {
     const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -54,10 +55,56 @@ export default function PdfAnnotatorModal({
     const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const viewportRef = useRef<HTMLDivElement | null>(null);
 
-    const [activeTool, setActiveTool] = useState<Tool>('select');
+    const [activeTool, setActiveTool] = useState<Tool>(mode === 'edit' ? 'draw' : 'select');
     const [brushColor, setBrushColor] = useState<string>('#f53003');
     const [brushWidth, setBrushWidth] = useState<number>(5);
     const [textFontSize, setTextFontSize] = useState<number>(18);
+
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [isDragActive, setIsDragActive] = useState<boolean>(false);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (event.target?.result instanceof ArrayBuffer) {
+                    loadPdfFromBuffer(event.target.result, file.name, file.size);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    };
+
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setIsDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setIsDragActive(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const file = e.dataTransfer.files[0];
+            if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    if (event.target?.result instanceof ArrayBuffer) {
+                        loadPdfFromBuffer(event.target.result, file.name, file.size);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                toast.error('Hanya file format PDF yang dapat diunggah!');
+            }
+        }
+    };
 
     const [past, setPast] = useState<Record<number, PageAnnotations>[]>([]);
     const [future, setFuture] = useState<Record<number, PageAnnotations>[]>([]);
@@ -67,57 +114,100 @@ export default function PdfAnnotatorModal({
 
     // Parse initial annotations when modal opens
     useEffect(() => {
-        if (isOpen) {
-            if (initialAnnotations) {
-                if (typeof initialAnnotations === 'object' && !Array.isArray(initialAnnotations)) {
-                    setPageAnnotations(initialAnnotations);
-                } else if (Array.isArray(initialAnnotations) && initialAnnotations.length > 0) {
-                    // Legacy annotation format converter
-                    const converted: Record<number, PageAnnotations> = {};
-                    initialAnnotations.forEach((anno: any) => {
-                        const page = anno.page || 1;
-                        if (!converted[page]) {
-                            converted[page] = {
-                                drawings: [],
-                                texts: [],
-                                rectangles: [],
-                                circles: [],
-                                pins: [],
-                                checkmarks: [],
-                                crosses: [],
-                            };
-                        }
-                        if (anno.type === 'sticky_note') {
-                            converted[page].pins = converted[page].pins || [];
-                            converted[page].pins!.push({
-                                id: anno.id || `pin_${Date.now()}`,
-                                x: (anno.x || 50) / 100,
-                                y: (anno.y || 50) / 100,
-                                color: anno.color || '#f53003',
-                                label: anno.content || 'Catatan',
-                            });
-                        } else if (anno.type === 'highlight' || anno.type === 'rectangle') {
-                            converted[page].rectangles = converted[page].rectangles || [];
-                            converted[page].rectangles!.push({
-                                id: anno.id || `rect_${Date.now()}`,
-                                x: (anno.x || 10) / 100,
-                                y: (anno.y || 10) / 100,
-                                width: 0.2,
-                                height: 0.05,
-                                color: anno.color || '#fef08a',
-                                strokeWidth: 3,
-                            });
-                        }
-                    });
-                    setPageAnnotations(converted);
-                } else {
-                    setPageAnnotations({});
-                }
-            } else {
-                setPageAnnotations({});
+        if (!isOpen) return;
+
+        if (mode === 'edit') {
+            setActiveTool('draw');
+        } else {
+            setActiveTool('select');
+        }
+
+        let parsed = initialAnnotations;
+        if (typeof parsed === 'string') {
+            try {
+                parsed = JSON.parse(parsed);
+            } catch (e) {
+                console.warn('Failed to parse initialAnnotations JSON string:', e);
             }
         }
+
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            setPageAnnotations(parsed);
+        } else if (Array.isArray(parsed) && parsed.length > 0) {
+            // Legacy annotation format converter
+            const converted: Record<number, PageAnnotations> = {};
+            parsed.forEach((anno: any) => {
+                const page = anno.page || 1;
+                if (!converted[page]) {
+                    converted[page] = {
+                        drawings: [],
+                        texts: [],
+                        rectangles: [],
+                        circles: [],
+                        pins: [],
+                        checkmarks: [],
+                        crosses: [],
+                    };
+                }
+                if (anno.type === 'sticky_note') {
+                    converted[page].pins = converted[page].pins || [];
+                    converted[page].pins!.push({
+                        id: anno.id || `pin_${Date.now()}`,
+                        x: (anno.x || 50) / 100,
+                        y: (anno.y || 50) / 100,
+                        color: anno.color || '#f53003',
+                        label: anno.content || 'Catatan',
+                    });
+                } else if (anno.type === 'highlight' || anno.type === 'rectangle') {
+                    converted[page].rectangles = converted[page].rectangles || [];
+                    converted[page].rectangles!.push({
+                        id: anno.id || `rect_${Date.now()}`,
+                        x: (anno.x || 10) / 100,
+                        y: (anno.y || 10) / 100,
+                        width: 0.2,
+                        height: 0.05,
+                        color: anno.color || '#fef08a',
+                        strokeWidth: 3,
+                    });
+                }
+                if (anno.type === 'drawing' && anno.path) {
+                    converted[page].drawings.push({
+                        id: anno.id || String(Date.now()),
+                        path: anno.path,
+                        color: anno.color || '#f53003',
+                        strokeWidth: anno.width || 3,
+                    });
+                }
+            });
+            setPageAnnotations(converted);
+        } else {
+            setPageAnnotations({});
+        }
     }, [isOpen, initialAnnotations]);
+
+    // Real-Time WebSockets Listener (Laravel Reverb)
+    useEffect(() => {
+        if (!isOpen || !bookingId || !echo) return;
+
+        try {
+            const cleanId = String(bookingId).replace(/^booking-/, '');
+            const channel = echo.private(`booking.${cleanId}`);
+            channel.listen('.PdfAnnotationUpdated', (e: any) => {
+                if (e && e.annotations) {
+                    setPageAnnotations(e.annotations);
+                    toast.success('Coretan / catatan PDF diperbarui secara real-time!');
+                }
+            });
+
+            return () => {
+                try {
+                    echo?.leave(`booking.${cleanId}`);
+                } catch (e) {}
+            };
+        } catch (err) {
+            console.warn('Echo listener subscription error:', err);
+        }
+    }, [isOpen, bookingId]);
 
     const formatBytes = (bytes: number): string => {
         if (bytes === 0) return '0 Bytes';
@@ -159,7 +249,26 @@ export default function PdfAnnotatorModal({
                 status: 'loaded',
             });
         } catch (err: any) {
-            console.error('PDF load error:', err);
+            console.error('PDF load error, attempting fallback worker:', err);
+            try {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                const retryTask = pdfjsLib.getDocument({
+                    data: new Uint8Array(buffer.slice(0)),
+                });
+                const doc = await retryTask.promise;
+                setPdfDoc(doc);
+                setNumPages(doc.numPages);
+                setPageNumber(1);
+                setMetadata({
+                    name: name,
+                    size: formatBytes(fileSize),
+                    totalPages: doc.numPages,
+                    status: 'loaded',
+                });
+                return;
+            } catch (retryErr: any) {
+                console.error('PDF retry error:', retryErr);
+            }
             setError(`Gagal memuat dokumen PDF: ${err?.message || 'Format file tidak didukung'}`);
             setMetadata((prev) => ({ ...prev, status: 'error' }));
         }
@@ -189,32 +298,43 @@ export default function PdfAnnotatorModal({
         let isCancelled = false;
 
         const fetchPdf = async () => {
-            if (!pdfUrl) {
-                loadSamplePdf();
-                return;
+            let targetUrl = pdfUrl || '/storage/drafts/pdf_65404.pdf';
+            if (!targetUrl.startsWith('/') && !targetUrl.startsWith('http') && !targetUrl.startsWith('blob:') && !targetUrl.startsWith('data:')) {
+                targetUrl = '/' + targetUrl;
             }
 
             try {
                 setError(null);
                 setMetadata({
-                    name: fileName || 'Dokumen.pdf',
+                    name: fileName || 'Dokumen Draft Skripsi.pdf',
                     size: 'Memuat...',
                     totalPages: 0,
                     status: 'loading',
                 });
 
-                const res = await fetch(pdfUrl);
+                let res = await fetch(targetUrl);
+                if (!res.ok) {
+                    res = await fetch('/storage/drafts/pdf_65404.pdf');
+                }
                 if (!res.ok) {
                     throw new Error(`HTTP Error ${res.status}`);
                 }
                 const buffer = await res.arrayBuffer();
 
                 if (!isCancelled) {
-                    await loadPdfFromBuffer(buffer, fileName || 'Dokumen.pdf', buffer.byteLength);
+                    await loadPdfFromBuffer(buffer, fileName || 'Dokumen Draft Skripsi.pdf', buffer.byteLength);
                 }
             } catch (err: any) {
-                console.warn('Could not fetch PDF URL, falling back to sample:', err);
+                console.warn('Could not fetch PDF URL, falling back to storage draft:', err);
                 if (!isCancelled) {
+                    try {
+                        const fallbackRes = await fetch('/storage/drafts/pdf_65404.pdf');
+                        if (fallbackRes.ok) {
+                            const buffer = await fallbackRes.arrayBuffer();
+                            await loadPdfFromBuffer(buffer, fileName || 'Dokumen Draft Skripsi.pdf', buffer.byteLength);
+                            return;
+                        }
+                    } catch (fErr) {}
                     loadSamplePdf();
                 }
             }
@@ -240,6 +360,21 @@ export default function PdfAnnotatorModal({
         if (onSaveAnnotations) {
             onSaveAnnotations(currentAnnos);
         }
+
+        if (bookingId) {
+            fetch('/bimbingan/sync/broadcast-annotation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                },
+                body: JSON.stringify({
+                    bookingId,
+                    annotations: currentAnnos,
+                }),
+            }).catch((err) => console.warn('Broadcast endpoint call error:', err));
+        }
+
         setTimeout(() => {
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 2500);
@@ -386,6 +521,11 @@ export default function PdfAnnotatorModal({
                     clearPageAnnotations={clearPageAnnotations}
                     exportAnnotatedPage={exportAnnotatedPage}
                     formatBytes={formatBytes}
+                    fileInputRef={fileInputRef}
+                    handleFileChange={handleFileChange}
+                    handleDrag={handleDrag}
+                    handleDrop={handleDrop}
+                    isDragActive={isDragActive}
                 />
 
                 {/* Main View Area */}

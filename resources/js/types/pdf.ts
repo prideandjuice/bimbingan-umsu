@@ -25,9 +25,12 @@ export interface Point {
 }
 
 export interface DrawPath {
-    points: Point[];
+    id?: string;
+    points?: Point[];
     color: string;
-    width: number;
+    width?: number;
+    path?: string;
+    strokeWidth?: number;
 }
 
 export interface TextAnnotation {

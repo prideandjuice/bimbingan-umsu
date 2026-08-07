@@ -58,6 +58,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('event-types', [BimbinganSyncController::class, 'syncEventTypes'])->name('event-types');
         Route::post('availability-rules', [BimbinganSyncController::class, 'syncAvailabilityRules'])->name('availability-rules');
         Route::post('bookings', [BimbinganSyncController::class, 'syncBookings'])->name('bookings');
+        Route::post('broadcast-annotation', [BimbinganSyncController::class, 'broadcastAnnotation'])->name('broadcast-annotation');
         Route::post('users', [BimbinganSyncController::class, 'syncUsers'])->name('users');
     });
 });

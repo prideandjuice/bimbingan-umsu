@@ -22,13 +22,37 @@ import {
   PenTool,
 } from 'lucide-react';
 import type { AppUser, Thesis, Guidance, Booking, EventType, AvailabilityRule, Proposal } from '@/types';
+import { DB } from '@/db';
 import RichTextDisplay from '../RichTextDisplay';
 import CalComBookingView from './CalComBookingView';
 import PdfAnnotatorModal from '../PdfAnnotatorModal';
 import { toast } from 'sonner';
-
+import echo from '@/echo';
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+const getAnnotationCount = (annotations: any): number => {
+  if (!annotations) return 0;
+  if (typeof annotations === 'string') {
+    try { annotations = JSON.parse(annotations); } catch { return 0; }
+  }
+  if (Array.isArray(annotations)) return annotations.length;
+  if (typeof annotations === 'object' && annotations !== null) {
+    return Object.values(annotations).reduce((sum: number, page: any) => {
+      if (!page || typeof page !== 'object') return sum;
+      return (
+        sum +
+        (Array.isArray(page.drawings) ? page.drawings.length : 0) +
+        (Array.isArray(page.pins) ? page.pins.length : 0) +
+        (Array.isArray(page.texts) ? page.texts.length : 0) +
+        (Array.isArray(page.rectangles) ? page.rectangles.length : 0) +
+        (Array.isArray(page.checkmarks) ? page.checkmarks.length : 0) +
+        (Array.isArray(page.crosses) ? page.crosses.length : 0)
+      );
+    }, 0);
+  }
+  return 0;
+};
 
 const formatDisplayDateWithDay = (dateStr?: string): string => {
   if (!dateStr) return '-';
@@ -65,7 +89,7 @@ interface ThesisActiveLayoutProps {
   mySupervisorAvailability: AvailabilityRule[];
   currentProgress: number;
   handleSubmitGuidance: (date: string, notes: string, revisions: string, progress: number) => void;
-  handleBookMeeting: (eventTypeId: string, date: string, slot: string, notes: string, draftFileName?: string | null) => void;
+  handleBookMeeting: (eventTypeId: string, date: string, slot: string, notes: string, draftFileInput?: File | string | null) => void;
   handleCancelBooking?: (bookingId: string) => void;
   initialTab?: 'info' | 'guidances' | 'bookings';
 }
@@ -95,6 +119,47 @@ export default function ThesisActiveLayout({
       setActiveTab(initialTab);
     }
   }, [initialTab]);
+
+  // Real-time Echo Listener for PDF Annotations from Lecturer
+  useEffect(() => {
+    if (!echo || !myBookings || myBookings.length === 0) return;
+
+    const subscriptions: string[] = [];
+    myBookings.forEach((b) => {
+      if (!b.id) return;
+      const cleanId = String(b.id).replace(/^booking-/, '');
+      try {
+        const channel = echo.private(`booking.${cleanId}`);
+        channel.listen('.PdfAnnotationUpdated', (e: any) => {
+          if (e && e.annotations) {
+            toast.success(
+              `Revisi PDF Baru! ${e.updatedBy || 'Dosen Pembimbing'} baru saja memperbarui coretan/catatan pada draft skripsi Anda.`,
+              { duration: 6000 }
+            );
+
+            // Sync to local DB
+            const allBookings = DB.getBookings();
+            const updatedBookings = allBookings.map((item) =>
+              String(item.id) === String(b.id) ? { ...item, annotations: e.annotations } : item
+            );
+            DB.saveBookings(updatedBookings);
+            window.dispatchEvent(new Event('storage'));
+          }
+        });
+        subscriptions.push(cleanId);
+      } catch (err) {
+        console.warn('Echo subscription warning:', err);
+      }
+    });
+
+    return () => {
+      subscriptions.forEach((cleanId) => {
+        try {
+          echo?.leave(`booking.${cleanId}`);
+        } catch (e) {}
+      });
+    };
+  }, [myBookings]);
 
   // Track mana sesi bimbingan yang di-expand detailnya (default: opsi pertama)
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(myGuidances[0]?.id || null);
@@ -138,7 +203,7 @@ export default function ThesisActiveLayout({
             </span>
 
             <span className="text-xs font-medium text-emerald-100/90">
-              Disetujui pada {new Date(myThesis.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+              Disetujui pada {new Date(myThesis.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
           </div>
 
@@ -587,14 +652,49 @@ export default function ThesisActiveLayout({
                               </span>
                             </div>
                             {b.draftFileName && (
-                              <div className="flex items-center justify-between pt-1.5 border-t border-gray-200/60 dark:border-zinc-800/60 text-[11px]">
-                                <span className="text-muted-foreground flex items-center gap-1 font-semibold">
-                                  <Paperclip className="w-3 h-3 text-emerald-600" />
-                                  <span>Berkas Draft:</span>
+                              <div className="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-zinc-800/60 text-[11px] gap-2">
+                                <span className="text-muted-foreground flex items-center gap-1 font-semibold truncate">
+                                  <Paperclip className="w-3 h-3 text-emerald-600 shrink-0" />
+                                  <span className="truncate max-w-[120px]">{b.draftFileName}</span>
                                 </span>
-                                <span className="font-extrabold text-emerald-700 dark:text-emerald-400 truncate max-w-[170px]">
-                                  {b.draftFileName}
-                                </span>
+                                {(() => {
+                                  let freshBooking: Booking = b;
+                                  try {
+                                    freshBooking = DB.getBookings().find((item) => String(item.id) === String(b.id)) || b;
+                                  } catch (e) {}
+                                  const count = getAnnotationCount(freshBooking.annotations || b.annotations);
+
+                                  const handleOpenViewModal = (e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    let latest: Booking = b;
+                                    try {
+                                      latest = DB.getBookings().find((item) => String(item.id) === String(b.id)) || b;
+                                    } catch (err) {}
+                                    setAnnotatorBooking(latest);
+                                  };
+
+                                  if (count > 0) {
+                                    return (
+                                      <button
+                                        onClick={handleOpenViewModal}
+                                        className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-[10px] font-bold transition-all shrink-0 shadow-2xs flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <PenTool className="w-3 h-3" />
+                                        <span>Coretan Dosen ({count})</span>
+                                      </button>
+                                    );
+                                  }
+
+                                  return (
+                                    <button
+                                      onClick={handleOpenViewModal}
+                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition-all shrink-0 shadow-2xs flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <FileText className="w-3 h-3" />
+                                      <span>Buka PDF</span>
+                                    </button>
+                                  );
+                                })()}
                               </div>
                             )}
                           </div>
@@ -636,7 +736,7 @@ export default function ThesisActiveLayout({
                 eventType={selectedBookingEventType}
                 myBookings={myBookings}
                 onBookMeeting={(date, timeSlot, notes, draftFile) => {
-                  handleBookMeeting(selectedBookingEventType.id || 'default-session', date, timeSlot, notes, draftFile?.name);
+                  handleBookMeeting(selectedBookingEventType.id || 'default-session', date, timeSlot, notes, draftFile);
                   toast.success(
                     `Pengajuan janji temu bimbingan (${selectedBookingEventType.name}) pada tanggal ${date} (${timeSlot}) berhasil dikirim!`
                   );
@@ -710,23 +810,58 @@ export default function ThesisActiveLayout({
                       <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span className="truncate">{selectedBookingDetail.draftFileName}</span>
                     </div>
-                    {selectedBookingDetail.annotations && selectedBookingDetail.annotations.length > 0 ? (
-                      <button
-                        onClick={() => setAnnotatorBooking(selectedBookingDetail)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-[11px] font-bold transition-all shrink-0 shadow-xs cursor-pointer"
-                      >
-                        <PenTool className="w-3.5 h-3.5" />
-                        <span>Lihat Catatan Revisi Dosen ({selectedBookingDetail.annotations.length})</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setAnnotatorBooking(selectedBookingDetail)}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shrink-0 shadow-2xs cursor-pointer"
-                      >
-                        <span>Buka PDF</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </button>
-                    )}
+                    {(() => {
+                      let fresh: Booking = selectedBookingDetail;
+                      try {
+                        fresh = DB.getBookings().find((item: Booking) => String(item.id) === String(selectedBookingDetail.id)) || selectedBookingDetail;
+                      } catch (e) {
+                        // fallback
+                      }
+                      let annos = fresh.annotations || selectedBookingDetail.annotations;
+                      if (typeof annos === 'string') {
+                        try { annos = JSON.parse(annos); } catch {}
+                      }
+                      let count = 0;
+                      if (annos) {
+                        if (Array.isArray(annos)) {
+                          count = annos.length;
+                        } else if (typeof annos === 'object') {
+                          count = Object.values(annos).reduce((sum: number, page: any) => {
+                            return sum + (page?.drawings?.length || 0) + (page?.pins?.length || 0) + (page?.texts?.length || 0) + (page?.rectangles?.length || 0) + (page?.checkmarks?.length || 0) + (page?.crosses?.length || 0);
+                          }, 0);
+                        }
+                      }
+
+                      const handleOpenModal = () => {
+                        let latest: Booking = selectedBookingDetail;
+                        try {
+                          latest = DB.getBookings().find((item: Booking) => String(item.id) === String(selectedBookingDetail.id)) || selectedBookingDetail;
+                        } catch (e) {}
+                        setAnnotatorBooking(latest);
+                      };
+
+                      if (count > 0) {
+                        return (
+                          <button
+                            onClick={handleOpenModal}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-[11px] font-bold transition-all shrink-0 shadow-xs cursor-pointer"
+                          >
+                            <PenTool className="w-3.5 h-3.5" />
+                            <span>Lihat Catatan Revisi Dosen ({count} Coretan)</span>
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <button
+                          onClick={handleOpenModal}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shrink-0 shadow-2xs cursor-pointer"
+                        >
+                          <span>Buka PDF</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -851,6 +986,7 @@ export default function ThesisActiveLayout({
           fileName={annotatorBooking.draftFileName || 'Draft Skripsi'}
           studentName={annotatorBooking.studentName}
           mode="view"
+          bookingId={annotatorBooking.id}
           initialAnnotations={annotatorBooking.annotations || []}
         />
       )}

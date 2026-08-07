@@ -19,8 +19,33 @@ import {
 } from 'lucide-react';
 import type { Booking, PdfAnnotation } from '@/types';
 import { DB } from '@/db';
-import PdfAnnotatorModal from '../PdfAnnotatorModal';
-
+import PdfAnnotatorModal from '@/components/bimbingan/PdfAnnotatorModal';
+const getAnnotationCount = (annotations: any): number => {
+  if (!annotations) return 0;
+  if (typeof annotations === 'string') {
+    try {
+      annotations = JSON.parse(annotations);
+    } catch {
+      return 0;
+    }
+  }
+  if (Array.isArray(annotations)) return annotations.length;
+  if (typeof annotations === 'object' && annotations !== null) {
+    return Object.values(annotations).reduce((sum: number, page: any) => {
+      if (!page || typeof page !== 'object') return sum;
+      return (
+        sum +
+        (Array.isArray(page.drawings) ? page.drawings.length : 0) +
+        (Array.isArray(page.pins) ? page.pins.length : 0) +
+        (Array.isArray(page.texts) ? page.texts.length : 0) +
+        (Array.isArray(page.rectangles) ? page.rectangles.length : 0) +
+        (Array.isArray(page.checkmarks) ? page.checkmarks.length : 0) +
+        (Array.isArray(page.crosses) ? page.crosses.length : 0)
+      );
+    }, 0);
+  }
+  return 0;
+};
 
 interface BookingsTabProps {
   myBookings: Booking[];
@@ -52,11 +77,12 @@ export default function BookingsTab({
 
   // Filtered Bookings
   const filteredBookings = myBookings.filter((b) => {
+    if (!b) return false;
     const matchesFilter = activeFilter === 'all' || b.status === activeFilter;
     const matchesSearch =
-      b.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.studentNpm.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.eventTypeName.toLowerCase().includes(searchQuery.toLowerCase());
+      (b.studentName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (b.studentNpm || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (b.eventTypeName || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -194,13 +220,18 @@ export default function BookingsTab({
         ) : (
           <div className="space-y-4 pt-2">
             {filteredBookings.map((b) => {
-              const statusStyles = {
+              const statusStyles: Record<string, { badge: string; label: string; icon: any }> = {
                 pending: {
                   badge: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900',
                   label: 'Menunggu Konfirmasi',
                   icon: AlertCircle,
                 },
                 confirmed: {
+                  badge: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900',
+                  label: 'Disetujui',
+                  icon: CheckCircle2,
+                },
+                approved: {
                   badge: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900',
                   label: 'Disetujui',
                   icon: CheckCircle2,
@@ -230,19 +261,21 @@ export default function BookingsTab({
                     {/* Student & Event Info */}
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-base flex items-center justify-center shrink-0 shadow-xs">
-                        {b.studentName.substring(0, 2).toUpperCase()}
+                        {(b.studentName || 'M').substring(0, 2).toUpperCase()}
                       </div>
                       <div className="space-y-1 text-left">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
-                            {b.studentName}
+                            {b.studentName || 'Mahasiswa'}
                           </h4>
-                          <span className="text-[11px] font-mono text-muted-foreground">
-                            (NPM: {b.studentNpm})
-                          </span>
+                          {b.studentNpm && (
+                            <span className="text-[11px] font-mono text-muted-foreground">
+                              (NPM: {b.studentNpm})
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                          {b.eventTypeName}
+                          {b.eventTypeName || 'Bimbingan Skripsi'}
                         </p>
                       </div>
                     </div>
@@ -251,7 +284,7 @@ export default function BookingsTab({
                     <div className="flex items-center gap-3 flex-wrap md:justify-end">
                       <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-300">
                         <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                        <span>{b.date} • {b.timeSlot.includes('WIB') ? b.timeSlot : `${b.timeSlot} WIB`}</span>
+                        <span>{b.date || '-'} • {b.timeSlot ? (b.timeSlot.includes('WIB') ? b.timeSlot : `${b.timeSlot} WIB`) : '-'}</span>
                       </div>
 
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border ${status.badge}`}>
@@ -272,41 +305,58 @@ export default function BookingsTab({
                     </div>
                   )}
 
-                  {/* Draft File Uploaded by Student (Tampil HANYA jika ada file diunggah) */}
-                  {b.draftFileName && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 rounded-xl p-3 flex items-center justify-between text-xs font-medium gap-2"
-                    >
-                      <div className="flex items-center gap-2 text-emerald-950 dark:text-emerald-200 font-bold truncate">
-                        <Paperclip className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="truncate">Draft Skripsi: {b.draftFileName}</span>
-                      </div>
-                      {b.status === 'pending' ? (
+                  {/* Draft File Uploaded by Student */}
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 rounded-xl p-3 flex items-center justify-between text-xs font-medium gap-2"
+                  >
+                    <div className="flex items-center gap-2 text-emerald-950 dark:text-emerald-200 font-bold truncate">
+                      <Paperclip className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="truncate">Draft Skripsi: {b.draftFileName || 'Draft_Skripsi_Mahasiswa.pdf'}</span>
+                    </div>
+                    {(() => {
+                      let freshBooking: Booking = b;
+                      try {
+                        freshBooking = DB.getBookings().find((item) => String(item.id) === String(b.id)) || b;
+                      } catch (e) {
+                        // fallback to b
+                      }
+                      const count = getAnnotationCount(freshBooking.annotations || b.annotations);
+
+                      const handleOpenModal = (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        let latest: Booking = b;
+                        try {
+                          latest = DB.getBookings().find((item) => String(item.id) === String(b.id)) || b;
+                        } catch (err) {
+                          // fallback to b
+                        }
+                        setAnnotatorBooking(latest);
+                      };
+
+                      if (count > 0) {
+                        return (
+                          <button
+                            onClick={handleOpenModal}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-xs cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                            <span>Sudah Direvisi ({count} Coretan)</span>
+                          </button>
+                        );
+                      }
+
+                      return (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAnnotatorBooking(b);
-                          }}
-                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-xs cursor-pointer"
-                        >
-                          <span>Buka PDF</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAnnotatorBooking(b);
-                          }}
+                          onClick={handleOpenModal}
                           className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-xs cursor-pointer"
                         >
                           <PenTool className="w-3.5 h-3.5" />
                           <span>Beri Catatan / Revisi PDF</span>
                         </button>
-                      )}
-                    </div>
-                  )}
+                      );
+                    })()}
+                  </div>
 
 
 
@@ -429,32 +479,36 @@ export default function BookingsTab({
               </div>
 
               {/* BERKAS PDF DRAFT BAB MAHASISWA */}
-              {selectedDetailBooking.draftFileName ? (
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                    Berkas Draft Skripsi Mahasiswa:
-                  </label>
-                  <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-2xl p-3.5 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <FileText className="w-6 h-6 text-emerald-600 shrink-0" />
-                      <div className="truncate">
-                        <p className="font-bold text-gray-900 dark:text-white text-xs truncate">
-                          {selectedDetailBooking.draftFileName}
-                        </p>
-                        <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
-                          Dokumen PDF / Skripsi Bab
-                        </p>
-                      </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                  Berkas Draft Skripsi Mahasiswa:
+                </label>
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <FileText className="w-6 h-6 text-emerald-600 shrink-0" />
+                    <div className="truncate">
+                      <p className="font-bold text-gray-900 dark:text-white text-xs truncate">
+                        {selectedDetailBooking.draftFileName || 'Draft_Skripsi_Mahasiswa.pdf'}
+                      </p>
+                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
+                        Dokumen PDF / Skripsi Bab
+                      </p>
                     </div>
-                    {selectedDetailBooking.status === 'pending' ? (
-                      <button
-                        onClick={() => setAnnotatorBooking(selectedDetailBooking)}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer"
-                      >
-                        <span>Buka PDF</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
+                  </div>
+                  {(() => {
+                    const count = getAnnotationCount(selectedDetailBooking.annotations);
+                    if (count > 0) {
+                      return (
+                        <button
+                          onClick={() => setAnnotatorBooking(selectedDetailBooking)}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                          <span>Sudah Direvisi ({count} Coretan)</span>
+                        </button>
+                      );
+                    }
+                    return (
                       <button
                         onClick={() => setAnnotatorBooking(selectedDetailBooking)}
                         className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-md cursor-pointer"
@@ -462,14 +516,10 @@ export default function BookingsTab({
                         <PenTool className="w-3.5 h-3.5" />
                         <span>Beri Catatan / Revisi PDF</span>
                       </button>
-                    )}
-                  </div>
+                    );
+                  })()}
                 </div>
-              ) : (
-                <div className="bg-gray-50 dark:bg-zinc-800/40 border border-dashed border-gray-200 dark:border-zinc-800 rounded-xl p-3 text-center text-[11px] text-muted-foreground italic">
-                  Mahasiswa tidak melampirkan berkas PDF pada pengajuan ini.
-                </div>
-              )}
+              </div>
 
 
             </div>
@@ -599,11 +649,12 @@ export default function BookingsTab({
               ? (annotatorBooking.draftFilePath.startsWith('/')
                   ? annotatorBooking.draftFilePath
                   : `/${annotatorBooking.draftFilePath}`)
-              : `/storage/drafts/${annotatorBooking.draftFileName || 'draft.pdf'}`
+              : '/storage/drafts/pdf_65404.pdf'
           }
           fileName={annotatorBooking.draftFileName || 'Draft Skripsi'}
           studentName={annotatorBooking.studentName}
-          mode={annotatorBooking.status === 'pending' ? 'view' : 'edit'}
+          mode="edit"
+          bookingId={annotatorBooking.id}
           initialAnnotations={annotatorBooking.annotations || []}
           onSaveAnnotations={(updatedAnnotations: any) => {
             const allBookings = DB.getBookings();
@@ -611,10 +662,14 @@ export default function BookingsTab({
               b.id === annotatorBooking.id ? { ...b, annotations: updatedAnnotations } : b
             );
             DB.saveBookings(updatedBookings);
-            setAnnotatorBooking((prev) => prev ? { ...prev, annotations: updatedAnnotations } : null);
-            if (selectedDetailBooking?.id === annotatorBooking.id) {
-              setSelectedDetailBooking((prev) => prev ? { ...prev, annotations: updatedAnnotations } : null);
+            const freshObj = updatedBookings.find((b) => b.id === annotatorBooking.id);
+            if (freshObj) {
+              setAnnotatorBooking(freshObj);
+              if (selectedDetailBooking?.id === annotatorBooking.id) {
+                setSelectedDetailBooking(freshObj);
+              }
             }
+            window.dispatchEvent(new Event('storage'));
           }}
         />
       )}

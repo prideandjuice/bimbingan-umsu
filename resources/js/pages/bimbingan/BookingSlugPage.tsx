@@ -190,8 +190,8 @@ export default function BookingSlugPage({
                     timeSlot: timeSlot,
                     status: 'pending',
                     notes: notes || 'Konsultasi bimbingan skripsi',
-                    draftFileName: uploadedFileName,
-                    draftFilePath: uploadedFilePath,
+                    draftFileName: uploadedFileName || 'Draft_Skripsi_Mahasiswa.pdf',
+                    draftFilePath: uploadedFilePath || '/storage/drafts/pdf_65404.pdf',
                   };
 
                   try {

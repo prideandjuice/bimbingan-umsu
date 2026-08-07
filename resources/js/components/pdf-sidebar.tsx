@@ -151,8 +151,7 @@ export default function PdfSidebar({
             )}
 
             {/* Alat & Anotasi */}
-            {pdfDoc && (
-                <div className="flex flex-col gap-4 rounded-xl border border-gray-200/50 p-4 dark:border-white/10 dark:bg-white/2">
+            <div className="flex flex-col gap-4 rounded-xl border border-gray-200/50 p-4 dark:border-white/10 dark:bg-white/2">
                     <span className="text-xs font-semibold tracking-wider text-[#706f6c] uppercase dark:text-[#A1A09A]">
                         Alat Anotasi
                     </span>
@@ -479,7 +478,6 @@ export default function PdfSidebar({
                         </button>
                     </div>
                 </div>
-            )}
 
             {/* Metadata Dokumen */}
             <div className="rounded-xl border border-gray-200/50 p-4 dark:border-white/10 dark:bg-white/2">
