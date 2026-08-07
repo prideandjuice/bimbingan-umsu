@@ -305,14 +305,15 @@ export default function BookingsTab({
                     </div>
                   )}
 
-                  {/* Draft File Uploaded by Student */}
+                  {/* Draft File Uploaded by Student — hanya tampil kalau ada draft */}
+                  {b.draftFileName && (
                   <div
                     onClick={(e) => e.stopPropagation()}
                     className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 rounded-xl p-3 flex items-center justify-between text-xs font-medium gap-2"
                   >
                     <div className="flex items-center gap-2 text-emerald-950 dark:text-emerald-200 font-bold truncate">
                       <Paperclip className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="truncate">Draft Skripsi: {b.draftFileName || 'Draft_Skripsi_Mahasiswa.pdf'}</span>
+                      <span className="truncate">Draft Skripsi: {b.draftFileName}</span>
                     </div>
                     {(() => {
                       let freshBooking: Booking = b;
@@ -357,7 +358,7 @@ export default function BookingsTab({
                       );
                     })()}
                   </div>
-
+                  )}
 
 
                   {/* Action Buttons */}
