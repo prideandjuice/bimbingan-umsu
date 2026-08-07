@@ -28,6 +28,7 @@ interface StudentsTabProps {
   setSelectedThesisId: (id: string | null) => void;
   handleVerifyGuidance: (id: string) => void;
   handleLecturerSubmitGuidance: (newGuidance: Omit<Guidance, 'id' | 'status' | 'createdBy' | 'creatorName' | 'createdAt'>) => void;
+  isLogBimbinganTab?: boolean;
 }
 
 export default function StudentsTab({
@@ -38,6 +39,7 @@ export default function StudentsTab({
   setSelectedThesisId,
   handleVerifyGuidance,
   handleLecturerSubmitGuidance,
+  isLogBimbinganTab = false,
 }: StudentsTabProps) {
   // Form State Bimbingan Dosen
   const [lGDate, setLGDate] = useState(new Date().toISOString().split('T')[0]);
@@ -341,6 +343,144 @@ export default function StudentsTab({
             )}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // --- TAMPILAN KHUSUS TAB LOG BIMBINGAN (DAFTAR CARD MAHASISWA BIMBINGAN) ---
+  if (isLogBimbinganTab) {
+    return (
+      <div className="space-y-6 text-left">
+        {/* Header Banner Log Bimbingan */}
+        <div className="bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 text-white rounded-3xl p-6 md:p-8 shadow-xl shadow-emerald-900/10 relative overflow-hidden text-left">
+          <div className="absolute -right-12 -bottom-12 w-56 h-56 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-inner">
+                <BookOpen className="w-7 h-7 md:w-8 md:h-8 text-emerald-200" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 bg-emerald-500/30 backdrop-blur-md border border-emerald-300/30 text-emerald-100 text-[11px] font-bold px-3 py-0.5 rounded-full">
+                    <Sparkles className="w-3 h-3 text-amber-300" />
+                    Log Bimbingan Skripsi
+                  </span>
+                </div>
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
+                  Log Bimbingan Mahasiswa
+                </h1>
+                <p className="text-xs md:text-sm text-emerald-100/80 font-light">
+                  Pilih kartu mahasiswa di bawah ini untuk mengelola riwayat bimbingan, catatan revisi, dan SK Pembimbing.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Daftar Cards Mahasiswa Bimbingan (Layout Kebawah / Vertical Stack) */}
+        {myStudents.length === 0 ? (
+          <div className="text-center py-12 border border-dashed border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-3xl space-y-3">
+            <BookOpen className="w-10 h-10 text-muted-foreground mx-auto" />
+            <h3 className="font-bold text-base text-gray-900 dark:text-white">Belum Ada Mahasiswa Bimbingan</h3>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Saat ini Anda belum ditugaskan sebagai dosen pembimbing oleh Kaprodi untuk mahasiswa manapun.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {myStudents.map((s) => {
+              const progress = getStudentProgress(s.id);
+              const studentLogs = guidances.filter((g) => g.thesisId === s.id);
+              const initials = s.studentName.substring(0, 2).toUpperCase();
+
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => setSelectedThesisId(s.id)}
+                  className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-800 transition-all cursor-pointer space-y-5 text-left group"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 font-bold text-lg flex items-center justify-center shrink-0">
+                        {initials}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-emerald-600 transition-colors">
+                          {s.studentName}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          NPM: <strong className="font-semibold text-gray-800 dark:text-gray-200">{s.studentNpm || 'N/A'}</strong> | Program Studi: <strong className="font-semibold text-gray-800 dark:text-gray-200">{s.department}</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="text-xs font-bold bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-full shrink-0 self-start sm:self-auto">
+                      Progress Skripsi: {progress}%
+                    </span>
+                  </div>
+
+                  {/* Status SK Pembimbing */}
+                  {s.skFile ? (
+                    <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 text-xs text-emerald-900 dark:text-emerald-200 font-medium">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 flex items-center justify-center shrink-0">
+                          <FileCheck2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs uppercase tracking-wider">Surat Keterangan (SK) Pembimbing Resmi</span>
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
+                              Diterbitkan Admin
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                            Berkas SK: {s.skFile.split('/').pop()}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-950/60 px-3 py-1 rounded-lg shrink-0 self-start sm:self-auto">
+                        Bimbingan Aktif
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 p-4 rounded-2xl flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 text-xs text-amber-900 dark:text-amber-200 font-medium">
+                        <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 flex items-center justify-center shrink-0">
+                          <Clock className="w-5 h-5 animate-pulse" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-xs">Menunggu Terbitnya SK Bimbingan dari Admin</span>
+                          <p className="text-xs text-amber-800/90 dark:text-amber-300/90">Sesi bimbingan belum aktif sampai SK diunggah oleh Admin.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Judul Skripsi */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
+                      Judul Skripsi Disetujui:
+                    </p>
+                    <p className="text-sm text-gray-800 dark:text-gray-200 font-medium leading-relaxed">
+                      {s.title}
+                    </p>
+                  </div>
+
+                  {/* Footer Card */}
+                  <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-emerald-600" />
+                      {studentLogs.length} Catatan Bimbingan Konsultasi
+                    </span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                      Buka Log Bimbingan &rarr;
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
