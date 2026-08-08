@@ -125,14 +125,15 @@ export default function ThesisActiveLayout({
 
   // Real-time Echo Listener for PDF Annotations from Lecturer
   useEffect(() => {
-    if (!echo || !myBookings || myBookings.length === 0) return;
+    const echoInstance = echo;
+    if (!echoInstance || !myBookings || myBookings.length === 0) return;
 
     const subscriptions: string[] = [];
     myBookings.forEach((b) => {
       if (!b.id) return;
       const cleanId = String(b.id).replace(/^booking-/, '');
       try {
-        const channel = echo.private(`booking.${cleanId}`);
+        const channel = echoInstance.private(`booking.${cleanId}`);
         channel.listen('.PdfAnnotationUpdated', (e: any) => {
           if (e && e.annotations) {
             toast.success(
@@ -158,7 +159,7 @@ export default function ThesisActiveLayout({
     return () => {
       subscriptions.forEach((cleanId) => {
         try {
-          echo?.leave(`booking.${cleanId}`);
+          echoInstance.leave(`booking.${cleanId}`);
         } catch (e) { }
       });
     };
