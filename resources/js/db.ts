@@ -9,7 +9,7 @@ import axios from 'axios';
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 // Naikkan versi ini setiap kali seed data berubah → localStorage lama otomatis dihapus
-const DB_VERSION = '19';
+const DB_VERSION = '20';
 const VERSION_KEY = 'db_version';
 
 

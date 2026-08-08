@@ -250,7 +250,7 @@ export default function BookingDetailPage({ bookingId }: BookingDetailPageProps)
                   </div>
                   <div>
                     <p className="text-xs font-extrabold text-gray-900 dark:text-white">
-                      {booking?.draftFileName || '19.+R.+Mahdalena+Simanjorang.pdf'}
+                      {booking?.draftFileName || 'Draft_Skripsi_Mahasiswa.pdf'}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
                       Format: PDF • Tersedia untuk dibaca & diberi coretan revisi

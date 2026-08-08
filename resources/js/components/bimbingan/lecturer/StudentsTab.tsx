@@ -17,12 +17,8 @@ import {
   UserCheck,
   ExternalLink,
   Download,
-  Paperclip,
-  Eye,
 } from 'lucide-react';
 import type { AppUser, Guidance, Thesis } from '@/types';
-import PdfAnnotatorModal from '@/components/bimbingan/PdfAnnotatorModal';
-import { DB } from '@/db';
 
 interface StudentsTabProps {
   currentUser: AppUser;
@@ -51,7 +47,6 @@ export default function StudentsTab({
   const [lGRevisions, setLGRevisions] = useState('');
   const [lGProgress, setLGProgress] = useState(10);
   const [showAddLog, setShowAddLog] = useState(false);
-  const [annotatorGuidance, setAnnotatorGuidance] = useState<Guidance | null>(null);
 
   const onSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,21 +74,16 @@ export default function StudentsTab({
 
   // Function menghitung max progress per mahasiswa
   const getStudentProgress = (thesisId: string) => {
-    const activeT = myStudents.find((s) => s.id === thesisId);
-    const studentLogs = guidances.filter(
-      (g) => g && (g.thesisId === thesisId || (activeT && activeT.studentId && (g as any).studentId === activeT.studentId)) && g.status === 'verified'
-    );
+    const studentLogs = guidances.filter(g => g.thesisId === thesisId && g.status === 'verified');
     if (studentLogs.length === 0) return 10;
-    return Math.max(...studentLogs.map((g) => g.progress));
+    return Math.max(...studentLogs.map(g => g.progress));
   };
 
   // --- JIKA DOSEN SUDAH MEMILIH SATU MAHASISWA (DETAIL VIEW) ---
   if (selectedThesisId) {
     const activeThesis = myStudents.find((s) => s.id === selectedThesisId);
     if (!activeThesis) return null;
-    const studentGuidances = guidances.filter(
-      (g) => g && (g.thesisId === activeThesis.id || (activeThesis.studentId && (g as any).studentId === activeThesis.studentId))
-    );
+    const studentGuidances = guidances.filter((g) => g.thesisId === activeThesis.id);
     const progress = getStudentProgress(activeThesis.id);
 
     return (
@@ -346,24 +336,6 @@ export default function StudentsTab({
                     <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 p-3 rounded-xl text-xs space-y-1">
                       <p className="font-bold text-amber-900 dark:text-amber-300">Poin Revisi / Perbaikan:</p>
                       <p className="text-amber-800 dark:text-amber-400 font-light">{g.revisions}</p>
-                    </div>
-                  )}
-
-                  {g.draftFileName && (
-                    <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 p-3 rounded-xl text-xs flex items-center justify-between gap-3 mt-2">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <Paperclip className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="font-semibold text-gray-800 dark:text-gray-200 truncate">
-                          Draft Skripsi: {g.draftFileName}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => setAnnotatorGuidance(g)}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-xs shrink-0 cursor-pointer transition-all"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Lihat Draft & Coretan</span>
-                      </button>
                     </div>
                   )}
                 </div>
@@ -775,38 +747,6 @@ export default function StudentsTab({
           </div>
         </div>
       </div>
-
-      {/* PDF Annotator Modal for Guidance Log (Lecturer Edit/View Mode) */}
-      {annotatorGuidance && (
-        <PdfAnnotatorModal
-          isOpen={Boolean(annotatorGuidance)}
-          onClose={() => setAnnotatorGuidance(null)}
-          pdfUrl={
-            annotatorGuidance.draftFilePath
-              ? (annotatorGuidance.draftFilePath.startsWith('/')
-                ? annotatorGuidance.draftFilePath
-                : `/${annotatorGuidance.draftFilePath}`)
-              : `/storage/drafts/${annotatorGuidance.draftFileName || 'draft.pdf'}`
-          }
-          fileName={annotatorGuidance.draftFileName || 'Draft Skripsi'}
-          studentName={currentUser.name}
-          mode="edit"
-          bookingId={annotatorGuidance.bookingId || annotatorGuidance.id}
-          initialAnnotations={annotatorGuidance.annotations || []}
-          onSaveAnnotations={(updatedAnnotations: any) => {
-            const allGuidances = DB.getGuidances();
-            const updatedGuidances = allGuidances.map((g) =>
-              g.id === annotatorGuidance.id ? { ...g, annotations: updatedAnnotations } : g
-            );
-            DB.saveGuidances(updatedGuidances);
-            const freshObj = updatedGuidances.find((g) => g.id === annotatorGuidance.id);
-            if (freshObj) {
-              setAnnotatorGuidance(freshObj);
-            }
-            window.dispatchEvent(new Event('storage'));
-          }}
-        />
-      )}
     </div>
   );
 }

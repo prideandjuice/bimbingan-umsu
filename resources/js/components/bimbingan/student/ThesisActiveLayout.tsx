@@ -159,7 +159,7 @@ export default function ThesisActiveLayout({
     return () => {
       subscriptions.forEach((cleanId) => {
         try {
-          echoInstance.leave(`booking.${cleanId}`);
+          echoInstance?.leave(`booking.${cleanId}`);
         } catch (e) { }
       });
     };
@@ -1107,7 +1107,7 @@ export default function ThesisActiveLayout({
                 ? (annotatorBooking.draftFilePath.startsWith('/')
                   ? annotatorBooking.draftFilePath
                   : `/${annotatorBooking.draftFilePath}`)
-                : `/storage/drafts/${annotatorBooking.draftFileName || 'draft.pdf'}`
+                : `/storage/drafts/${annotatorBooking.draftFileName || 'pdf_65404.pdf'}`
             }
             fileName={annotatorBooking.draftFileName || 'Draft Skripsi'}
             studentName={annotatorBooking.studentName}
@@ -1146,7 +1146,7 @@ export default function ThesisActiveLayout({
                 ? (annotatorGuidance.draftFilePath.startsWith('/')
                   ? annotatorGuidance.draftFilePath
                   : `/${annotatorGuidance.draftFilePath}`)
-                : `/storage/drafts/${annotatorGuidance.draftFileName || 'draft.pdf'}`
+                : `/storage/drafts/${annotatorGuidance.draftFileName || 'pdf_65404.pdf'}`
             }
             fileName={annotatorGuidance.draftFileName || 'Draft Skripsi'}
             studentName={currentUser.name}
