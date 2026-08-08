@@ -170,7 +170,7 @@ export interface Booking {
     eventTypeName: string;
     date: string;
     timeSlot: string;
-    status: 'pending' | 'confirmed' | 'approved' | 'rejected' | 'completed';
+    status: 'pending' | 'confirmed' | 'approved' | 'rejected' | 'completed' | 'cancelled';
     notes?: string;
     rejectionReason?: string;
     draftFileName?: string | null;
