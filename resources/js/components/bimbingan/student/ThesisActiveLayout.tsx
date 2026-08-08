@@ -536,8 +536,7 @@ export default function ThesisActiveLayout({
       {/* TAB 3: Janji Temu Bimbingan */}
       {activeTab === 'bookings' && (
         <div className="space-y-8 text-left">
-          {selectedBookingEventType === null ? (
-            <div className="space-y-8">
+          <div className="space-y-8">
               {/* SECTION 1: PILIH JENIS SESI BIMBINGAN DOSEN */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -827,31 +826,6 @@ export default function ThesisActiveLayout({
                 )}
               </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <button
-                type="button"
-                onClick={() => setSelectedBookingEventType(null)}
-                className="inline-flex items-center gap-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 px-4 py-2 rounded-xl transition-all cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali ke Pilihan Jenis Bimbingan</span>
-              </button>
-
-              <CalComBookingView
-                myThesis={myThesis}
-                availabilityRules={mySupervisorAvailability}
-                eventType={selectedBookingEventType}
-                myBookings={myBookings}
-                onBookMeeting={(date, timeSlot, notes, draftFile) => {
-                  handleBookMeeting(selectedBookingEventType.id || 'default-session', date, timeSlot, notes, draftFile);
-                  toast.success(
-                    `Pengajuan janji temu bimbingan (${selectedBookingEventType.name}) pada tanggal ${date} (${timeSlot}) berhasil dikirim!`
-                  );
-                }}
-              />
-            </div>
-          )}
         </div>
       )}
 
