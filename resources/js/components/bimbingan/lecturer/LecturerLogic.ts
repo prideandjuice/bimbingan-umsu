@@ -24,18 +24,16 @@ export function useLecturerLogic({ currentUser, onRefresh, propActiveTab }: Lect
 
   const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
 
-  // Determine active tab based on Controller prop or URL path fallback
+  // Active tab determined by Controller prop (DashboardController@resolveActiveTab) or URL fallback
   let activeTab: 'students' | 'logBimbingan' | 'eventTypes' | 'scheduling' | 'bookings' = 'students';
-  if (propActiveTab && propActiveTab !== 'overview' && propActiveTab !== 'students') {
-    if (propActiveTab === 'bookings' || propActiveTab === 'persetujuan-jadwal' || propActiveTab === 'permohonan-jadwal') {
-      activeTab = 'bookings';
-    } else if (propActiveTab === 'eventTypes' || propActiveTab === 'event-types' || propActiveTab === 'jenis-bimbingan' || propActiveTab === 'tipe-bimbingan') {
-      activeTab = 'eventTypes';
-    } else if (propActiveTab === 'scheduling' || propActiveTab === 'ketersediaan-waktu' || propActiveTab === 'atur-jadwal') {
-      activeTab = 'scheduling';
-    } else if (propActiveTab === 'logBimbingan' || propActiveTab === 'log-bimbingan') {
-      activeTab = 'logBimbingan';
-    }
+  if (propActiveTab && ['students', 'logBimbingan', 'eventTypes', 'scheduling', 'bookings'].includes(propActiveTab)) {
+    activeTab = propActiveTab as any;
+  } else if (propActiveTab && propActiveTab !== 'overview') {
+    if (['bookings', 'persetujuan-jadwal', 'permohonan-jadwal'].includes(propActiveTab)) activeTab = 'bookings';
+    else if (['eventTypes', 'event-types', 'jenis-bimbingan', 'tipe-bimbingan'].includes(propActiveTab)) activeTab = 'eventTypes';
+    else if (['scheduling', 'ketersediaan-waktu', 'atur-jadwal'].includes(propActiveTab)) activeTab = 'scheduling';
+    else if (['logBimbingan', 'log-bimbingan'].includes(propActiveTab)) activeTab = 'logBimbingan';
+    else if (['students', 'mahasiswa-bimbingan', 'progres-mahasiswa'].includes(propActiveTab)) activeTab = 'students';
   } else if (url.includes('/dosen/persetujuan-jadwal') || url.includes('/dosen/permohonan-jadwal')) {
     activeTab = 'bookings';
   } else if (url.includes('/dosen/jenis-bimbingan') || url.includes('/dosen/event-types')) {
@@ -125,10 +123,72 @@ export function useLecturerLogic({ currentUser, onRefresh, propActiveTab }: Lect
     toast.success(type === 'confirm' ? 'Janji temu berhasil dikonfirmasi.' : 'Janji temu telah ditolak.');
   };
 
-  const handleCompleteBooking = (id: string) => {
-    const updated = bookings.map((b) => (b.id === id ? { ...b, status: 'completed' as const } : b));
-    DB.saveBookings(updated);
+  const handleCompleteBooking = (id: string, customProgress?: number, customNotes?: string, customRevisions?: string) => {
+    const targetBooking = bookings.find((b) => b.id === id);
+    if (!targetBooking) return;
+
+    const updatedBookings = bookings.map((b) => (b.id === id ? { ...b, status: 'completed' as const } : b));
+    DB.saveBookings(updatedBookings);
+
+    let resolvedThesisId = targetBooking.thesisId;
+    if (!resolvedThesisId || !theses.some((t) => t.id === resolvedThesisId)) {
+      const matchingThesis = theses.find(
+        (t) =>
+          t.studentId === targetBooking.studentId ||
+          (t.studentNpm && targetBooking.studentNpm && t.studentNpm === targetBooking.studentNpm) ||
+          (t.studentName && targetBooking.studentName && t.studentName.toLowerCase() === targetBooking.studentName.toLowerCase())
+      );
+      if (matchingThesis) {
+        resolvedThesisId = matchingThesis.id;
+      }
+    }
+
+    const currentGuidances = DB.getGuidances();
+    const existingForThesis = currentGuidances.filter((g) => g.thesisId === resolvedThesisId && g.status === 'verified');
+    const lastProgress = existingForThesis.length > 0 ? Math.max(...existingForThesis.map((g) => g.progress)) : 0;
+    const nextProgress = typeof customProgress === 'number' ? customProgress : Math.min(100, lastProgress + 15);
+
+    let annotationCount = 0;
+    if (targetBooking.annotations) {
+      if (Array.isArray(targetBooking.annotations)) {
+        annotationCount = targetBooking.annotations.length;
+      } else if (typeof targetBooking.annotations === 'object') {
+        annotationCount = Object.values(targetBooking.annotations).reduce((sum: number, page: any) => {
+          if (!page || typeof page !== 'object') return sum;
+          return (
+            sum +
+            (Array.isArray(page.drawings) ? page.drawings.length : 0) +
+            (Array.isArray(page.pins) ? page.pins.length : 0) +
+            (Array.isArray(page.texts) ? page.texts.length : 0)
+          );
+        }, 0);
+      }
+    }
+
+    const defaultRevisions = annotationCount > 0
+      ? `${annotationCount} catatan coretan revisi diberikan dosen pada draft skripsi.`
+      : 'Catatan perbaikan telah didiskusikan.';
+
+    const newGuidance: Guidance = {
+      id: `g-${Date.now()}`,
+      thesisId: resolvedThesisId || targetBooking.thesisId || `thesis-${targetBooking.studentId}`,
+      bookingId: targetBooking.id,
+      date: targetBooking.date,
+      notes: customNotes || targetBooking.notes || `Sesi bimbingan "${targetBooking.eventTypeName || 'Skripsi'}" telah dilaksanakan.`,
+      revisions: customRevisions !== undefined ? customRevisions : defaultRevisions,
+      progress: nextProgress,
+      createdBy: 'lecturer',
+      creatorName: currentUser.name || 'Dosen Pembimbing',
+      status: 'verified',
+      createdAt: new Date().toISOString(),
+      draftFileName: targetBooking.draftFileName || null,
+      draftFilePath: targetBooking.draftFilePath || null,
+      annotations: targetBooking.annotations || null,
+    };
+
+    DB.saveGuidances([...currentGuidances, newGuidance]);
     refreshLocalData();
+    toast.success('Bimbingan selesai! Draft skripsi & catatan otomatis masuk ke Log Bimbingan Mahasiswa.');
   };
 
   const handleAddAvailability = (

@@ -43,13 +43,15 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
   const rawTab = propActiveTab || (
     url.includes('/mahasiswa/pengajuan-judul') ? 'pengajuan-judul'
       : url.includes('/mahasiswa/status-judul') ? 'status-judul'
-      : url.includes('/mahasiswa/log-bimbingan') ? 'log-bimbingan'
-      : url.includes('/mahasiswa/booking-jadwal') || url.includes('/mahasiswa/bookings') ? 'booking-jadwal'
-      : 'overview'
+        : url.includes('/mahasiswa/log-bimbingan') || url.includes('log-bimbingan') ? 'log-bimbingan'
+          : url.includes('/mahasiswa/booking-jadwal') || url.includes('/mahasiswa/bookings') ? 'booking-jadwal'
+            : 'overview'
   );
 
   const activeTab: 'overview' | 'pengajuan-judul' | 'status-judul' | 'log-bimbingan' | 'booking-jadwal' =
-    rawTab === 'bookings' ? 'booking-jadwal' : (rawTab as any);
+    (rawTab === 'bookings' || rawTab === 'booking-jadwal') ? 'booking-jadwal'
+      : (rawTab === 'logBimbingan' || rawTab === 'log-bimbingan' || rawTab === 'guidances') ? 'log-bimbingan'
+        : (rawTab as any);
 
   // DB States
   const [proposals, setProposals] = useState(DB.getProposals());
@@ -63,9 +65,18 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
   // Find student's current status
   const myProposal = proposals.find(p => p.studentId === currentUser.id);
   const myTitles = myProposal ? proposalTitles.filter(t => String(t.proposalId) === String(myProposal.id)) : [];
-  const myThesis = theses.find(t => t.studentId === currentUser.id);
-  const myGuidances = myThesis ? guidances.filter(g => g.thesisId === myThesis.id) : [];
-  const myBookings = bookings.filter(b => b.studentId === currentUser.id);
+  const myThesis = theses.find(t => t.studentId === currentUser.id || (currentUser.npm && t.studentNpm === currentUser.npm));
+  const myGuidances = guidances.filter(g =>
+    (myThesis && g.thesisId === myThesis.id) ||
+    g.thesisId === 'thesis-auto' ||
+    (g as any).studentId === currentUser.id ||
+    g.creatorName === currentUser.name
+  );
+  const myBookings = bookings.filter(b =>
+    b.studentId === currentUser.id ||
+    (currentUser.npm && b.studentNpm === currentUser.npm) ||
+    (currentUser.name && b.studentName === currentUser.name)
+  );
 
   const refreshLocalData = () => {
     setProposals(DB.getProposals());
@@ -197,7 +208,7 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
         'X-Requested-With': 'XMLHttpRequest',
       },
       body: JSON.stringify({ bookings: [newBooking] }),
-    }).catch(() => {});
+    }).catch(() => { });
   };
 
   const onCancelBooking = (bookingId: string) => {
@@ -244,11 +255,10 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
                   <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                     <FilePlus className="w-5.5 h-5.5" />
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    myThesis ? 'bg-emerald-100 text-emerald-800' :
-                    myProposal ? 'bg-amber-100 text-amber-800' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${myThesis ? 'bg-emerald-100 text-emerald-800' :
+                      myProposal ? 'bg-amber-100 text-amber-800' :
+                        'bg-gray-100 text-gray-700'
+                    }`}>
                     {myThesis ? 'Disetujui' : myProposal ? 'Proses Review' : 'Belum Ada'}
                   </span>
                 </div>
@@ -266,9 +276,8 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
                   <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                     <UserCheck className="w-5.5 h-5.5" />
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    myThesis?.supervisorName ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
-                  }`}>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${myThesis?.supervisorName ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                    }`}>
                     {myThesis?.supervisorName ? 'Ditetapkan' : 'Belum Ada'}
                   </span>
                 </div>
@@ -469,13 +478,12 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
                               </span>
 
                               <span
-                                className={`text-3xs font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${
-                                  t.status === 'ACCEPTED'
+                                className={`text-3xs font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${t.status === 'ACCEPTED'
                                     ? 'bg-emerald-100 text-emerald-800'
                                     : t.status === 'REJECTED'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-amber-100 text-amber-800'
-                                }`}
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-amber-100 text-amber-800'
+                                  }`}
                               >
                                 {t.status === 'ACCEPTED' && <CheckCircle2 className="w-3 h-3" />}
                                 {t.status === 'REJECTED' && <XCircle className="w-3 h-3" />}
@@ -578,48 +586,29 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
         {/* ROUTE 4: LOG BIMBINGAN */}
         {activeTab === 'log-bimbingan' && (
           <div className="w-full">
-            {myThesis ? (
-              <ThesisActiveLayout
-                currentUser={currentUser}
-                myThesis={myThesis}
-                proposals={proposals}
-                myGuidances={myGuidances}
-                myBookings={myBookings}
-                mySupervisorEventTypes={mySupervisorEventTypes}
-                mySupervisorAvailability={mySupervisorAvailability}
-                currentProgress={currentProgress}
-                handleSubmitGuidance={onAddGuidanceLog}
-                handleBookMeeting={onBookMeeting}
-                initialTab="guidances"
-              />
-            ) : (
-              <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-8 text-center space-y-4">
-                <BookOpen className="w-10 h-10 text-muted-foreground mx-auto" />
-                <div>
-                  <h3 className="font-bold text-base text-gray-900 dark:text-white">Log Bimbingan Belum Aktif</h3>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-                    Log bimbingan akan aktif secara otomatis setelah pengajuan judul skripsi Anda disetujui oleh Kaprodi dan SK Pembimbing telah ditetapkan.
-                  </p>
-                </div>
-                {!myProposal ? (
-                  <Link
-                    href="/mahasiswa/pengajuan-judul"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/10 transition-all"
-                  >
-                    <FilePlus className="w-4 h-4" />
-                    <span>Ajukan Judul Skripsi</span>
-                  </Link>
-                ) : (
-                  <Link
-                    href="/mahasiswa/status-judul"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/10 transition-all"
-                  >
-                    <Clock className="w-4 h-4" />
-                    <span>Cek Status Persetujuan</span>
-                  </Link>
-                )}
-              </div>
-            )}
+            <ThesisActiveLayout
+              currentUser={currentUser}
+              myThesis={myThesis || {
+                id: 'thesis-auto',
+                studentId: currentUser.id,
+                studentName: currentUser.name,
+                studentNpm: currentUser.npm || '',
+                title: 'Skripsi / Bimbingan Akademik',
+                supervisorId: 'super-1',
+                supervisorName: 'Dosen Pembimbing UMSU',
+                status: 'ACTIVE',
+              }}
+              proposals={proposals}
+              myGuidances={myGuidances}
+              myBookings={myBookings}
+              mySupervisorEventTypes={mySupervisorEventTypes}
+              mySupervisorAvailability={mySupervisorAvailability}
+              currentProgress={currentProgress}
+              handleSubmitGuidance={onAddGuidanceLog}
+              handleBookMeeting={onBookMeeting}
+              handleCancelBooking={onCancelBooking}
+              initialTab="guidances"
+            />
           </div>
         )}
 

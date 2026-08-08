@@ -19,7 +19,7 @@ class DashboardController extends Controller
 {
     public function index(Request $request, $tab = 'overview')
     {
-        $activeTab = $tab ?: $request->route('tab') ?: 'overview';
+        $activeTab = $this->resolveActiveTab($request, (string) $tab);
 
         $users = User::with('roles')->get()->map(function ($u) {
             // User::all(): Mengambil semua record dari tabel users di database.
@@ -109,6 +109,10 @@ class DashboardController extends Controller
                 'creatorName' => $g->creator_name,
                 'status' => $g->status,
                 'createdAt' => $g->created_at->toISOString(),
+                'draftFileName' => $g->metadata['draft_file_name'] ?? null,
+                'draftFilePath' => $g->metadata['draft_file_path'] ?? null,
+                'annotations' => $g->metadata['annotations'] ?? null,
+                'bookingId' => $g->metadata['booking_id'] ?? null,
             ];
         });
 
@@ -361,5 +365,41 @@ class DashboardController extends Controller
             ] : null,
             'availabilityRules' => $availabilities,
         ]);
+    }
+
+    private function resolveActiveTab(Request $request, string $tab): string
+    {
+        $rawTab = $tab ?: $request->route('tab') ?: 'overview';
+        $uri = $request->getRequestUri();
+
+        if (in_array($rawTab, ['booking-jadwal', 'bookings']) || str_contains($uri, '/mahasiswa/booking-jadwal')) {
+            return 'booking-jadwal';
+        }
+
+        if (in_array($rawTab, ['log-bimbingan', 'logBimbingan']) || str_contains($uri, '/mahasiswa/log-bimbingan')) {
+            return 'log-bimbingan';
+        }
+
+        if (in_array($rawTab, ['bookings', 'persetujuan-jadwal', 'permohonan-jadwal']) || str_contains($uri, '/dosen/persetujuan-jadwal') || str_contains($uri, '/dosen/permohonan-jadwal')) {
+            return 'bookings';
+        }
+
+        if (in_array($rawTab, ['eventTypes', 'event-types', 'jenis-bimbingan', 'tipe-bimbingan']) || str_contains($uri, '/dosen/jenis-bimbingan') || str_contains($uri, '/dosen/event-types')) {
+            return 'eventTypes';
+        }
+
+        if (in_array($rawTab, ['scheduling', 'ketersediaan-waktu', 'atur-jadwal']) || str_contains($uri, '/dosen/ketersediaan-waktu') || str_contains($uri, '/dosen/atur-jadwal')) {
+            return 'scheduling';
+        }
+
+        if (in_array($rawTab, ['logBimbingan', 'log-bimbingan', 'verifikasi-log']) || str_contains($uri, '/dosen/log-bimbingan')) {
+            return 'logBimbingan';
+        }
+
+        if (in_array($rawTab, ['students', 'mahasiswa-bimbingan', 'progres-mahasiswa']) || str_contains($uri, '/dosen/mahasiswa-bimbingan') || str_contains($uri, '/dosen/progres-mahasiswa')) {
+            return 'students';
+        }
+
+        return $rawTab;
     }
 }

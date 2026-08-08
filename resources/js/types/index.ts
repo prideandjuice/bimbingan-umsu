@@ -106,6 +106,10 @@ export interface Guidance {
     creatorName: string;
     status: 'pending_verification' | 'verified';
     createdAt: string;
+    bookingId?: string;
+    draftFileName?: string | null;
+    draftFilePath?: string | null;
+    annotations?: any;
 }
 
 export interface EventType {

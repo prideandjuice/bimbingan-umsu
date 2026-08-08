@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   CheckCircle2,
   Clock,
@@ -20,6 +20,8 @@ import {
   X,
   Paperclip,
   PenTool,
+  Eye,
+  Lock,
 } from 'lucide-react';
 import type { AppUser, Thesis, Guidance, Booking, EventType, AvailabilityRule, Proposal } from '@/types';
 import { DB } from '@/db';
@@ -112,6 +114,7 @@ export default function ThesisActiveLayout({
   const [selectedBookingEventType, setSelectedBookingEventType] = useState<EventType | null>(null);
   const [selectedBookingDetail, setSelectedBookingDetail] = useState<Booking | null>(null);
   const [annotatorBooking, setAnnotatorBooking] = useState<Booking | null>(null);
+  const [annotatorGuidance, setAnnotatorGuidance] = useState<Guidance | null>(null);
 
 
   useEffect(() => {
@@ -156,7 +159,7 @@ export default function ThesisActiveLayout({
       subscriptions.forEach((cleanId) => {
         try {
           echo?.leave(`booking.${cleanId}`);
-        } catch (e) {}
+        } catch (e) { }
       });
     };
   }, [myBookings]);
@@ -172,6 +175,19 @@ export default function ThesisActiveLayout({
   const [removedBookingIds, setRemovedBookingIds] = useState<string[]>([]);
 
   const visibleBookings = myBookings.filter((b) => !removedBookingIds.includes(b.id));
+
+  const activeBookingObj = useMemo(() => {
+    const list = myBookings && myBookings.length > 0 ? myBookings : visibleBookings;
+    return list.find(
+      (b) =>
+        b &&
+        b.status !== 'completed' &&
+        b.status !== 'rejected' &&
+        b.status !== 'cancelled'
+    );
+  }, [myBookings, visibleBookings]);
+
+  const hasActiveBooking = Boolean(activeBookingObj);
 
   const handleDeleteBookingItem = (id: string) => {
     setRemovedBookingIds((prev) => [...prev, id]);
@@ -446,6 +462,66 @@ export default function ThesisActiveLayout({
                             </p>
                           </div>
                         </div>
+
+                        {/* File Draft Skripsi & Hasil Coretan Revisi Dosen */}
+                        {g.draftFileName && (
+                          <div className="space-y-1.5 pt-1">
+                            <p className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                              <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
+                              File Draft Skripsi & Hasil Coretan Revisi Dosen:
+                            </p>
+                            <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 p-3.5 rounded-xl flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span className="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                                  {g.draftFileName}
+                                </span>
+                              </div>
+
+                              {(() => {
+                                let freshGuidance: Guidance = g;
+                                try {
+                                  freshGuidance = DB.getGuidances().find((item) => String(item.id) === String(g.id)) || g;
+                                } catch (e) { }
+                                const annos = freshGuidance.annotations || (freshGuidance as any).metadata?.annotations || g.annotations || (g as any).metadata?.annotations;
+                                const count = getAnnotationCount(annos);
+
+                                const handleOpenViewModal = (e: React.MouseEvent) => {
+                                  e.stopPropagation();
+                                  let latest: Guidance = g;
+                                  try {
+                                    latest = DB.getGuidances().find((item) => String(item.id) === String(g.id)) || g;
+                                  } catch (err) { }
+                                  setAnnotatorGuidance(latest);
+                                };
+
+                                if (count > 0) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={handleOpenViewModal}
+                                      className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-bold transition-all shrink-0 shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      <PenTool className="w-3.5 h-3.5" />
+                                      <span>Coretan Dosen ({count})</span>
+                                    </button>
+                                  );
+                                }
+
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={handleOpenViewModal}
+                                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shrink-0 shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>Lihat Draft & Coretan</span>
+                                  </button>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -475,39 +551,58 @@ export default function ThesisActiveLayout({
                   </div>
                 </div>
 
+                {hasActiveBooking && activeBookingObj && (
+                  <div className="bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 rounded-3xl p-5 flex items-start gap-4 text-left shadow-2xs animate-in fade-in duration-200">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-extrabold text-sm text-amber-950 dark:text-amber-200">
+                          Pendaftaran Janji Temu Baru Dikunci
+                        </h4>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200/90 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 capitalize">
+                          Status: {activeBookingObj.status === 'pending' ? 'Menunggu Konfirmasi Dosen' : 'Disetujui Dosen'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-amber-900/80 dark:text-amber-300/90 leading-relaxed font-medium">
+                        Anda saat ini sudah memiliki pengajuan janji temu bimbingan aktif ({activeBookingObj.date} | {activeBookingObj.timeSlot}). Pengajuan janji temu baru dikunci hingga Dosen Pembimbing menandai sesi bimbingan ini <strong>Selesai</strong> dan mencatatnya ke logbook.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   {(mySupervisorEventTypes && mySupervisorEventTypes.length > 0
                     ? mySupervisorEventTypes
                     : [
                       {
-                        id: 'et-offline-default',
-                        name: 'Bimbingan Tatap Muka (Offline di Kampus)',
-                        slug: 'bimbingan-tatap-muka-offline-di-kampus',
+                        id: 'et-judul-default',
+                        name: 'Bimbingan Judul',
+                        slug: 'bimbingan-judul',
                         duration: 30,
-                        description:
-                          'Wajib janji temu (appointment) H-1. Jangan mendadak datang ke ruangan ya, supaya saya bisa mengalokasikan waktu yang cukup buat membedah draf kamu tanpa terburu-buru jadwal mengajar',
+                        description: 'Diharapkan membawa laptop',
                         locationType: 'offline',
-                      },
-                      {
-                        id: 'et-online-default',
-                        name: 'Bimbingan Online (Google Meet)',
-                        slug: 'bimbingan-online-google-meet',
-                        duration: 30,
-                        description:
-                          'Sesi konsultasi bimbingan via Google Meet. Link meeting akan diberikan oleh dosen pembimbing setelah janji temu disetujui.',
-                        locationType: 'online',
                       },
                     ]
                   ).map((et: any) => (
                     <div
                       key={et.id}
-                      className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-2xs hover:shadow-md transition-all space-y-3.5 text-left"
+                      className={`bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-2xs transition-all space-y-3.5 text-left ${hasActiveBooking ? 'opacity-75' : 'hover:shadow-md'
+                        }`}
                     >
                       <div className="flex items-center justify-between gap-4 flex-wrap">
                         <div>
                           <h3
-                            onClick={() => setSelectedBookingEventType(et)}
-                            className="font-extrabold text-base text-gray-900 dark:text-white hover:text-emerald-600 transition-colors cursor-pointer"
+                            onClick={() => {
+                              if (hasActiveBooking) {
+                                toast.warning('Anda masih memiliki janji temu bimbingan aktif yang belum diselesaikan dosen.');
+                                return;
+                              }
+                              setSelectedBookingEventType(et);
+                            }}
+                            className={`font-extrabold text-base text-gray-900 dark:text-white transition-colors ${hasActiveBooking ? 'cursor-not-allowed opacity-80' : 'hover:text-emerald-600 cursor-pointer'
+                              }`}
                           >
                             {et.name}
                           </h3>
@@ -541,11 +636,31 @@ export default function ThesisActiveLayout({
                       <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800 flex-wrap gap-3">
                         <button
                           type="button"
-                          onClick={() => setSelectedBookingEventType(et)}
-                          className="bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-2xs group"
+                          disabled={hasActiveBooking}
+                          onClick={() => {
+                            if (hasActiveBooking) {
+                              toast.warning('Pendaftaran dikunci! Anda masih memiliki janji temu bimbingan aktif yang belum diselesaikan dosen.');
+                              return;
+                            }
+                            setSelectedBookingEventType(et);
+                          }}
+                          className={
+                            hasActiveBooking
+                              ? 'bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 border border-gray-200 dark:border-zinc-700 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 cursor-not-allowed shadow-2xs opacity-75'
+                              : 'bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-2xs group'
+                          }
                         >
-                          <LinkIcon className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />
-                          <span>Pilih Sesi Ini & Buka Kalender Jam</span>
+                          {hasActiveBooking ? (
+                            <>
+                              <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                              <span className="text-amber-800 dark:text-amber-300 font-extrabold">Dikunci (Ada Janji Temu Aktif)</span>
+                            </>
+                          ) : (
+                            <>
+                              <LinkIcon className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />
+                              <span>Pilih Sesi Ini & Buka Kalender Jam</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -661,7 +776,7 @@ export default function ThesisActiveLayout({
                                   let freshBooking: Booking = b;
                                   try {
                                     freshBooking = DB.getBookings().find((item) => String(item.id) === String(b.id)) || b;
-                                  } catch (e) {}
+                                  } catch (e) { }
                                   const count = getAnnotationCount(freshBooking.annotations || b.annotations);
 
                                   const handleOpenViewModal = (e: React.MouseEvent) => {
@@ -669,7 +784,7 @@ export default function ThesisActiveLayout({
                                     let latest: Booking = b;
                                     try {
                                       latest = DB.getBookings().find((item) => String(item.id) === String(b.id)) || b;
-                                    } catch (err) {}
+                                    } catch (err) { }
                                     setAnnotatorBooking(latest);
                                   };
 
@@ -819,7 +934,7 @@ export default function ThesisActiveLayout({
                       }
                       let annos = fresh.annotations || selectedBookingDetail.annotations;
                       if (typeof annos === 'string') {
-                        try { annos = JSON.parse(annos); } catch {}
+                        try { annos = JSON.parse(annos); } catch { }
                       }
                       let count = 0;
                       if (annos) {
@@ -836,7 +951,7 @@ export default function ThesisActiveLayout({
                         let latest: Booking = selectedBookingDetail;
                         try {
                           latest = DB.getBookings().find((item: Booking) => String(item.id) === String(selectedBookingDetail.id)) || selectedBookingDetail;
-                        } catch (e) {}
+                        } catch (e) { }
                         setAnnotatorBooking(latest);
                       };
 
@@ -972,24 +1087,74 @@ export default function ThesisActiveLayout({
       )}
 
       {/* PDF Annotator Modal (View Mode for Student) */}
-      {annotatorBooking && (
-        <PdfAnnotatorModal
-          isOpen={Boolean(annotatorBooking)}
-          onClose={() => setAnnotatorBooking(null)}
-          pdfUrl={
-            annotatorBooking.draftFilePath
-              ? (annotatorBooking.draftFilePath.startsWith('/')
-                ? annotatorBooking.draftFilePath
-                : `/${annotatorBooking.draftFilePath}`)
-              : `/storage/drafts/${annotatorBooking.draftFileName || 'draft.pdf'}`
+      {annotatorBooking && (() => {
+        let annos = annotatorBooking.annotations || (annotatorBooking as any).metadata?.annotations;
+        if (!annos || (typeof annos === 'object' && Object.keys(annos).length === 0)) {
+          try {
+            const allBookings = DB.getBookings();
+            const matchB = allBookings.find(b => String(b.id) === String(annotatorBooking.id));
+            if (matchB?.annotations) annos = matchB.annotations;
+          } catch (e) { }
+        }
+
+        return (
+          <PdfAnnotatorModal
+            isOpen={Boolean(annotatorBooking)}
+            onClose={() => setAnnotatorBooking(null)}
+            pdfUrl={
+              annotatorBooking.draftFilePath
+                ? (annotatorBooking.draftFilePath.startsWith('/')
+                  ? annotatorBooking.draftFilePath
+                  : `/${annotatorBooking.draftFilePath}`)
+                : `/storage/drafts/${annotatorBooking.draftFileName || 'draft.pdf'}`
+            }
+            fileName={annotatorBooking.draftFileName || 'Draft Skripsi'}
+            studentName={annotatorBooking.studentName}
+            mode="view"
+            bookingId={annotatorBooking.id}
+            initialAnnotations={annos || []}
+          />
+        );
+      })()}
+
+      {/* PDF Annotator Modal for Guidance Log (View Mode for Student) */}
+      {annotatorGuidance && (() => {
+        let annos = annotatorGuidance.annotations || (annotatorGuidance as any).metadata?.annotations;
+        if (!annos || (typeof annos === 'object' && Object.keys(annos).length === 0)) {
+          try {
+            const allGuidances = DB.getGuidances();
+            const matchG = allGuidances.find(g => String(g.id) === String(annotatorGuidance.id));
+            if (matchG?.annotations) annos = matchG.annotations;
+          } catch (e) { }
+
+          if (!annos || (typeof annos === 'object' && Object.keys(annos).length === 0)) {
+            try {
+              const allBookings = DB.getBookings();
+              const matchB = allBookings.find(b => String(b.id) === String(annotatorGuidance.bookingId || annotatorGuidance.id));
+              if (matchB?.annotations) annos = matchB.annotations;
+            } catch (e) { }
           }
-          fileName={annotatorBooking.draftFileName || 'Draft Skripsi'}
-          studentName={annotatorBooking.studentName}
-          mode="view"
-          bookingId={annotatorBooking.id}
-          initialAnnotations={annotatorBooking.annotations || []}
-        />
-      )}
+        }
+
+        return (
+          <PdfAnnotatorModal
+            isOpen={Boolean(annotatorGuidance)}
+            onClose={() => setAnnotatorGuidance(null)}
+            pdfUrl={
+              annotatorGuidance.draftFilePath
+                ? (annotatorGuidance.draftFilePath.startsWith('/')
+                  ? annotatorGuidance.draftFilePath
+                  : `/${annotatorGuidance.draftFilePath}`)
+                : `/storage/drafts/${annotatorGuidance.draftFileName || 'draft.pdf'}`
+            }
+            fileName={annotatorGuidance.draftFileName || 'Draft Skripsi'}
+            studentName={currentUser.name}
+            mode="view"
+            bookingId={annotatorGuidance.bookingId || annotatorGuidance.id}
+            initialAnnotations={annos || []}
+          />
+        );
+      })()}
     </div>
   );
 }
