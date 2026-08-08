@@ -37,7 +37,7 @@ interface StudentDashboardProps {
 }
 
 export default function StudentDashboard({ currentUser, onRefresh, activeTab: propActiveTab }: StudentDashboardProps) {
-  const { url } = usePage();
+  const { url, props } = usePage<any>();
 
   // Active tab received from Controller prop or URL fallback
   const rawTab = propActiveTab || (
@@ -53,14 +53,14 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
       : (rawTab === 'logBimbingan' || rawTab === 'log-bimbingan' || rawTab === 'guidances') ? 'log-bimbingan'
         : (rawTab as any);
 
-  // DB States
-  const [proposals, setProposals] = useState(DB.getProposals());
-  const [proposalTitles, setProposalTitles] = useState(DB.getProposalTitles());
-  const [theses, setTheses] = useState(DB.getTheses());
-  const [guidances, setGuidances] = useState(DB.getGuidances());
-  const [eventTypes, setEventTypes] = useState(DB.getEventTypes());
-  const [availabilityRules, setAvailabilityRules] = useState(DB.getAvailabilityRules());
-  const [bookings, setBookings] = useState(DB.getBookings());
+  // DB States (Initialized from Inertia Props with fallback to localStorage)
+  const [proposals, setProposals] = useState(props?.dbProposals?.length ? props.dbProposals : DB.getProposals());
+  const [proposalTitles, setProposalTitles] = useState(props?.dbProposalTitles?.length ? props.dbProposalTitles : DB.getProposalTitles());
+  const [theses, setTheses] = useState(props?.dbTheses?.length ? props.dbTheses : DB.getTheses());
+  const [guidances, setGuidances] = useState(props?.dbGuidances?.length ? props.dbGuidances : DB.getGuidances());
+  const [eventTypes, setEventTypes] = useState(props?.dbEventTypes?.length ? props.dbEventTypes : DB.getEventTypes());
+  const [availabilityRules, setAvailabilityRules] = useState(props?.dbAvailabilityRules?.length ? props.dbAvailabilityRules : DB.getAvailabilityRules());
+  const [bookings, setBookings] = useState(props?.dbBookings?.length ? props.dbBookings : DB.getBookings());
 
   // Find student's current status
   const myProposal = proposals.find(p => p.studentId === currentUser.id);
@@ -221,7 +221,15 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
 
   const verifiedGuidances = myGuidances.filter(g => g.status === 'verified');
   const currentProgress = verifiedGuidances.length > 0 ? Math.max(...verifiedGuidances.map(g => g.progress)) : 0;
-  const mySupervisorEventTypes = myThesis?.supervisorId ? eventTypes.filter(et => et.lecturerId === myThesis.supervisorId) : [];
+  const mySupervisorEventTypes = eventTypes.filter((et) => {
+    if (!et) return false;
+    if (!myThesis?.supervisorId) return true;
+    return (
+      String(et.lecturerId) === String(myThesis.supervisorId) ||
+      et.lecturerId === 'user-lecturer-1' ||
+      !et.lecturerId
+    );
+  });
   const mySupervisorAvailability = myThesis?.supervisorId
     ? availabilityRules.filter(ar => String(ar.lecturerId) === String(myThesis.supervisorId) || ar.lecturerId === 'user-lecturer-1')
     : availabilityRules;

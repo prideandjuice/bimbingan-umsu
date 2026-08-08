@@ -278,8 +278,11 @@ class DashboardController extends Controller
         $eventType = $eventTypeQuery->first() ?? EventType::with('lecturer')->where('slug', $slug)->first();
 
         if (! $eventType) {
-            $eventType = EventType::with('lecturer')->where('id', $slug)->first()
-                ?? EventType::with('lecturer')->first();
+            $eventType = EventType::with('lecturer')->where('id', $slug)->first();
+        }
+        if (! $eventType) {
+            $cleanName = ucwords(str_replace('-', ' ', $slug));
+            $eventType = EventType::with('lecturer')->where('name', 'like', '%' . str_replace('-', '%', $slug) . '%')->first();
         }
 
         if (! $lecturer) {

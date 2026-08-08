@@ -138,7 +138,7 @@ export default function ThesisActiveLayout({
           if (e && e.annotations) {
             toast.success(
               `Revisi PDF Baru! ${e.updatedBy || 'Dosen Pembimbing'} baru saja memperbarui coretan/catatan pada draft skripsi Anda.`,
-              { duration: 6000 }
+              { duration: 2000 }
             );
 
             // Sync to local DB
@@ -574,98 +574,90 @@ export default function ThesisActiveLayout({
                 )}
 
                 <div className="space-y-4">
-                  {(mySupervisorEventTypes && mySupervisorEventTypes.length > 0
-                    ? mySupervisorEventTypes
-                    : [
-                      {
-                        id: 'et-judul-default',
-                        name: 'Bimbingan Judul',
-                        slug: 'bimbingan-judul',
-                        duration: 30,
-                        description: 'Diharapkan membawa laptop',
-                        locationType: 'offline',
-                      },
-                    ]
-                  ).map((et: any) => (
-                    <div
-                      key={et.id}
-                      className={`bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-2xs transition-all space-y-3.5 text-left ${hasActiveBooking ? 'opacity-75' : 'hover:shadow-md'
-                        }`}
-                    >
-                      <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <div>
-                          <h3
-                            onClick={() => {
-                              if (hasActiveBooking) {
-                                toast.warning('Anda masih memiliki janji temu bimbingan aktif yang belum diselesaikan dosen.');
-                                return;
-                              }
-                              setSelectedBookingEventType(et);
-                            }}
-                            className={`font-extrabold text-base text-gray-900 dark:text-white transition-colors ${hasActiveBooking ? 'cursor-not-allowed opacity-80' : 'hover:text-emerald-600 cursor-pointer'
-                              }`}
-                          >
-                            {et.name}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <a
-                              href={`/bimbingan/${et.slug || 'tatap-muka'}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 hover:underline font-medium flex items-center gap-1 cursor-pointer transition-all"
-                              title="Klik untuk membuka halaman booking jenis sesi ini di tab baru"
+                  {mySupervisorEventTypes && mySupervisorEventTypes.length > 0 ? (
+                    mySupervisorEventTypes.map((et: any) => (
+                      <div
+                        key={et.id}
+                        className={`bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-2xs transition-all space-y-3.5 text-left ${hasActiveBooking ? 'opacity-75' : 'hover:shadow-md'
+                          }`}
+                      >
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                          <div>
+                            <h3
+                              onClick={() => {
+                                if (hasActiveBooking) {
+                                  toast.warning('Anda masih memiliki janji temu bimbingan aktif yang belum diselesaikan dosen.');
+                                  return;
+                                }
+                                window.location.href = `/bimbingan/${et.slug || 'bimbingan-judul'}?authenticated=1`;
+                              }}
+                              className={`font-extrabold text-base text-gray-900 dark:text-white transition-colors ${hasActiveBooking ? 'cursor-not-allowed opacity-80' : 'hover:text-emerald-600 cursor-pointer'
+                                }`}
                             >
-                              <Globe className="w-3 h-3" />
-                              <span>/bimbingan/{et.slug || 'tatap-muka'}</span>
-                              <ExternalLink className="w-3 h-3 text-emerald-500" />
-                            </a>
+                              {et.name}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <a
+                                href={`/bimbingan/${et.slug || 'bimbingan-judul'}?authenticated=1`}
+                                className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 hover:underline font-medium flex items-center gap-1 cursor-pointer transition-all"
+                                title="Klik untuk membuka halaman booking jenis sesi ini"
+                              >
+                                <Globe className="w-3.5 h-3.5" />
+                                <span>/bimbingan/{et.slug || 'bimbingan-judul'}</span>
+                                <ExternalLink className="w-3.5 h-3.5 text-emerald-500" />
+                              </a>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 px-3 py-1 rounded-full shrink-0">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>{et.duration || 30} Min</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 px-3 py-1 rounded-full shrink-0">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>{et.duration || 30} Min</span>
-                          </div>
-                        </div>
-                      </div>
 
-                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed pt-1">
-                        {et.description ||
-                          'Wajib janji temu (appointment) H-1. Jangan mendadak datang ke ruangan ya, supaya saya bisa mengalokasikan waktu yang cukup buat membedah draf kamu tanpa terburu-buru jadwal mengajar.'}
-                      </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed pt-1">
+                          {et.description ||
+                            'Wajib janji temu (appointment) H-1. Jangan mendadak datang ke ruangan ya, supaya saya bisa mengalokasikan waktu yang cukup buat membedah draf kamu tanpa terburu-buru jadwal mengajar.'}
+                        </p>
 
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800 flex-wrap gap-3">
-                        <button
-                          type="button"
-                          disabled={hasActiveBooking}
-                          onClick={() => {
-                            if (hasActiveBooking) {
-                              toast.warning('Pendaftaran dikunci! Anda masih memiliki janji temu bimbingan aktif yang belum diselesaikan dosen.');
-                              return;
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800 flex-wrap gap-3">
+                          <a
+                            href={hasActiveBooking ? undefined : `/bimbingan/${et.slug || 'bimbingan-judul'}?authenticated=1`}
+                            onClick={(e) => {
+                              if (hasActiveBooking) {
+                                e.preventDefault();
+                                toast.warning('Pendaftaran dikunci! Anda masih memiliki janji temu bimbingan aktif yang belum diselesaikan dosen.');
+                              }
+                            }}
+                            className={
+                              hasActiveBooking
+                                ? 'bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 border border-gray-200 dark:border-zinc-700 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 cursor-not-allowed shadow-2xs opacity-75'
+                                : 'bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-2xs group'
                             }
-                            setSelectedBookingEventType(et);
-                          }}
-                          className={
-                            hasActiveBooking
-                              ? 'bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 border border-gray-200 dark:border-zinc-700 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 cursor-not-allowed shadow-2xs opacity-75'
-                              : 'bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-2xs group'
-                          }
-                        >
-                          {hasActiveBooking ? (
-                            <>
-                              <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                              <span className="text-amber-800 dark:text-amber-300 font-extrabold">Dikunci (Ada Janji Temu Aktif)</span>
-                            </>
-                          ) : (
-                            <>
-                              <LinkIcon className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />
-                              <span>Pilih Sesi Ini & Buka Kalender Jam</span>
-                            </>
-                          )}
-                        </button>
+                          >
+                            {hasActiveBooking ? (
+                              <>
+                                <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                <span className="text-amber-800 dark:text-amber-300 font-extrabold">Sudah Ada Janji Temu Aktif</span>
+                              </>
+                            ) : (
+                              <>
+                                <LinkIcon className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />
+                                <span>Pilih Sesi Ini dan Ambil Jadwal</span>
+                              </>
+                            )}
+                          </a>
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center bg-gray-50 dark:bg-zinc-800/40 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-2">
+                      <Calendar className="w-8 h-8 text-muted-foreground mx-auto opacity-50" />
+                      <p className="text-xs font-bold text-gray-700 dark:text-gray-300">Belum Ada Jenis Sesi Bimbingan</p>
+                      <p className="text-[11px] text-muted-foreground">Dosen pembimbing Anda belum menambahkan jenis sesi bimbingan.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
