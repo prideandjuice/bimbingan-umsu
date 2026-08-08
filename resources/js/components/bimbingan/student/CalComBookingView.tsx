@@ -554,7 +554,7 @@ export default function CalComBookingView({
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                 <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Upload Draft Skripsi (Bab 1 - 3 / PDF)</span>
+                <span>Upload Draft Skripsi</span>
                 <span className="text-[10px] font-normal text-muted-foreground">(Maks 10MB)</span>
               </label>
 
@@ -860,9 +860,8 @@ export default function CalComBookingView({
                         </div>
                       </div>
 
-                      <span className={`text-[11px] font-sans font-bold transition-colors ${
-                        isLecturerUser || disabled || slotPassed ? 'text-gray-500 font-bold' : isBooked ? 'text-emerald-800 font-extrabold' : 'text-emerald-800 group-hover:text-white'
-                      }`}>
+                      <span className={`text-[11px] font-sans font-bold transition-colors ${isLecturerUser || disabled || slotPassed ? 'text-gray-500 font-bold' : isBooked ? 'text-emerald-800 font-extrabold' : 'text-emerald-800 group-hover:text-white'
+                        }`}>
                         {btnText}
                       </span>
                     </button>

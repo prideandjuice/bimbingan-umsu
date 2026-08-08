@@ -252,7 +252,7 @@ class BimbinganSyncController extends Controller
         try {
             $defaultLecturer = User::whereHas('roles', function ($q) {
                 $q->where('name', 'lecturer');
-            })->first() ?? User::where('email', 'irwan@umsu.ac.id')->first() ?? User::first();
+            })->first() ?? User::first();
 
             $lecturerId = $this->currentUserId() ?? $defaultLecturer?->id;
 
@@ -308,7 +308,7 @@ class BimbinganSyncController extends Controller
         try {
             $defaultLecturer = User::whereHas('roles', function ($q) {
                 $q->where('name', 'lecturer');
-            })->first() ?? User::where('email', 'irwan@umsu.ac.id')->first() ?? User::first();
+            })->first() ?? User::first();
 
             $lecturerId = $this->currentUserId() ?? $defaultLecturer?->id;
 
@@ -441,28 +441,30 @@ class BimbinganSyncController extends Controller
             foreach ($incomingBookings as $booking) {
                 $studentId = $booking['studentId'] ?? null;
                 if (! $studentId || ! User::where('id', $studentId)->exists()) {
-                    $studentId = $this->currentUserId();
-                }
-                if (! $studentId) {
-                    continue;
+                    $studentId = $this->currentUserId()
+                        ?? User::whereHas('roles', fn($q) => $q->where('name', 'student'))->first()?->id
+                        ?? User::first()?->id;
                 }
 
                 $thesisId = $booking['thesisId'] ?? null;
                 if (! $thesisId || ! Thesis::where('id', $thesisId)->exists()) {
-                    $thesisId = Thesis::where('student_id', $studentId)->first()?->id ?? Thesis::first()?->id;
-                }
-                if (! $thesisId) {
-                    continue;
+                    $thesis = Thesis::where('student_id', $studentId)->first() ?? Thesis::first();
+                    if (! $thesis && $studentId) {
+                        $thesis = Thesis::create([
+                            'title' => 'Skripsi ' . (User::find($studentId)?->name ?? 'Mahasiswa'),
+                            'student_id' => $studentId,
+                            'status' => 'approved',
+                            'metadata' => ['supervisors' => ['current' => ['supervisor_1' => 1]]],
+                        ]);
+                    }
+                    $thesisId = $thesis?->id;
                 }
 
                 $lecturerId = $booking['lecturerId'] ?? null;
                 if (! $lecturerId || ! User::where('id', $lecturerId)->exists()) {
                     $lecturerId = User::whereHas('roles', function ($q) {
                         $q->where('name', 'lecturer');
-                    })->first()?->id ?? User::where('id', '!=', $studentId)->first()?->id;
-                }
-                if (! $lecturerId) {
-                    continue;
+                    })->first()?->id ?? User::first()?->id;
                 }
 
                 $eventType = EventType::find($booking['eventTypeId'] ?? null);

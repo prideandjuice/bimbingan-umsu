@@ -1,81 +1,59 @@
-// components/bimbingan/studentdashboard.tsx
 import { useState } from 'react';
-import { usePage, Link } from '@inertiajs/react';
-import {
-  FilePlus,
-  Clock,
-  BookOpen,
-  Calendar,
-  ArrowRight,
-  Sparkles,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  UserCheck,
-  TrendingUp,
-  FileText,
-} from 'lucide-react';
+import { usePage } from '@inertiajs/react';
 import { DB } from '@/db';
-import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, Booking } from '@/types';
+import type { AppUser, Proposal, ProposalTitle, Thesis, Guidance, Booking, EventType, AvailabilityRule } from '@/types';
 import { toast } from 'sonner';
 
-import ProposalForm from './student/ProposalForm';
-import ProposalPending from './student/ProposalPending';
-import ThesisActiveLayout from './student/ThesisActiveLayout';
 import StudentSidebarNav from './student/StudentSidebarNav';
-
-import StudentWelcomeHeader from './student/StudentWelcomeHeader';
-import ThesisJourneyTimeline from './student/ThesisJourneyTimeline';
-import AcademicGuidelineCard from './student/AcademicGuidelineCard';
+import StudentOverviewTab from './student/StudentOverviewTab';
+import StudentProposalTab from './student/StudentProposalTab';
+import StudentStatusTab from './student/StudentStatusTab';
+import ThesisActiveLayout from './student/ThesisActiveLayout';
 import RoleFooter from './RoleFooter';
-import RichTextDisplay from './RichTextDisplay';
+
+export type StudentTab = 'overview' | 'pengajuan-judul' | 'status-judul' | 'log-bimbingan' | 'booking-jadwal';
 
 interface StudentDashboardProps {
   currentUser: AppUser;
   onRefresh: () => void;
-  activeTab?: string;
+  activeTab?: StudentTab | string;
 }
 
-export default function StudentDashboard({ currentUser, onRefresh, activeTab: propActiveTab }: StudentDashboardProps) {
-  const { url, props } = usePage<any>();
+export default function StudentDashboard({ currentUser, onRefresh, activeTab = 'overview' }: StudentDashboardProps) {
+  const { props } = usePage<any>();
 
-  // Active tab received from Controller prop or URL fallback
-  const rawTab = propActiveTab || (
-    url.includes('/mahasiswa/pengajuan-judul') ? 'pengajuan-judul'
-      : url.includes('/mahasiswa/status-judul') ? 'status-judul'
-        : url.includes('/mahasiswa/log-bimbingan') || url.includes('log-bimbingan') ? 'log-bimbingan'
-          : url.includes('/mahasiswa/booking-jadwal') || url.includes('/mahasiswa/bookings') ? 'booking-jadwal'
-            : 'overview'
-  );
-
-  const activeTab: 'overview' | 'pengajuan-judul' | 'status-judul' | 'log-bimbingan' | 'booking-jadwal' =
-    (rawTab === 'bookings' || rawTab === 'booking-jadwal') ? 'booking-jadwal'
-      : (rawTab === 'logBimbingan' || rawTab === 'log-bimbingan' || rawTab === 'guidances') ? 'log-bimbingan'
-        : (rawTab as any);
+  const currentTab: StudentTab = ['overview', 'pengajuan-judul', 'status-judul', 'log-bimbingan', 'booking-jadwal'].includes(activeTab)
+    ? (activeTab as StudentTab)
+    : 'overview';
 
   // DB States (Initialized from Inertia Props with fallback to localStorage)
-  const [proposals, setProposals] = useState(props?.dbProposals?.length ? props.dbProposals : DB.getProposals());
-  const [proposalTitles, setProposalTitles] = useState(props?.dbProposalTitles?.length ? props.dbProposalTitles : DB.getProposalTitles());
-  const [theses, setTheses] = useState(props?.dbTheses?.length ? props.dbTheses : DB.getTheses());
-  const [guidances, setGuidances] = useState(props?.dbGuidances?.length ? props.dbGuidances : DB.getGuidances());
-  const [eventTypes, setEventTypes] = useState(props?.dbEventTypes?.length ? props.dbEventTypes : DB.getEventTypes());
-  const [availabilityRules, setAvailabilityRules] = useState(props?.dbAvailabilityRules?.length ? props.dbAvailabilityRules : DB.getAvailabilityRules());
-  const [bookings, setBookings] = useState(props?.dbBookings?.length ? props.dbBookings : DB.getBookings());
+  const [proposals, setProposals] = useState<Proposal[]>(props?.dbProposals?.length ? props.dbProposals : DB.getProposals());
+  const [proposalTitles, setProposalTitles] = useState<ProposalTitle[]>(props?.dbProposalTitles?.length ? props.dbProposalTitles : DB.getProposalTitles());
+  const [theses, setTheses] = useState<Thesis[]>(props?.dbTheses?.length ? props.dbTheses : DB.getTheses());
+  const [guidances, setGuidances] = useState<Guidance[]>(props?.dbGuidances?.length ? props.dbGuidances : DB.getGuidances());
+  const [eventTypes, setEventTypes] = useState<EventType[]>(props?.dbEventTypes?.length ? props.dbEventTypes : DB.getEventTypes());
+  const [availabilityRules, setAvailabilityRules] = useState<AvailabilityRule[]>(props?.dbAvailabilityRules?.length ? props.dbAvailabilityRules : DB.getAvailabilityRules());
+  const [bookings, setBookings] = useState<Booking[]>(props?.dbBookings?.length ? props.dbBookings : DB.getBookings());
 
   // Find student's current status
-  const myProposal = proposals.find(p => p.studentId === currentUser.id);
-  const myTitles = myProposal ? proposalTitles.filter(t => String(t.proposalId) === String(myProposal.id)) : [];
-  const myThesis = theses.find(t => t.studentId === currentUser.id || (currentUser.npm && t.studentNpm === currentUser.npm));
-  const myGuidances = guidances.filter(g =>
-    (myThesis && g.thesisId === myThesis.id) ||
-    g.thesisId === 'thesis-auto' ||
-    (g as any).studentId === currentUser.id ||
-    g.creatorName === currentUser.name
+  const myProposal = proposals.find((p: Proposal) => p && (String(p.studentId) === String(currentUser.id) || p.studentName === currentUser.name));
+  const myTitles = myProposal ? proposalTitles.filter((t: ProposalTitle) => t && String(t.proposalId) === String(myProposal.id)) : [];
+  const myThesis = theses.find((t: Thesis) => t && (String(t.studentId) === String(currentUser.id) || (currentUser.npm && String(t.studentNpm) === String(currentUser.npm))));
+  const myGuidances = guidances.filter((g: Guidance) =>
+    g && (
+      (myThesis && String(g.thesisId) === String(myThesis.id)) ||
+      g.thesisId === 'thesis-auto' ||
+      (g as any).studentId === currentUser.id ||
+      g.creatorName === currentUser.name
+    )
   );
-  const myBookings = bookings.filter(b =>
-    b.studentId === currentUser.id ||
-    (currentUser.npm && b.studentNpm === currentUser.npm) ||
-    (currentUser.name && b.studentName === currentUser.name)
+  const myBookings = bookings.filter((b: Booking) =>
+    b && (
+      String(b.studentId) === String(currentUser.id) ||
+      (currentUser.npm && String(b.studentNpm) === String(currentUser.npm)) ||
+      (currentUser.name && b.studentName === currentUser.name) ||
+      !b.studentId
+    )
   );
 
   const refreshLocalData = () => {
@@ -212,16 +190,16 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
   };
 
   const onCancelBooking = (bookingId: string) => {
-    const updated = bookings.filter((b) => b.id !== bookingId);
+    const updated = bookings.filter((b: Booking) => b.id !== bookingId);
     setBookings(updated);
     DB.saveBookings(updated);
     refreshLocalData();
     toast.success('Pengajuan janji temu berhasil dibatalkan/dihapus.');
   };
 
-  const verifiedGuidances = myGuidances.filter(g => g.status === 'verified');
-  const currentProgress = verifiedGuidances.length > 0 ? Math.max(...verifiedGuidances.map(g => g.progress)) : 0;
-  const mySupervisorEventTypes = eventTypes.filter((et) => {
+  const verifiedGuidances = myGuidances.filter((g: Guidance) => g.status === 'verified');
+  const currentProgress = verifiedGuidances.length > 0 ? Math.max(...verifiedGuidances.map((g: Guidance) => g.progress)) : 0;
+  const mySupervisorEventTypes = eventTypes.filter((et: EventType) => {
     if (!et) return false;
     if (!myThesis?.supervisorId) return true;
     return (
@@ -231,7 +209,7 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
     );
   });
   const mySupervisorAvailability = myThesis?.supervisorId
-    ? availabilityRules.filter(ar => String(ar.lecturerId) === String(myThesis.supervisorId) || ar.lecturerId === 'user-lecturer-1')
+    ? availabilityRules.filter((ar: AvailabilityRule) => String(ar.lecturerId) === String(myThesis.supervisorId) || ar.lecturerId === 'user-lecturer-1')
     : availabilityRules;
 
   return (
@@ -240,7 +218,7 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
       <div className="lg:col-span-3">
         <StudentSidebarNav
           currentUser={currentUser}
-          activeTab={activeTab}
+          activeTab={currentTab}
           myProposal={myProposal}
           myThesis={myThesis}
           myGuidances={myGuidances}
@@ -252,343 +230,35 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
       <div className="lg:col-span-9 space-y-6">
         {/* ROUTE 1: OVERVIEW DASHBOARD UTAMA */}
         {activeTab === 'overview' && (
-          <div className="space-y-6" id="student-overview-view">
-            <StudentWelcomeHeader currentUser={currentUser} />
-
-            {/* Stat Cards Grid (4 Key Metric Cards) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Card 1: Status Pengajuan Judul */}
-              <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-5 shadow-sm space-y-3 text-left">
-                <div className="flex items-center justify-between">
-                  <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                    <FilePlus className="w-5.5 h-5.5" />
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${myThesis ? 'bg-emerald-100 text-emerald-800' :
-                      myProposal ? 'bg-amber-100 text-amber-800' :
-                        'bg-gray-100 text-gray-700'
-                    }`}>
-                    {myThesis ? 'Disetujui' : myProposal ? 'Proses Review' : 'Belum Ada'}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-muted-foreground">Status Judul</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5 truncate">
-                    {myThesis ? 'Judul Disetujui' : myProposal ? 'Ditinjau Kaprodi' : 'Belum Mengajukan'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Card 2: Dosen Pembimbing */}
-              <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-5 shadow-sm space-y-3 text-left">
-                <div className="flex items-center justify-between">
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                    <UserCheck className="w-5.5 h-5.5" />
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${myThesis?.supervisorName ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                    {myThesis?.supervisorName ? 'Ditetapkan' : 'Belum Ada'}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-muted-foreground">Dosen Pembimbing</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5 truncate">
-                    {myThesis?.supervisorName ? myThesis.supervisorName : 'Belum Ditentukan'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Card 3: Progress Bimbingan */}
-              <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-5 shadow-sm space-y-3 text-left">
-                <div className="flex items-center justify-between">
-                  <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-5.5 h-5.5" />
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                    {verifiedGuidances.length} Sesi
-                  </span>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-muted-foreground">Progress Bimbingan</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">
-                    {currentProgress}%
-                  </p>
-                </div>
-              </div>
-
-              {/* Card 4: Janji Temu Bimbingan */}
-              <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-5 shadow-sm space-y-3 text-left">
-                <div className="flex items-center justify-between">
-                  <div className="w-11 h-11 rounded-2xl bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                    <Calendar className="w-5.5 h-5.5" />
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
-                    {myBookings.length} Total
-                  </span>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-muted-foreground">Janji Temu</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5 truncate">
-                    {myBookings.filter(b => b.status === 'confirmed').length} Disetujui Dosen
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Status Summary Banner & Embedded Timeline & Guidelines */}
-            <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm space-y-6 text-left">
-              {!myProposal && !myThesis && (
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-zinc-800 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                        <Clock className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-base text-gray-900 dark:text-white">Belum Mengajukan Judul</h3>
-                        <p className="text-xs text-muted-foreground">Silakan ajukan draf proposal skripsi beserta 3 alternatif judul Anda.</p>
-                      </div>
-                    </div>
-                    <Link
-                      href="/mahasiswa/pengajuan-judul"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/10 shrink-0"
-                    >
-                      <FilePlus className="w-4 h-4" />
-                      <span>Formulir Pengajuan Judul</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              )}
-
-              {myProposal && !myThesis && (
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-zinc-800 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                        <Clock className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-base text-gray-900 dark:text-white">Proposal Judul Sedang Ditinjau</h3>
-                        <p className="text-xs text-muted-foreground">Pengajuan draf proposal Anda telah diterima dan sedang diseleksi oleh Kaprodi.</p>
-                      </div>
-                    </div>
-                    <Link
-                      href="/mahasiswa/status-judul"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/10 shrink-0"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Detail Status Persetujuan</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              )}
-
-              {myThesis && (
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-zinc-800 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-base text-gray-900 dark:text-white">Judul Disetujui & Masa Bimbingan Aktif</h3>
-                        <p className="text-xs text-muted-foreground">Judul: <strong>{myThesis.title}</strong></p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Link
-                        href="/mahasiswa/log-bimbingan"
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all"
-                      >
-                        <BookOpen className="w-3.5 h-3.5" />
-                        <span>Log Bimbingan</span>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Embedded Timeline & Guideline Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                <ThesisJourneyTimeline />
-                <AcademicGuidelineCard />
-              </div>
-            </div>
-          </div>
+          <StudentOverviewTab
+            currentUser={currentUser}
+            myProposal={myProposal}
+            myThesis={myThesis}
+            verifiedCount={verifiedGuidances.length}
+            currentProgress={currentProgress}
+            myBookings={myBookings}
+          />
         )}
 
         {/* ROUTE 2: PENGAJUAN JUDUL */}
         {activeTab === 'pengajuan-judul' && (
-          <div className="space-y-6" id="student-pengajuan-judul">
-            <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
-                  <FilePlus className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Formulir Pengajuan Judul Skripsi</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {myProposal ? 'Draf pengajuan judul skripsi Anda telah terkirim.' : 'Silakan lengkapi draf proposal dan alternatif judul skripsi Anda.'}
-                  </p>
-                </div>
-              </div>
-
-              {myProposal && (
-                <Link
-                  href="/mahasiswa/status-judul"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition-all self-start md:self-auto"
-                >
-                  <Clock className="w-4 h-4" />
-                  <span>Lihat Status Persetujuan</span>
-                </Link>
-              )}
-            </div>
-
-            <div className="w-full">
-              {!myProposal && !myThesis ? (
-                <ProposalForm currentUser={currentUser} onSubmitProposal={onSubmitProposal} />
-              ) : (
-                <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm space-y-6 text-left">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 dark:border-zinc-800 pb-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-white">Pengajuan Judul Berhasil Terkirim</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">Draf proposal alternatif judul Anda saat ini sedang dalam peninjauan oleh Kaprodi.</p>
-                      </div>
-                    </div>
-
-                    <span className="bg-amber-100/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-semibold px-4 py-1.5 rounded-full self-start md:self-auto shrink-0">
-                      Menunggu Keputusan Kaprodi
-                    </span>
-                  </div>
-
-                  {/* Daftar 3 Alternatif Judul Skripsi yang Diajukan */}
-                  {myTitles.length > 0 ? (
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-emerald-600" />
-                        Alternatif Judul & Latar Belakang yang Diajukan ({myTitles.length})
-                      </h4>
-
-                      <div className="space-y-4">
-                        {myTitles.map((t, idx) => (
-                          <div
-                            key={t.id || idx}
-                            className="bg-emerald-50/30 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-5 rounded-2xl space-y-3"
-                          >
-                            <div className="flex items-center justify-between gap-2 flex-wrap">
-                              <span className="inline-block bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-3xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md">
-                                Opsi {idx + 1}
-                              </span>
-
-                              <span
-                                className={`text-3xs font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${t.status === 'ACCEPTED'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : t.status === 'REJECTED'
-                                      ? 'bg-red-100 text-red-800'
-                                      : 'bg-amber-100 text-amber-800'
-                                  }`}
-                              >
-                                {t.status === 'ACCEPTED' && <CheckCircle2 className="w-3 h-3" />}
-                                {t.status === 'REJECTED' && <XCircle className="w-3 h-3" />}
-                                {t.status === 'PENDING' && <Clock className="w-3 h-3" />}
-                                {t.status === 'ACCEPTED' ? 'Disetujui Kaprodi' : t.status === 'REJECTED' ? 'Ditolak' : 'Menunggu Review'}
-                              </span>
-                            </div>
-
-                            <h4 className="font-bold text-sm md:text-base text-gray-900 dark:text-white leading-snug">
-                              {t.title}
-                            </h4>
-
-                            <div className="pt-1">
-                              <p className="text-3xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider mb-1.5">
-                                Latar Belakang / Abstrak:
-                              </p>
-                              <RichTextDisplay
-                                content={t.abstract}
-                                fallback="Abstrak telah disimpan dalam draf pengajuan proposal."
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-5 rounded-2xl space-y-3">
-                      <p className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
-                        Abstrak / Latar Belakang Proposal Asal:
-                      </p>
-                      <RichTextDisplay
-                        content={myProposal?.abstract}
-                        fallback="Abstrak telah disimpan dalam draf pengajuan proposal."
-                      />
-                    </div>
-                  )}
-
-                  <div className="pt-2 flex justify-end">
-                    <Link
-                      href="/mahasiswa/status-judul"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/10 transition-all"
-                    >
-                      <span>Cek Detail Status Seleksi Judul</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <StudentProposalTab
+            currentUser={currentUser}
+            myProposal={myProposal}
+            myThesis={myThesis}
+            myTitles={myTitles}
+            onSubmitProposal={onSubmitProposal}
+          />
         )}
 
         {/* ROUTE 3: STATUS PERSETUJUAN */}
         {activeTab === 'status-judul' && (
-          <div className="space-y-6" id="student-status-judul">
-            <div className="w-full">
-              {myProposal && !myThesis ? (
-                <ProposalPending myProposal={myProposal} proposalTitles={proposalTitles} onRefresh={onRefresh} />
-              ) : myThesis ? (
-                <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm space-y-4 text-left">
-                  <div className="flex items-center gap-3 text-emerald-600">
-                    <CheckCircle2 className="w-6 h-6" />
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Judul Skripsi Disetujui & Pembimbing Ditetapkan</h3>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Judul skripsi Anda (<strong>{myThesis.title}</strong>) telah disetujui oleh Ketua Program Studi dan Dosen Pembimbing telah ditetapkan.
-                  </p>
-                  <div className="pt-2">
-                    <Link
-                      href="/mahasiswa/log-bimbingan"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/10 transition-all"
-                    >
-                      <span>Buka Log Bimbingan</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-8 text-center space-y-4">
-                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
-                  <div>
-                    <h3 className="font-bold text-base text-gray-900 dark:text-white">Belum Ada Draf Pengajuan Judul</h3>
-                    <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-                      Anda belum membuat pengajuan draf proposal skripsi. Silakan buat pengajuan terlebih dahulu untuk melihat status persetujuan.
-                    </p>
-                  </div>
-                  <Link
-                    href="/mahasiswa/pengajuan-judul"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/10"
-                  >
-                    <FilePlus className="w-4 h-4" />
-                    <span>Buat Pengajuan Judul Skripsi</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
+          <StudentStatusTab
+            myProposal={myProposal}
+            myThesis={myThesis}
+            proposalTitles={proposalTitles}
+            onRefresh={onRefresh}
+          />
         )}
 
         {/* ROUTE 4: LOG BIMBINGAN */}
