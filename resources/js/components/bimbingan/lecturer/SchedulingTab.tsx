@@ -1,6 +1,6 @@
 // components/bimbingan/lecturer/SchedulingTab.tsx
 import { useState, useMemo } from 'react';
-import { Plus, MoreHorizontal, Globe, Trash2, Edit3 } from 'lucide-react';
+import { Plus, MoreHorizontal, Globe, Trash2, Edit3, Clock, Calendar } from 'lucide-react';
 import type { AvailabilityRule, AvailabilityRuleConfig } from '@/types';
 import { toast } from 'sonner';
 import ScheduleDetailEditor from './EditorScheduleDetail';
@@ -239,21 +239,10 @@ export default function SchedulingTab({
                 Atur ketersediaan waktu bimbingan.
               </p>
             </div>
-
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowAddModal(true)}
-                className="py-2 px-4 rounded-xl bg-white dark:bg-zinc-100 hover:bg-emerald-50 text-emerald-950 dark:text-zinc-900 font-bold text-xs shadow-xs hover:shadow-md border border-emerald-200 dark:border-zinc-300 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
-              >
-                <Plus className="w-4 h-4 text-emerald-800 dark:text-zinc-900" />
-                <span>New</span>
-              </button>
-            </div>
           </div>
 
           {/* SCHEDULE LIST CONTAINER */}
-          {groupedSchedules.length > 0 && (
+          {groupedSchedules.length > 0 ? (
             <div className="bg-emerald-950 dark:bg-zinc-900/90 text-white rounded-2xl border border-emerald-900 dark:border-zinc-800 shadow-md divide-y divide-emerald-900/80 dark:divide-zinc-800">
               {groupedSchedules.map((sched, idx) => (
                 <div
@@ -330,6 +319,32 @@ export default function SchedulingTab({
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-zinc-900 border border-dashed border-emerald-200 dark:border-zinc-800 rounded-3xl p-8 md:p-12 text-center space-y-5 shadow-2xs">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto border border-emerald-100 dark:border-emerald-900/50 shadow-inner">
+                <Clock className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-2 max-w-md mx-auto">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  Belum Ada Jadwal Ketersediaan Waktu
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+                  Anda belum membuat atau mengatur jadwal ketersediaan waktu bimbingan. Silakan tambahkan jadwal ketersediaan baru agar mahasiswa dapat memilih slot jam bimbingan.
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer inline-flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Jadwal Ketersediaan</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

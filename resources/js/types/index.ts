@@ -106,6 +106,10 @@ export interface Guidance {
     creatorName: string;
     status: 'pending_verification' | 'verified';
     createdAt: string;
+    bookingId?: string;
+    draftFileName?: string | null;
+    draftFilePath?: string | null;
+    annotations?: any;
 }
 
 export interface EventType {
@@ -166,7 +170,7 @@ export interface Booking {
     eventTypeName: string;
     date: string;
     timeSlot: string;
-    status: 'pending' | 'confirmed' | 'approved' | 'rejected' | 'completed';
+    status: 'pending' | 'confirmed' | 'approved' | 'rejected' | 'completed' | 'cancelled';
     notes?: string;
     rejectionReason?: string;
     draftFileName?: string | null;

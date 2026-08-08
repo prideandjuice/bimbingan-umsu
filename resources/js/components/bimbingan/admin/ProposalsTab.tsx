@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Check, ChevronDown, ChevronUp, BookOpen, X, Sparkles, FileUp, ShieldCheck, Search } from 'lucide-react';
+import { FileText, Check, ChevronDown, BookOpen, X, Sparkles, FileUp, ShieldCheck, Search } from 'lucide-react';
 import type { Proposal, ProposalTitle } from '@/types';
 import RichTextDisplay from '../RichTextDisplay';
 
@@ -88,10 +88,6 @@ export default function ProposalsTab({
             Tinjau usulan alternatif judul dari mahasiswa. Klik pada kartu judul untuk membaca detail & latar belakang lengkap.
           </p>
         </div>
-
-        <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30 self-start md:self-auto">
-          {pendingProposals.length} Pengajuan Perlu Review
-        </span>
       </div>
 
       {/* Search and Filters Section */}
@@ -173,9 +169,9 @@ export default function ProposalsTab({
                       return (
                         <div
                           key={titleItem.id}
-                          className={`bg-white dark:bg-zinc-900 border transition-all rounded-2xl overflow-hidden shadow-2xs ${isExpanded
-                              ? 'border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/10'
-                              : 'border-gray-200/80 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-700'
+                          className={`bg-white dark:bg-zinc-900 border transition-all duration-300 ease-in-out rounded-2xl overflow-hidden shadow-2xs ${isExpanded
+                            ? 'border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/10'
+                            : 'border-gray-200/80 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-700'
                             }`}
                         >
                           {/* Main Row / Header Baris Opsi (Clickable) */}
@@ -193,7 +189,7 @@ export default function ProposalsTab({
                                   {titleItem.title}
                                 </h5>
                                 {!isExpanded && titleItem.abstract && (
-                                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1 font-light">
+                                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1 font-light transition-opacity duration-200">
                                     {titleItem.abstract.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim()}
                                   </p>
                                 )}
@@ -226,42 +222,47 @@ export default function ProposalsTab({
                               <button
                                 type="button"
                                 onClick={() => toggleExpand(titleItem.id)}
-                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-lg"
+                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-lg cursor-pointer"
                               >
-                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180 text-emerald-600 dark:text-emerald-400' : 'rotate-0'}`} />
                               </button>
                             </div>
                           </div>
 
-                          {/* Expanded Content View (Detail Latar Belakang) */}
-                          {isExpanded && (
-                            <div className="px-5 pb-5 pt-2 border-t border-gray-100 dark:border-zinc-800 bg-emerald-50/20 dark:bg-emerald-950/10 space-y-3">
-                              <div className="flex items-center justify-between text-xs font-bold text-emerald-900 dark:text-emerald-300">
-                                <span>📄 Latar Belakang Singkat / Alasan Pengajuan</span>
-                                <span className="text-[10px] font-normal text-muted-foreground">
-                                  {wordCount} kata
-                                </span>
-                              </div>
+                          {/* Expanded Content View (Detail Latar Belakang - Smooth Accordion) */}
+                          <div
+                            className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                              }`}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="px-5 pb-5 pt-3 border-t border-gray-100 dark:border-zinc-800 bg-emerald-50/20 dark:bg-emerald-950/10 space-y-3">
+                                <div className="flex items-center justify-between text-xs font-bold text-emerald-900 dark:text-emerald-300">
+                                  <span>📄 Latar Belakang Singkat / Alasan Pengajuan</span>
+                                  <span className="text-[10px] font-normal text-muted-foreground">
+                                    {wordCount} kata
+                                  </span>
+                                </div>
 
-                              <div className="bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-xl shadow-2xs">
-                                <RichTextDisplay
-                                  content={titleItem.abstract}
-                                  fallback="Belum ada deskripsi latar belakang."
-                                />
-                              </div>
+                                <div className="bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-xl shadow-2xs">
+                                  <RichTextDisplay
+                                    content={titleItem.abstract}
+                                    fallback="Belum ada deskripsi latar belakang."
+                                  />
+                                </div>
 
-                              <div className="flex justify-end pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => openApprovalModal(proposal.id, titleItem.id, titleItem.title, proposal.studentName)}
-                                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 cursor-pointer"
-                                >
-                                  <Check className="w-4 h-4" />
-                                  Pilih & Setujui Judul Opsi {idx + 1}
-                                </button>
+                                <div className="flex justify-end pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => openApprovalModal(proposal.id, titleItem.id, titleItem.title, proposal.studentName)}
+                                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                    Pilih & Setujui Judul Opsi {idx + 1}
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                          )}
+                          </div>
                         </div>
                       );
                     })}

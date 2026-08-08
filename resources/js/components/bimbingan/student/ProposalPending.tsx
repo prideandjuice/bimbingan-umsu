@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, FileText, CheckCircle2, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, FileText, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
 import type { Proposal, ProposalTitle } from '@/types';
 import RichTextDisplay from '../RichTextDisplay';
 
@@ -57,9 +57,6 @@ export default function ProposalPending({ myProposal, proposalTitles, onRefresh 
             <FileText className="w-4 h-4 text-emerald-600" />
             Alternatif Judul & Latar Belakang yang Diajukan ({titles.length})
           </h3>
-          <span className="text-xs text-emerald-600 font-medium hidden sm:inline">
-            💡 Klik opsi untuk melihat latar belakang
-          </span>
         </div>
 
         <div className="space-y-3">
@@ -70,7 +67,7 @@ export default function ProposalPending({ myProposal, proposalTitles, onRefresh 
             return (
               <div
                 key={t.id || idx}
-                className={`bg-white dark:bg-zinc-900 border transition-all rounded-2xl overflow-hidden shadow-2xs ${isExpanded
+                className={`bg-white dark:bg-zinc-900 border transition-all duration-300 ease-in-out rounded-2xl overflow-hidden shadow-2xs ${isExpanded
                   ? 'border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/10'
                   : 'border-gray-200/80 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-700'
                   }`}
@@ -106,7 +103,7 @@ export default function ProposalPending({ myProposal, proposalTitles, onRefresh 
                     </h4>
 
                     {!isExpanded && t.abstract && (
-                      <p className="text-xs text-muted-foreground line-clamp-1 font-light">
+                      <p className="text-xs text-muted-foreground line-clamp-1 font-light transition-opacity duration-200">
                         {t.abstract.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim()}
                       </p>
                     )}
@@ -114,37 +111,40 @@ export default function ProposalPending({ myProposal, proposalTitles, onRefresh 
 
                   {/* Icon Expand Toggle */}
                   <div className="flex items-center gap-2 shrink-0 pt-1">
-                    {isExpanded && (
-                      <span className="text-[11px] text-emerald-600 font-semibold hidden md:inline-flex items-center gap-1">
-                        Sembunyikan
-                      </span>
-                    )}
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold hidden md:inline-flex items-center gap-1 transition-opacity duration-300">
+                      {isExpanded ? 'Sembunyikan' : 'Lihat Detail'}
+                    </span>
                     <div className="p-1.5 rounded-lg text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-colors">
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180 text-emerald-600 dark:text-emerald-400' : 'rotate-0'}`} />
                     </div>
                   </div>
                 </div>
 
-                {/* Expanded Latar Belakang Detail */}
-                {isExpanded && (
-                  <div className="px-5 pb-5 pt-2 border-t border-gray-100 dark:border-zinc-800 bg-emerald-50/20 dark:bg-emerald-950/10 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-emerald-900 dark:text-emerald-300">
-                      <span>📄 Latar Belakang Singkat / Alasan Pengajuan</span>
-                      {wordCount > 0 && (
-                        <span className="text-[10px] font-normal text-muted-foreground qi-editor">
-                          {wordCount} kata
-                        </span>
-                      )}
-                    </div>
+                {/* Expanded Latar Belakang Detail (Smooth Accordion Animation) */}
+                <div
+                  className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                    }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-5 pb-5 pt-3 border-t border-gray-100 dark:border-zinc-800 bg-emerald-50/20 dark:bg-emerald-950/10 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-emerald-900 dark:text-emerald-300">
+                        <span>📄 Latar Belakang Singkat / Alasan Pengajuan</span>
+                        {wordCount > 0 && (
+                          <span className="text-[10px] font-normal text-muted-foreground qi-editor">
+                            {wordCount} kata
+                          </span>
+                        )}
+                      </div>
 
-                    <div className="bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-xl shadow-2xs">
-                      <RichTextDisplay
-                        content={t.abstract}
-                        fallback="Belum ada deskripsi latar belakang yang ditulis."
-                      />
+                      <div className="bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-xl shadow-2xs">
+                        <RichTextDisplay
+                          content={t.abstract}
+                          fallback="Belum ada deskripsi latar belakang yang ditulis."
+                        />
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}

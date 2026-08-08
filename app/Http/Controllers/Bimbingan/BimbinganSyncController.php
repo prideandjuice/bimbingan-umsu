@@ -229,6 +229,12 @@ class BimbinganSyncController extends Controller
                         'creator_name' => $guidance['creatorName'],
                         'status' => $guidance['status'],
                         'created_at' => $guidance['createdAt'] ?? now(),
+                        'metadata' => [
+                            'draft_file_name' => $guidance['draftFileName'] ?? null,
+                            'draft_file_path' => $guidance['draftFilePath'] ?? null,
+                            'annotations' => $guidance['annotations'] ?? null,
+                            'booking_id' => $guidance['bookingId'] ?? null,
+                        ],
                     ]
                 );
             }

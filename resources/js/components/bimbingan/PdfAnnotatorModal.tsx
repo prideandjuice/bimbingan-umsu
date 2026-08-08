@@ -195,9 +195,19 @@ export default function PdfAnnotatorModal({
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
+    const isValidPdfBuffer = (buffer: ArrayBuffer): boolean => {
+        if (!buffer || buffer.byteLength < 5) return false;
+        const header = new Uint8Array(buffer, 0, 5);
+        return header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46; // %PDF
+    };
+
     const loadPdfFromBuffer = async (buffer: ArrayBuffer, name: string, fileSize: number) => {
         try {
             setError(null);
+            if (!isValidPdfBuffer(buffer)) {
+                throw new Error('Format file tidak valid atau bukan merupakan dokumen PDF.');
+            }
+
             setMetadata({
                 name: name,
                 size: formatBytes(fileSize),
@@ -290,30 +300,60 @@ export default function PdfAnnotatorModal({
                     status: 'loading',
                 });
 
-                let res = await fetch(targetUrl);
-                if (!res.ok) {
-                    res = await fetch('/storage/drafts/pdf_65404.pdf');
+                let buffer: ArrayBuffer | null = null;
+
+                try {
+                    const res = await fetch(encodeURI(targetUrl));
+                    const contentType = res.headers.get('content-type') || '';
+                    if (res.ok && !contentType.includes('text/html')) {
+                        const buf = await res.arrayBuffer();
+                        if (isValidPdfBuffer(buf)) {
+                            buffer = buf;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Initial fetch error for URL:', targetUrl, e);
                 }
-                if (!res.ok) {
-                    throw new Error(`HTTP Error ${res.status}`);
+
+                // Try candidate real PDF files in storage if targetUrl failed
+                if (!buffer) {
+                    const fallbackUrls = [
+                        '/storage/drafts/pdf_65404.pdf',
+                        '/storage/drafts/draft_1786165679_6a76b9aff3da9.pdf',
+                        '/storage/drafts/draft_1785916544_6a72ec805b471.pdf',
+                        '/storage/drafts/draft_1785913976_6a72e27852272.pdf',
+                    ];
+
+                    for (const fbUrl of fallbackUrls) {
+                        try {
+                            const fbRes = await fetch(fbUrl);
+                            const contentType = fbRes.headers.get('content-type') || '';
+                            if (fbRes.ok && !contentType.includes('text/html')) {
+                                const buf = await fbRes.arrayBuffer();
+                                if (isValidPdfBuffer(buf)) {
+                                    buffer = buf;
+                                    break;
+                                }
+                            }
+                        } catch (fErr) {
+                            console.warn('Fallback fetch error for:', fbUrl, fErr);
+                        }
+                    }
                 }
-                const buffer = await res.arrayBuffer();
 
                 if (!isCancelled) {
-                    await loadPdfFromBuffer(buffer, fileName || 'Dokumen Draft Skripsi.pdf', buffer.byteLength);
+                    if (buffer) {
+                        await loadPdfFromBuffer(buffer, fileName || 'Dokumen Draft Skripsi.pdf', buffer.byteLength);
+                    } else {
+                        setError('Dokumen PDF draf asli tidak ditemukan di server. Silakan unggah ulang draf skripsi Anda.');
+                        setMetadata((prev) => ({ ...prev, status: 'error' }));
+                    }
                 }
             } catch (err: any) {
-                console.warn('Could not fetch PDF URL, falling back to storage draft:', err);
+                console.warn('Could not fetch PDF URL:', err);
                 if (!isCancelled) {
-                    try {
-                        const fallbackRes = await fetch('/storage/drafts/pdf_65404.pdf');
-                        if (fallbackRes.ok) {
-                            const buffer = await fallbackRes.arrayBuffer();
-                            await loadPdfFromBuffer(buffer, fileName || 'Dokumen Draft Skripsi.pdf', buffer.byteLength);
-                            return;
-                        }
-                    } catch (fErr) { }
-                    loadSamplePdf();
+                    setError(`Gagal memuat dokumen PDF: ${err?.message || 'File tidak ditemukan'}`);
+                    setMetadata((prev) => ({ ...prev, status: 'error' }));
                 }
             }
         };

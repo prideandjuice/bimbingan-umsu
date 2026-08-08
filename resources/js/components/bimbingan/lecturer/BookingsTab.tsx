@@ -50,7 +50,7 @@ const getAnnotationCount = (annotations: any): number => {
 interface BookingsTabProps {
   myBookings: Booking[];
   handleProcessBookingSubmit: (bookingId: string, type: 'confirm' | 'reject', note: string) => void;
-  handleCompleteBooking: (id: string) => void;
+  handleCompleteBooking: (id: string, progress?: number, notes?: string, revisions?: string) => void;
 }
 
 export default function BookingsTab({
@@ -67,6 +67,12 @@ export default function BookingsTab({
   const [annotatorBooking, setAnnotatorBooking] = useState<Booking | null>(null);
   const [actionType, setActionType] = useState<'confirm' | 'reject' | null>(null);
   const [noteInput, setNoteInput] = useState('');
+
+  // Modal State for Completing Booking & Creating Guidance Log
+  const [completingBooking, setCompletingBooking] = useState<Booking | null>(null);
+  const [progressInput, setProgressInput] = useState<number>(30);
+  const [completionNotes, setCompletionNotes] = useState<string>('');
+  const [completionRevisions, setCompletionRevisions] = useState<string>('');
 
 
   // Counts
@@ -405,7 +411,15 @@ export default function BookingsTab({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCompleteBooking(b.id);
+                            setCompletingBooking(b);
+                            setProgressInput(30);
+                            setCompletionNotes(b.notes || `Sesi bimbingan "${b.eventTypeName || 'Skripsi'}" telah dilaksanakan.`);
+                            const annCount = getAnnotationCount(b.annotations);
+                            setCompletionRevisions(
+                              annCount > 0
+                                ? `${annCount} catatan coretan revisi diberikan dosen pada draft skripsi.`
+                                : 'Tingkatkan kualitas naskah untuk bab selanjutnya.'
+                            );
                           }}
                           className="px-4 py-1.5 rounded-xl text-xs font-bold bg-zinc-800 hover:bg-zinc-900 text-white transition-all cursor-pointer flex items-center gap-1.5"
                         >
@@ -673,6 +687,125 @@ export default function BookingsTab({
             window.dispatchEvent(new Event('storage'));
           }}
         />
+      )}
+
+      {/* MODAL SELESAIKAN BIMBINGAN & SIMPAN KE LOGBOOK */}
+      {completingBooking && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200 text-left">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-bold text-base text-gray-900 dark:text-white">
+                  Selesaikan Bimbingan & Catat ke Logbook
+                </h3>
+              </div>
+              <button
+                onClick={() => setCompletingBooking(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 p-4 rounded-2xl space-y-2 text-xs">
+              <p className="font-bold text-gray-900 dark:text-white">
+                {completingBooking.studentName} ({completingBooking.studentNpm})
+              </p>
+              <p className="text-gray-600 dark:text-gray-300 font-medium">
+                Sesi: {completingBooking.eventTypeName} • {completingBooking.date} ({completingBooking.timeSlot})
+              </p>
+              {completingBooking.draftFileName && (
+                <div className="flex items-center justify-between bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-800/40 mt-1">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Paperclip className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                      Draft: {completingBooking.draftFileName}
+                    </span>
+                  </div>
+                  {getAnnotationCount(completingBooking.annotations) > 0 ? (
+                    <span className="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0">
+                      {getAnnotationCount(completingBooking.annotations)} Coretan
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-gray-400 font-medium shrink-0">Tanpa coretan</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCompleteBooking(completingBooking.id, progressInput, completionNotes, completionRevisions);
+                setCompletingBooking(null);
+              }}
+              className="space-y-4 text-xs"
+            >
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <label className="font-semibold text-gray-700 dark:text-gray-300">
+                    Update Progress Skripsi (%)
+                  </label>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{progressInput}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  step="5"
+                  value={progressInput}
+                  onChange={(e) => setProgressInput(Number(e.target.value))}
+                  className="w-full accent-emerald-600 mt-2"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-gray-700 dark:text-gray-300">
+                  Catatan Konsultasi / Feedback Dosen
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={completionNotes}
+                  onChange={(e) => setCompletionNotes(e.target.value)}
+                  placeholder="Tuliskan catatan pembahasan bimbingan..."
+                  className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl p-3 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-gray-700 dark:text-gray-300">
+                  Tugas / Poin Perbaikan (Opsional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={completionRevisions}
+                  onChange={(e) => setCompletionRevisions(e.target.value)}
+                  placeholder="Tuliskan poin perbaikan yang harus direvisi..."
+                  className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl p-3 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCompletingBooking(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Simpan & Masukkan ke Logbook</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

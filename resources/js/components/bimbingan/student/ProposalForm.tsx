@@ -99,8 +99,7 @@ export default function ProposalForm({ currentUser, onSubmitProposal }: Proposal
           <FileCheck2 className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="font-bold text-lg text-gray-900 dark:text-white">Formulir Pengajuan Judul Skripsi</h2>
-          <p className="text-xs text-muted-foreground font-light mt-0.5">
+          <p className="font-semibold text-sm text-black-600 dark:text-black-600 leading-relaxed">
             Silakan ajukan draf proposal skripsi Anda. Sesuai ketentuan, Anda wajib memberikan minimal 3 alternatif judul lengkap dengan latar belakang singkat (~500 kata).
           </p>
         </div>

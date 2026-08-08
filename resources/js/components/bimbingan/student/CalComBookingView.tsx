@@ -58,6 +58,12 @@ export default function CalComBookingView({
     .join('')
     .toUpperCase() || 'DS';
 
+  const activeBooking = useMemo(() => {
+    return myBookings?.find(
+      (b) => b.status === 'pending' || b.status === 'confirmed'
+    );
+  }, [myBookings]);
+
   // Real-time Date Calculation
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -320,6 +326,11 @@ export default function CalComBookingView({
       return;
     }
 
+    if (activeBooking) {
+      toast.warning('Pendaftaran dikunci! Anda masih memiliki janji temu bimbingan aktif yang belum diselesaikan dosen.');
+      return;
+    }
+
     if (!currentUser) {
       setSelectedTimeSlot(slot.fullSlotText);
       setShowAuthModal(true);
@@ -333,6 +344,10 @@ export default function CalComBookingView({
 
   const handleConfirmSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (activeBooking) {
+      toast.warning('Pendaftaran dikunci! Anda masih memiliki janji temu bimbingan aktif yang belum diselesaikan dosen.');
+      return;
+    }
     if (!selectedTimeSlot || disabled || isSelectedDatePast) return;
 
     const paddedMonth = String(month + 1).padStart(2, '0');
@@ -411,6 +426,26 @@ export default function CalComBookingView({
           </div>
         </div>
       </div>
+
+      {activeBooking && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 md:p-5 flex items-start gap-3.5 text-left mb-6 shadow-2xs animate-in fade-in duration-200">
+          <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+            <Lock className="w-5 h-5" />
+          </div>
+          <div className="space-y-1 flex-1">
+            <h4 className="font-extrabold text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2">
+              <span>Pemesanan Jadwal Baru Dikunci</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 font-mono capitalize">
+                {activeBooking.status === 'pending' ? 'Menunggu Dosen' : 'Disetujui Dosen'}
+              </span>
+            </h4>
+            <p className="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed font-medium">
+              Anda memiliki janji temu bimbingan yang masih berjalan ({activeBooking.date} | {activeBooking.timeSlot}).
+              Silakan tunggu hingga Dosen Pembimbing menandai bimbingan ini <strong>Selesai</strong> untuk dapat melakukan booking jadwal baru.
+            </p>
+          </div>
+        </div>
+      )}
 
       {showConfirmStep ? (
         /* Cal.com Style 2-Column Confirmation View */

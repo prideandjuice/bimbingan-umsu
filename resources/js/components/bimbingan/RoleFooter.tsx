@@ -27,12 +27,12 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
     (typeof window !== 'undefined' ? DB.getCurrentUser() : null) ||
     (authUser
       ? {
-          id: String(authUser.id),
-          name: authUser.name,
-          email: authUser.email,
-          role: (((authUser as any).roles?.[0] as UserRole) || 'student'),
-          avatar: authUser.avatar,
-        }
+        id: String(authUser.id),
+        name: authUser.name,
+        email: authUser.email,
+        role: (((authUser as any).roles?.[0] as UserRole) || 'student'),
+        avatar: authUser.avatar,
+      }
       : null);
 
   const role: UserRole = propRole || currentUser?.role || 'guest';
@@ -52,13 +52,24 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
     superadmin: {
       label: 'Super Admin Portal',
       bgBadge: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-      description:
-        'Portal Utama Administrator Sistem Skripsi UMSU. Mengelola hak akses pengguna, verifikasi pendaftar Google SSO, konfigurasi master data, serta pemantauan audit trail.',
+      description: 'Portal Utama Administrator Sistem Skripsi UMSU. Mengelola hak akses pengguna, verifikasi pendaftar Google SSO, konfigurasi master data, serta pemantauan audit trail.',
       quickLinks: [
-        { label: 'Ringkasan Statistik Sistem', href: '/dashboard' },
-        { label: 'Manajemen Pengguna & Verifikasi', href: '/dashboard' },
-        { label: 'Seleksi Judul Proposal Skripsi', href: '/dashboard' },
-        { label: 'Penugasan SK Pembimbing', href: '/dashboard' },
+        {
+          label: 'Ringkasan Statistik Sistem',
+          href: ''
+        },
+        {
+          label: 'Manajemen Pengguna & Verifikasi',
+          href: ''
+        },
+        {
+          label: 'Seleksi Judul Proposal Skripsi',
+          href: ''
+        },
+        {
+          label: 'Penugasan SK Pembimbing',
+          href: ''
+        },
       ],
       supportText: 'Tim IT Administrator & Support UMSU',
       contactEmail: 'superadmin@umsu.ac.id',
@@ -66,13 +77,12 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
     admin: {
       label: 'Admin Portal',
       bgBadge: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-      description:
-        'Portal Administrator Utama Sistem Skripsi UMSU. Mengelola hak akses pengguna, verifikasi pendaftar Google SSO, konfigurasi master data, serta pemantauan audit trail.',
+      description: 'Portal Administrator Utama Sistem Skripsi UMSU. Mengelola hak akses pengguna, verifikasi pendaftar Google SSO, konfigurasi master data, serta pemantauan audit trail.',
       quickLinks: [
-        { label: 'Ringkasan Statistik Sistem', href: '/dashboard' },
-        { label: 'Manajemen Pengguna & Verifikasi', href: '/dashboard' },
-        { label: 'Seleksi Judul Proposal Skripsi', href: '/dashboard' },
-        { label: 'Penugasan SK Pembimbing', href: '/dashboard' },
+        { label: 'Ringkasan Statistik Sistem', href: '' },
+        { label: 'Manajemen Pengguna & Verifikasi', href: '' },
+        { label: 'Seleksi Judul Proposal Skripsi', href: '' },
+        { label: 'Penugasan SK Pembimbing', href: '' },
       ],
       supportText: 'Tim IT Administrator & Support UMSU',
       contactEmail: 'admin@umsu.ac.id',
@@ -80,13 +90,12 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
     prodi: {
       label: 'Program Studi Portal',
       bgBadge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-      description:
-        'Portal Program Studi UMSU. Digunakan untuk persetujuan usulan judul skripsi, penetapan dosen pembimbing I & II, serta pengesahan SK Dekan.',
+      description: 'Portal Program Studi UMSU. Digunakan untuk persetujuan usulan judul skripsi, penetapan dosen pembimbing I & II, serta pengesahan SK Dekan.',
       quickLinks: [
-        { label: 'Validasi Proposal Judul', href: '/dashboard' },
-        { label: 'Plotting Dosen Pembimbing', href: '/dashboard' },
-        { label: 'Unggah SK Pembimbing', href: '/dashboard' },
-        { label: 'Monitoring Progres Mahasiswa', href: '/dashboard' },
+        { label: 'Validasi Proposal Judul', href: '' },
+        { label: 'Plotting Dosen Pembimbing', href: '' },
+        { label: 'Unggah SK Pembimbing', href: '' },
+        { label: 'Monitoring Progres Mahasiswa', href: '' },
       ],
       supportText: 'Sekretariat Prodi UMSU',
       contactEmail: 'prodi@umsu.ac.id',
@@ -94,13 +103,12 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
     lecturer: {
       label: 'Dosen Pembimbing Portal',
       bgBadge: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
-      description:
-        'Portal Dosen Pembimbing Skripsi UMSU. Tempat verifikasi catatan logbook bimbingan mahasiswa, pengesahan progres skripsi, dan pengaturan jadwal konsultasi.',
+      description: 'Portal Dosen Pembimbing Skripsi UMSU. Tempat verifikasi catatan logbook bimbingan mahasiswa, pengesahan progres skripsi, dan pengaturan jadwal konsultasi.',
       quickLinks: [
-        { label: 'Daftar Mahasiswa Bimbingan', href: '/dosen/mahasiswa-bimbingan' },
-        { label: 'Persetujuan Permohonan Bimbingan', href: '/dosen/persetujuan-jadwal' },
-        { label: 'Atur Ketersediaan Slot Waktu', href: '/dosen/ketersediaan-waktu' },
-        { label: 'Verifikasi Logbook Catatan', href: '/dosen/mahasiswa-bimbingan' },
+        { label: 'Daftar Mahasiswa Bimbingan', href: '' },
+        { label: 'Persetujuan Permohonan Bimbingan', href: '' },
+        { label: 'Atur Ketersediaan Slot Waktu', href: '' },
+        { label: 'Verifikasi Logbook Catatan', href: '' },
       ],
       supportText: 'Layanan Akademik Dosen Pembimbing UMSU',
       contactEmail: 'lecturer@umsu.ac.id',
@@ -108,13 +116,12 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
     student: {
       label: 'Mahasiswa Portal',
       bgBadge: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-      description:
-        'Portal Akademik Skripsi Mahasiswa UMSU. Pengajuan usulan 3 judul skripsi, pemantauan status persetujuan Kaprodi, pengisian logbook, dan booking jadwal dosen.',
+      description: 'Portal Akademik Skripsi Mahasiswa UMSU. Pengajuan usulan 3 judul skripsi, pemantauan status persetujuan Kaprodi, pengisian logbook, dan booking jadwal dosen.',
       quickLinks: [
-        { label: 'Pengajuan Judul Proposal', href: '/mahasiswa/pengajuan-judul' },
-        { label: 'Cek Status Persetujuan Judul', href: '/mahasiswa/status-judul' },
-        { label: 'Catatan Logbook Bimbingan', href: '/mahasiswa/log-bimbingan' },
-        { label: 'Booking Jadwal Konsultasi', href: '/mahasiswa/booking-jadwal' },
+        { label: 'Pengajuan Judul Proposal', href: '' },
+        { label: 'Cek Status Persetujuan Judul', href: '' },
+        { label: 'Catatan Logbook Bimbingan', href: '' },
+        { label: 'Booking Jadwal Konsultasi', href: '' },
       ],
       supportText: 'Helpdesk Akademik Skripsi Mahasiswa UMSU',
       contactEmail: 'student@umsu.ac.id',
@@ -122,16 +129,31 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
     guest: {
       label: 'Pendaftaran & Verifikasi',
       bgBadge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-      description:
-        'Portal Aktivasi Akun Pendaftar UMSU. Akun terhubung via Google SSO. Mohon tunggu proses verifikasi identitas (NPM / NIDN) oleh Sekretariat Prodi / Admin UMSU.',
+      description: 'Portal Aktivasi Akun Pendaftar UMSU. Akun terhubung via Google SSO. Mohon tunggu proses verifikasi identitas (NPM / NIDN) oleh Sekretariat Prodi / Admin UMSU.',
       quickLinks: [
-        { label: 'Cek Status Verifikasi Akun', href: '/dashboard' },
-        { label: 'Panduan Google SSO UMSU', href: '#' },
-        { label: 'Kontak Admin Program Studi', href: '#' },
+        { label: 'Cek Status Verifikasi Akun', href: '' },
+        { label: 'Panduan Google SSO UMSU', href: '' },
+        { label: 'Kontak Admin Program Studi', href: '' },
       ],
       supportText: 'Helpdesk Pendaftaran & Verifikasi UMSU',
       contactEmail: 'helpdesk@umsu.ac.id',
     },
+    mahasiswa: {
+      label: '',
+      bgBadge: '',
+      description: '',
+      quickLinks: [],
+      supportText: '',
+      contactEmail: ''
+    },
+    dosen: {
+      label: '',
+      bgBadge: '',
+      description: '',
+      quickLinks: [],
+      supportText: '',
+      contactEmail: ''
+    }
   };
 
   const currentConfig = roleConfig[role] || roleConfig.guest;
@@ -144,7 +166,7 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
       {/* Main Footer Container */}
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-          
+
           {/* Column 1: Branding, Role Info & Tag */}
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center gap-3.5">
